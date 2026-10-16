@@ -39,6 +39,7 @@ class _AgregarEjemplarState extends State<AgregarEjemplar> {
   }
 
   Future<void> _guardar() async {
+    FocusManager.instance.primaryFocus?.unfocus(); // cierra el teclado para que no tape los resultados
     final formularioValido = _formKey.currentState!.validate();
     if (_fechaIngreso == null) {
       setState(() => _error = 'Seleccione la fecha de ingreso.');

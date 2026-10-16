@@ -19,6 +19,14 @@ Dirección del servidor según el dispositivo:
 | Chrome / Windows | `http://localhost:8081/graphql` | No |
 | Teléfono físico (misma Wi-Fi) | IP del computador | `flutter run --dart-define=URL_GRAPHQL=http://<IP>:8081/graphql` |
 
+**Celular por cable USB (recomendado si el Wi-Fi bloquea la conexión entre equipos):** con la
+depuración USB activada, `adb reverse` hace que el celular llegue al servidor por el cable:
+
+```bash
+adb reverse tcp:8081 tcp:8081
+flutter run --dart-define=URL_GRAPHQL=http://localhost:8081/graphql
+```
+
 El `AndroidManifest.xml` incluye el permiso `INTERNET` y `usesCleartextTraffic`, necesario
 porque el servidor del proyecto usa `http://` (Android 9+ bloquea HTTP sin TLS por defecto).
 
@@ -41,6 +49,17 @@ lib/
 │   └── comunes/                 FichaLibro, FichaEjemplar, CampoFecha, TextoError
 └── utilidades/                  Formatos de fecha/precio y validaciones de formularios
 ```
+
+## Problemas comunes
+
+- **`flutter emulators` no muestra ningún emulador, pero Android Studio sí tiene.** Flutter está
+  usando otro SDK (lo indica `flutter doctor -v`, línea *Android SDK at …*). Opciones: encender
+  el emulador desde *Device Manager* de Android Studio y luego `flutter run` lo detecta, o apuntar
+  Flutter al SDK de Android Studio con `flutter config --android-sdk "%LOCALAPPDATA%\Android\Sdk"`.
+- **La primera compilación para Android tarda varios minutos** (Gradle descarga dependencias).
+  Hacerla antes de la presentación.
+- **"No se pudo conectar con el servidor"**: verificar que el servidor esté corriendo y que la URL
+  corresponda al dispositivo (tabla de arriba).
 
 ## Pruebas
 

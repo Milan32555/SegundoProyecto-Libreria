@@ -39,6 +39,7 @@ class _ActualizarEjemplarState extends State<ActualizarEjemplar> {
   }
 
   Future<void> _buscar() async {
+    FocusManager.instance.primaryFocus?.unfocus(); // cierra el teclado para que no tape los resultados
     setState(() {
       _cargando = true;
       _error = null;
@@ -66,6 +67,7 @@ class _ActualizarEjemplarState extends State<ActualizarEjemplar> {
   }
 
   Future<void> _guardarCambios() async {
+    FocusManager.instance.primaryFocus?.unfocus(); // cierra el teclado para que no tape los resultados
     if (_ejemplar == null || !_formKey.currentState!.validate()) return;
     setState(() {
       _cargando = true;

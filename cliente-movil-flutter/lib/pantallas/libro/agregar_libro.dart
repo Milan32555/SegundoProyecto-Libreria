@@ -41,6 +41,7 @@ class _AgregarLibroState extends State<AgregarLibro> {
   }
 
   Future<void> _guardar() async {
+    FocusManager.instance.primaryFocus?.unfocus(); // cierra el teclado para que no tape los resultados
     final formularioValido = _formKey.currentState!.validate();
     if (_fechaPublicacion == null) {
       setState(() => _error = 'Seleccione la fecha de publicación.');

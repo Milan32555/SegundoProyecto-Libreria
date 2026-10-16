@@ -29,6 +29,7 @@ class _EliminarEjemplarState extends State<EliminarEjemplar> {
   }
 
   Future<void> _buscar() async {
+    FocusManager.instance.primaryFocus?.unfocus(); // cierra el teclado para que no tape los resultados
     setState(() {
       _cargando = true;
       _error = null;

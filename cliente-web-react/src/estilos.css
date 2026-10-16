@@ -1,0 +1,186 @@
+:root {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: #f4f5f7;
+  color: #1f2430;
+}
+
+.barra-superior {
+  background: #2f3b52;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.barra-superior a {
+  color: #dce3f0;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.barra-superior a:hover {
+  color: white;
+  text-decoration: underline;
+}
+
+.menu-desplegable {
+  position: relative;
+}
+
+.menu-desplegable-contenido {
+  display: none;
+  position: absolute;
+  background: white;
+  color: #1f2430;
+  min-width: 220px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.menu-desplegable:hover .menu-desplegable-contenido,
+.menu-desplegable:focus-within .menu-desplegable-contenido {
+  display: block;
+}
+
+.menu-desplegable-contenido a {
+  display: block;
+  padding: 0.6rem 1rem;
+  color: #1f2430;
+}
+
+.menu-desplegable-contenido a:hover {
+  background: #eef1f7;
+}
+
+.contenedor {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+}
+
+.tarjeta {
+  background: white;
+  border-radius: 10px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+h1 {
+  font-size: 1.4rem;
+  margin-top: 0;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  max-width: 480px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #3c4458;
+}
+
+input, select {
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #c7ccd8;
+  font-size: 1rem;
+}
+
+button {
+  padding: 0.6rem 1.1rem;
+  border-radius: 6px;
+  border: none;
+  background: #3a5bd9;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  width: fit-content;
+}
+
+button.secundario {
+  background: #e5e8f0;
+  color: #2f3b52;
+}
+
+button.peligro {
+  background: #c0392b;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.mensaje-error {
+  background: #fdecea;
+  color: #a4201a;
+  border: 1px solid #f3c6c1;
+  padding: 0.7rem 1rem;
+  border-radius: 6px;
+}
+
+.mensaje-exito {
+  background: #e7f6ec;
+  color: #1b6b3a;
+  border: 1px solid #bfe8cc;
+  padding: 0.7rem 1rem;
+  border-radius: 6px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+th, td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid #e3e6ee;
+  font-size: 0.92rem;
+}
+
+th {
+  color: #5a6378;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.filtros {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+}
+
+.ficha-objeto {
+  background: #f7f8fb;
+  border: 1px solid #e1e5ef;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.acciones {
+  display: flex;
+  gap: 0.6rem;
+}

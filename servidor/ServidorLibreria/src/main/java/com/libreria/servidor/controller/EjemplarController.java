@@ -45,6 +45,11 @@ public class EjemplarController {
         return servicioEjemplar.buscarPorCodigo(codigo);
     }
 
+    @QueryMapping
+    public int revisionEjemplares() {
+        return servicioEjemplar.revision();
+    }
+
     // ---------- Mutations ----------
 
     @MutationMapping

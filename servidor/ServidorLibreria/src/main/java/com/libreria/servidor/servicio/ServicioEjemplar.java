@@ -6,8 +6,10 @@ import com.libreria.servidor.excepciones.LibreriaException;
 import com.libreria.servidor.model.Ejemplar;
 import com.libreria.servidor.model.EjemplarInput;
 import com.libreria.servidor.model.EjemplarUpdateInput;
+import com.libreria.servidor.model.Libro;
 import com.libreria.servidor.observer.ListadoObservable;
 import com.libreria.servidor.observer.ObservadorListado;
+import com.libreria.servidor.observer.RevisionListado;
 import com.libreria.servidor.repositorio.RepositorioEjemplares;
 import org.springframework.stereotype.Service;
 
@@ -15,16 +17,22 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-/** Lógica de negocio del CRUD de Ejemplar (clase detalle, 0..* por Libro). */
+/**
+ * Lógica de negocio del CRUD de Ejemplar (clase detalle, 0..* por Libro).
+ * Mismo diseño que {@link ServicioLibro}: repositorio Singleton, Observer y
+ * operaciones de escritura synchronized.
+ */
 @Service
 public class ServicioEjemplar {
 
     private final RepositorioEjemplares repositorio = RepositorioEjemplares.getInstancia();
     private final ListadoObservable<Ejemplar> observable = new ListadoObservable<>();
+    private final RevisionListado<Ejemplar> revision = new RevisionListado<>();
     private final ServicioLibro servicioLibro;
 
     public ServicioEjemplar(ServicioLibro servicioLibro) {
         this.servicioLibro = servicioLibro;
+        observable.suscribir(revision);
     }
 
     public void suscribir(ObservadorListado<Ejemplar> observador) {
@@ -33,6 +41,11 @@ public class ServicioEjemplar {
 
     public void desuscribir(ObservadorListado<Ejemplar> observador) {
         observable.desuscribir(observador);
+    }
+
+    /** Número que aumenta con cada cambio de la colección (lo usa el Observer de los clientes). */
+    public int revision() {
+        return revision.getRevision();
     }
 
     public List<Ejemplar> listar() {
@@ -62,16 +75,15 @@ public class ServicioEjemplar {
                 .findFirst();
     }
 
-    public Ejemplar crear(EjemplarInput in) {
+    public synchronized Ejemplar crear(EjemplarInput in) {
         if (in.codigo() == null || in.codigo().isBlank()) {
             throw new LibreriaException("El código del ejemplar es obligatorio.");
         }
         if (buscarPorCodigo(in.codigo()).isPresent()) {
             throw new LibreriaException("Ya existe un ejemplar con el código " + in.codigo().trim() + ".");
         }
-        if (in.isbnLibro() == null || servicioLibro.buscarPorIsbn(in.isbnLibro()).isEmpty()) {
-            throw new LibreriaException("No existe un libro con el ISBN " + in.isbnLibro() + ".");
-        }
+        Libro libro = servicioLibro.buscarPorIsbn(in.isbnLibro())
+                .orElseThrow(() -> new LibreriaException("No existe un libro con el ISBN " + in.isbnLibro() + "."));
         validar(in.estado(), in.ubicacion(), in.fechaIngreso(), in.precioReposicion());
 
         Ejemplar ejemplar = new EjemplarBuilder()
@@ -80,7 +92,7 @@ public class ServicioEjemplar {
                 .conUbicacion(in.ubicacion().trim())
                 .conFechaIngreso(in.fechaIngreso())
                 .conPrecioReposicion(in.precioReposicion())
-                .conIsbnLibro(in.isbnLibro().trim())
+                .conIsbnLibro(libro.getIsbn())
                 .construir();
 
         repositorio.agregar(ejemplar);
@@ -88,7 +100,7 @@ public class ServicioEjemplar {
         return ejemplar;
     }
 
-    public Ejemplar actualizar(String codigo, EjemplarUpdateInput in) {
+    public synchronized Ejemplar actualizar(String codigo, EjemplarUpdateInput in) {
         Ejemplar ejemplar = buscarPorCodigo(codigo)
                 .orElseThrow(() -> new LibreriaException("No existe un ejemplar con el código " + codigo + "."));
         validar(in.estado(), in.ubicacion(), in.fechaIngreso(), in.precioReposicion());
@@ -102,7 +114,7 @@ public class ServicioEjemplar {
         return ejemplar;
     }
 
-    public Ejemplar eliminar(String codigo) {
+    public synchronized Ejemplar eliminar(String codigo) {
         Ejemplar ejemplar = buscarPorCodigo(codigo)
                 .orElseThrow(() -> new LibreriaException("No existe un ejemplar con el código " + codigo + "."));
         repositorio.eliminar(ejemplar);

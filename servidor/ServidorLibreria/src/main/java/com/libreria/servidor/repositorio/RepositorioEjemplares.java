@@ -26,15 +26,15 @@ public final class RepositorioEjemplares {
         return instancia;
     }
 
-    public List<Ejemplar> listar() {
+    public synchronized List<Ejemplar> listar() {
         return new ArrayList<>(ejemplares);
     }
 
-    public void agregar(Ejemplar ejemplar) {
+    public synchronized void agregar(Ejemplar ejemplar) {
         ejemplares.add(ejemplar);
     }
 
-    public boolean eliminar(Ejemplar ejemplar) {
+    public synchronized boolean eliminar(Ejemplar ejemplar) {
         return ejemplares.remove(ejemplar);
     }
 

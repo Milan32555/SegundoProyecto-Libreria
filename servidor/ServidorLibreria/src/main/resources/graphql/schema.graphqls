@@ -84,6 +84,10 @@ type Query {
     librosFiltrados(autor: String, genero: Genero): [Libro!]!
     "Consultar UN SOLO libro por su ISBN"
     libroPorIsbn(isbn: ID!): Libro
+    "Consultar UN SOLO libro por su título exacto (sin distinguir tildes ni mayúsculas)"
+    libroPorTitulo(titulo: String!): Libro
+    "Aumenta cada vez que la colección de libros cambia (Observer de los clientes)"
+    revisionLibros: Int!
 
     "Listar todos los ejemplares"
     ejemplares: [Ejemplar!]!
@@ -91,12 +95,14 @@ type Query {
     ejemplaresFiltrados(estado: EstadoEjemplar, isbnLibro: String): [Ejemplar!]!
     "Consultar UN SOLO ejemplar por su código"
     ejemplarPorCodigo(codigo: ID!): Ejemplar
+    "Aumenta cada vez que la colección de ejemplares cambia (Observer de los clientes)"
+    revisionEjemplares: Int!
 }
 
 type Mutation {
     crearLibro(input: LibroInput!): Libro
     actualizarLibro(isbn: ID!, input: LibroUpdateInput!): Libro
-    "Elimina el libro y devuelve los datos del libro eliminado"
+    "Elimina el libro (solo si no tiene ejemplares) y devuelve los datos del libro eliminado"
     eliminarLibro(isbn: ID!): Libro
 
     crearEjemplar(input: EjemplarInput!): Ejemplar

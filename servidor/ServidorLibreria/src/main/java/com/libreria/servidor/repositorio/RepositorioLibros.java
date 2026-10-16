@@ -14,6 +14,7 @@ import java.util.List;
  * "la aplicación debe almacenar la información en una Lista").
  *
  * El constructor es privado; el acceso es siempre a través de {@link #getInstancia()}.
+ * Los métodos son synchronized porque varios clientes pueden hacer peticiones a la vez.
  */
 public final class RepositorioLibros {
 
@@ -32,15 +33,15 @@ public final class RepositorioLibros {
         return instancia;
     }
 
-    public List<Libro> listar() {
+    public synchronized List<Libro> listar() {
         return new ArrayList<>(libros);
     }
 
-    public void agregar(Libro libro) {
+    public synchronized void agregar(Libro libro) {
         libros.add(libro);
     }
 
-    public boolean eliminar(Libro libro) {
+    public synchronized boolean eliminar(Libro libro) {
         return libros.remove(libro);
     }
 

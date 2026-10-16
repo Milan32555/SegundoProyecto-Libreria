@@ -52,6 +52,12 @@ class _ListarEjemplaresState extends State<ListarEjemplares> {
     }
   }
 
+  /// Filtro pedido por el usuario (el refresco del Observer usa _cargar sin cerrar el teclado).
+  void _filtrar() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    _cargar();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,7 +87,7 @@ class _ListarEjemplaresState extends State<ListarEjemplares> {
               ),
               IconButton(
                 tooltip: 'Filtrar',
-                onPressed: _cargando ? null : _cargar,
+                onPressed: _cargando ? null : _filtrar,
                 icon: const Icon(Icons.filter_alt),
               ),
             ]),

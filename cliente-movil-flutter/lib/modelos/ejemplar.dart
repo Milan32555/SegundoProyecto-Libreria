@@ -1,0 +1,35 @@
+/// Estados posibles de un Ejemplar (enum EstadoEjemplar en el schema GraphQL).
+const List<String> estadosEjemplar = [
+  'DISPONIBLE',
+  'PRESTADO',
+  'DANIADO',
+  'DADO_DE_BAJA',
+];
+
+/// Objeto detalle: Ejemplar (1..1 con su Libro, un Libro tiene 0..* Ejemplares).
+class Ejemplar {
+  final String codigo;
+  final String estado;
+  final String ubicacion;
+  final String fechaIngreso;
+  final double precioReposicion;
+  final String isbnLibro;
+
+  Ejemplar({
+    required this.codigo,
+    required this.estado,
+    required this.ubicacion,
+    required this.fechaIngreso,
+    required this.precioReposicion,
+    required this.isbnLibro,
+  });
+
+  factory Ejemplar.desdeJson(Map<String, dynamic> json) => Ejemplar(
+        codigo: json['codigo'] as String,
+        estado: json['estado'] as String,
+        ubicacion: json['ubicacion'] as String,
+        fechaIngreso: json['fechaIngreso'] as String,
+        precioReposicion: (json['precioReposicion'] as num).toDouble(),
+        isbnLibro: json['isbnLibro'] as String,
+      );
+}

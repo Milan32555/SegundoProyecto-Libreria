@@ -1,0 +1,22 @@
+# Java / Maven
+target/
+*.class
+.idea/
+*.iml
+
+# Node / React
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Flutter / Dart
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+
+# Sistema
+.DS_Store
+Thumbs.db
+.vscode/

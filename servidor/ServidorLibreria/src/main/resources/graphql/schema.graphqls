@@ -1,0 +1,106 @@
+scalar LocalDateTime
+
+enum Genero {
+    FICCION
+    NO_FICCION
+    CIENCIA
+    HISTORIA
+    INFANTIL
+    POESIA
+    OTRO
+}
+
+enum EstadoEjemplar {
+    DISPONIBLE
+    PRESTADO
+    DANIADO
+    DADO_DE_BAJA
+}
+
+"Clase maestro: un título editorial."
+type Libro {
+    isbn: ID!
+    titulo: String!
+    autor: String!
+    precio: Float!
+    numeroPaginas: Int!
+    fechaPublicacion: LocalDateTime!
+    genero: Genero!
+    "Ejemplares físicos de este libro en inventario (0..*)"
+    ejemplares: [Ejemplar!]!
+}
+
+"Clase detalle: un ejemplar físico concreto de un Libro (1..1 con su libro)."
+type Ejemplar {
+    codigo: ID!
+    estado: EstadoEjemplar!
+    ubicacion: String!
+    fechaIngreso: LocalDateTime!
+    precioReposicion: Float!
+    isbnLibro: String!
+    "Libro al que pertenece este ejemplar"
+    libro: Libro!
+}
+
+input LibroInput {
+    isbn: ID!
+    titulo: String!
+    autor: String!
+    precio: Float!
+    numeroPaginas: Int!
+    fechaPublicacion: LocalDateTime!
+    genero: Genero!
+}
+
+input LibroUpdateInput {
+    titulo: String!
+    autor: String!
+    precio: Float!
+    numeroPaginas: Int!
+    fechaPublicacion: LocalDateTime!
+    genero: Genero!
+}
+
+input EjemplarInput {
+    codigo: ID!
+    estado: EstadoEjemplar!
+    ubicacion: String!
+    fechaIngreso: LocalDateTime!
+    precioReposicion: Float!
+    isbnLibro: String!
+}
+
+input EjemplarUpdateInput {
+    estado: EstadoEjemplar!
+    ubicacion: String!
+    fechaIngreso: LocalDateTime!
+    precioReposicion: Float!
+}
+
+type Query {
+    "Listar todos los libros"
+    libros: [Libro!]!
+    "Listar libros filtrando por autor (contiene, sin tildes) y/o género"
+    librosFiltrados(autor: String, genero: Genero): [Libro!]!
+    "Consultar UN SOLO libro por su ISBN"
+    libroPorIsbn(isbn: ID!): Libro
+
+    "Listar todos los ejemplares"
+    ejemplares: [Ejemplar!]!
+    "Listar ejemplares filtrando por estado y/o isbn del libro"
+    ejemplaresFiltrados(estado: EstadoEjemplar, isbnLibro: String): [Ejemplar!]!
+    "Consultar UN SOLO ejemplar por su código"
+    ejemplarPorCodigo(codigo: ID!): Ejemplar
+}
+
+type Mutation {
+    crearLibro(input: LibroInput!): Libro
+    actualizarLibro(isbn: ID!, input: LibroUpdateInput!): Libro
+    "Elimina el libro y devuelve los datos del libro eliminado"
+    eliminarLibro(isbn: ID!): Libro
+
+    crearEjemplar(input: EjemplarInput!): Ejemplar
+    actualizarEjemplar(codigo: ID!, input: EjemplarUpdateInput!): Ejemplar
+    "Elimina el ejemplar y devuelve los datos del ejemplar eliminado"
+    eliminarEjemplar(codigo: ID!): Ejemplar
+}

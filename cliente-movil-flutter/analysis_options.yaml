@@ -1,0 +1,10 @@
+# Reglas de análisis estático (flutter analyze). Se parte de las recomendadas por Flutter
+# y se agregan algunas para mantener un estilo uniforme en el proyecto.
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    prefer_single_quotes: true
+    prefer_final_locals: true
+    always_declare_return_types: true
+    avoid_print: true

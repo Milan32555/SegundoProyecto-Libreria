@@ -1,38 +1,53 @@
 import '../modelos/libro.dart';
 import 'cliente_graphql.dart';
 
-const String _camposLibro =
-    'isbn titulo autor precio numeroPaginas fechaPublicacion genero';
+const String _camposLibro = 'isbn titulo autor precio numeroPaginas fechaPublicacion genero';
+
+List<Libro> _aLibros(Object? lista) =>
+    (lista as List).map((e) => Libro.desdeJson(e as Map<String, dynamic>)).toList();
+
+Libro? _aLibroOpcional(Object? json) =>
+    json == null ? null : Libro.desdeJson(json as Map<String, dynamic>);
 
 Future<List<Libro>> listarLibros() async {
-  final data = await ejecutarGraphQL('query { libros { $_camposLibro } }');
-  return (data['libros'] as List)
-      .map((e) => Libro.desdeJson(e as Map<String, dynamic>))
-      .toList();
+  final data = await ClienteGraphQL().ejecutar('query { libros { $_camposLibro } }');
+  return _aLibros(data['libros']);
 }
 
+/// Listar con filtro: el filtrado se hace del lado del servidor.
 Future<List<Libro>> listarLibrosFiltrados({String? autor, String? genero}) async {
-  final data = await ejecutarGraphQL(
+  final data = await ClienteGraphQL().ejecutar(
     '''query (\$autor: String, \$genero: Genero) {
          librosFiltrados(autor: \$autor, genero: \$genero) { $_camposLibro }
        }''',
     variables: {
-      'autor': (autor == null || autor.isEmpty) ? null : autor,
+      'autor': (autor == null || autor.trim().isEmpty) ? null : autor.trim(),
       'genero': (genero == null || genero.isEmpty) ? null : genero,
     },
   );
-  return (data['librosFiltrados'] as List)
-      .map((e) => Libro.desdeJson(e as Map<String, dynamic>))
-      .toList();
+  return _aLibros(data['librosFiltrados']);
 }
 
 Future<Libro?> buscarLibroPorIsbn(String isbn) async {
-  final data = await ejecutarGraphQL(
+  final data = await ClienteGraphQL().ejecutar(
     'query (\$isbn: ID!) { libroPorIsbn(isbn: \$isbn) { $_camposLibro } }',
-    variables: {'isbn': isbn},
+    variables: {'isbn': isbn.trim()},
   );
-  final libro = data['libroPorIsbn'];
-  return libro == null ? null : Libro.desdeJson(libro as Map<String, dynamic>);
+  return _aLibroOpcional(data['libroPorIsbn']);
+}
+
+Future<Libro?> buscarLibroPorTitulo(String titulo) async {
+  final data = await ClienteGraphQL().ejecutar(
+    'query (\$titulo: String!) { libroPorTitulo(titulo: \$titulo) { $_camposLibro } }',
+    variables: {'titulo': titulo.trim()},
+  );
+  return _aLibroOpcional(data['libroPorTitulo']);
+}
+
+/// Número de revisión de la colección en el servidor (lo usa el Observer de Listar).
+Future<int> consultarRevisionLibros() async {
+  final data = await ClienteGraphQL().ejecutar('query { revisionLibros }');
+  return data['revisionLibros'] as int;
 }
 
 Future<Libro> crearLibro({
@@ -44,7 +59,7 @@ Future<Libro> crearLibro({
   required String fechaPublicacion,
   required String genero,
 }) async {
-  final data = await ejecutarGraphQL(
+  final data = await ClienteGraphQL().ejecutar(
     'mutation (\$input: LibroInput!) { crearLibro(input: \$input) { $_camposLibro } }',
     variables: {
       'input': {
@@ -70,7 +85,7 @@ Future<Libro> actualizarLibro({
   required String fechaPublicacion,
   required String genero,
 }) async {
-  final data = await ejecutarGraphQL(
+  final data = await ClienteGraphQL().ejecutar(
     '''mutation (\$isbn: ID!, \$input: LibroUpdateInput!) {
          actualizarLibro(isbn: \$isbn, input: \$input) { $_camposLibro }
        }''',
@@ -90,7 +105,7 @@ Future<Libro> actualizarLibro({
 }
 
 Future<Libro> eliminarLibro(String isbn) async {
-  final data = await ejecutarGraphQL(
+  final data = await ClienteGraphQL().ejecutar(
     'mutation (\$isbn: ID!) { eliminarLibro(isbn: \$isbn) { $_camposLibro } }',
     variables: {'isbn': isbn},
   );

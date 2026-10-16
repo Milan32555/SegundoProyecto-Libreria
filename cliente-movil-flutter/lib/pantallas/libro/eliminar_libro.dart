@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+
 import '../../modelos/libro.dart';
 import '../../observador/listado_observable.dart';
 import '../../servicios/cliente_graphql.dart';
 import '../../servicios/servicio_libro.dart';
+import '../comunes/fichas.dart';
+import '../comunes/texto_error.dart';
 
 /// Caso de uso: Eliminar Libro. Primero se busca y se muestra TODA la información
 /// del objeto; solo después de confirmar se elimina.
@@ -19,6 +22,12 @@ class _EliminarLibroState extends State<EliminarLibro> {
   bool _cargando = false;
   String? _error;
 
+  @override
+  void dispose() {
+    _isbn.dispose();
+    super.dispose();
+  }
+
   Future<void> _buscar() async {
     setState(() {
       _cargando = true;
@@ -26,23 +35,25 @@ class _EliminarLibroState extends State<EliminarLibro> {
       _libro = null;
     });
     try {
-      final resultado = await buscarLibroPorIsbn(_isbn.text.trim());
-      setState(() => _libro = resultado);
-      if (resultado == null) {
-        setState(() => _error = 'No se encontró ningún libro con ese ISBN.');
-      }
+      final resultado = await buscarLibroPorIsbn(_isbn.text);
+      if (!mounted) return;
+      setState(() {
+        _libro = resultado;
+        if (resultado == null) _error = 'No se encontró ningún libro con ese ISBN.';
+      });
     } on ErrorGraphQL catch (e) {
-      setState(() => _error = e.mensaje);
-    } catch (_) {
-      setState(() => _error = 'Error de conexión con el servidor.');
+      if (mounted) setState(() => _error = e.mensaje);
     } finally {
-      setState(() => _cargando = false);
+      if (mounted) setState(() => _cargando = false);
     }
   }
 
   Future<void> _confirmarEliminacion() async {
     if (_libro == null) return;
-    setState(() => _cargando = true);
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
     try {
       final eliminado = await eliminarLibro(_libro!.isbn);
       libroObservable.notificar();
@@ -51,7 +62,7 @@ class _EliminarLibroState extends State<EliminarLibro> {
           SnackBar(content: Text('Libro "${eliminado.titulo}" eliminado correctamente.')));
       Navigator.pop(context);
     } on ErrorGraphQL catch (e) {
-      setState(() => _error = e.mensaje);
+      if (mounted) setState(() => _error = e.mensaje);
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -65,35 +76,31 @@ class _EliminarLibroState extends State<EliminarLibro> {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            TextField(controller: _isbn, decoration: const InputDecoration(labelText: 'ISBN a eliminar')),
+            TextField(
+              controller: _isbn,
+              decoration: const InputDecoration(labelText: 'ISBN del libro a eliminar'),
+              onSubmitted: (_) => _buscar(),
+            ),
             const SizedBox(height: 12),
             FilledButton(onPressed: _cargando ? null : _buscar, child: const Text('Buscar')),
-            if (_error != null) Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Text(_error!, style: const TextStyle(color: Colors.red)),
-            ),
+            if (_error != null) TextoError(_error!),
             if (_libro != null) ...[
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('ISBN: ${_libro!.isbn}'),
-                    Text('Título: ${_libro!.titulo}'),
-                    Text('Autor: ${_libro!.autor}'),
-                    Text('Precio: \$${_libro!.precio.toStringAsFixed(0)}'),
-                    Text('Páginas: ${_libro!.numeroPaginas}'),
-                    Text('Publicación: ${_libro!.fechaPublicacion}'),
-                    Text('Género: ${_libro!.genero}'),
-                  ]),
-                ),
-              ),
+              const SizedBox(height: 8),
+              const Text('¿Seguro que desea eliminar este libro?'),
+              FichaLibro(libro: _libro!),
               const SizedBox(height: 12),
-              FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                onPressed: _cargando ? null : _confirmarEliminacion,
-                child: const Text('Confirmar eliminación'),
-              ),
+              Row(children: [
+                FilledButton(
+                  style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                  onPressed: _cargando ? null : _confirmarEliminacion,
+                  child: const Text('Confirmar eliminación'),
+                ),
+                const SizedBox(width: 12),
+                OutlinedButton(
+                  onPressed: () => setState(() => _libro = null),
+                  child: const Text('Cancelar'),
+                ),
+              ]),
             ],
           ],
         ),

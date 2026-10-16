@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+
 import '../../modelos/libro.dart';
 import '../../observador/listado_observable.dart';
 import '../../servicios/cliente_graphql.dart';
 import '../../servicios/servicio_libro.dart';
+import '../../utilidades/formato.dart';
+import '../../utilidades/validaciones.dart';
+import '../comunes/campo_fecha.dart';
+import '../comunes/texto_error.dart';
 
 /// Caso de uso: Actualizar Libro. Primero se busca y se muestra TODA la
 /// información actual; luego el usuario la modifica y confirma.
@@ -27,51 +32,59 @@ class _ActualizarLibroState extends State<ActualizarLibro> {
   bool _cargando = false;
   String? _error;
 
-  Future<void> _buscar() async {
-    setState(() { _cargando = true; _error = null; _libro = null; });
-    try {
-      final resultado = await buscarLibroPorIsbn(_isbnBusqueda.text.trim());
-      if (resultado == null) {
-        setState(() => _error = 'No se encontró ningún libro con ese ISBN.');
-      } else {
-        setState(() {
-          _libro = resultado;
-          _titulo.text = resultado.titulo;
-          _autor.text = resultado.autor;
-          _precio.text = resultado.precio.toString();
-          _numeroPaginas.text = resultado.numeroPaginas.toString();
-          _fechaPublicacion = DateTime.parse(resultado.fechaPublicacion);
-          _genero = resultado.genero;
-        });
-      }
-    } on ErrorGraphQL catch (e) {
-      setState(() => _error = e.mensaje);
-    } finally {
-      setState(() => _cargando = false);
-    }
+  @override
+  void dispose() {
+    _isbnBusqueda.dispose();
+    _titulo.dispose();
+    _autor.dispose();
+    _precio.dispose();
+    _numeroPaginas.dispose();
+    super.dispose();
   }
 
-  Future<void> _elegirFecha() async {
-    final fecha = await showDatePicker(
-      context: context,
-      initialDate: _fechaPublicacion ?? DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-    );
-    if (fecha != null) setState(() => _fechaPublicacion = fecha);
+  Future<void> _buscar() async {
+    setState(() {
+      _cargando = true;
+      _error = null;
+      _libro = null;
+    });
+    try {
+      final resultado = await buscarLibroPorIsbn(_isbnBusqueda.text);
+      if (!mounted) return;
+      setState(() {
+        if (resultado == null) {
+          _error = 'No se encontró ningún libro con ese ISBN.';
+          return;
+        }
+        _libro = resultado;
+        _titulo.text = resultado.titulo;
+        _autor.text = resultado.autor;
+        _precio.text = resultado.precio.toString();
+        _numeroPaginas.text = resultado.numeroPaginas.toString();
+        _fechaPublicacion = DateTime.parse(resultado.fechaPublicacion);
+        _genero = resultado.genero;
+      });
+    } on ErrorGraphQL catch (e) {
+      if (mounted) setState(() => _error = e.mensaje);
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
   }
 
   Future<void> _guardarCambios() async {
     if (_libro == null || !_formKey.currentState!.validate()) return;
-    setState(() => _cargando = true);
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
     try {
       await actualizarLibro(
         isbn: _libro!.isbn,
         titulo: _titulo.text.trim(),
         autor: _autor.text.trim(),
-        precio: double.parse(_precio.text),
-        numeroPaginas: int.parse(_numeroPaginas.text),
-        fechaPublicacion: _fechaPublicacion!.toIso8601String().substring(0, 19),
+        precio: double.parse(_precio.text.trim()),
+        numeroPaginas: int.parse(_numeroPaginas.text.trim()),
+        fechaPublicacion: aFechaServidor(_fechaPublicacion!),
         genero: _genero,
       );
       libroObservable.notificar();
@@ -80,7 +93,7 @@ class _ActualizarLibroState extends State<ActualizarLibro> {
           .showSnackBar(const SnackBar(content: Text('Libro actualizado correctamente.')));
       Navigator.pop(context);
     } on ErrorGraphQL catch (e) {
-      setState(() => _error = e.mensaje);
+      if (mounted) setState(() => _error = e.mensaje);
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -92,85 +105,80 @@ class _ActualizarLibroState extends State<ActualizarLibro> {
       appBar: AppBar(title: const Text('Actualizar Libro')),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: _libro == null
-            ? ListView(
-                children: [
-                  TextField(
-                      controller: _isbnBusqueda,
-                      decoration: const InputDecoration(labelText: 'ISBN a actualizar')),
-                  const SizedBox(height: 12),
-                  FilledButton(onPressed: _cargando ? null : _buscar, child: const Text('Buscar')),
-                  if (_error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Text(_error!, style: const TextStyle(color: Colors.red)),
-                    ),
-                ],
-              )
-            : Form(
-                key: _formKey,
-                child: ListView(
-                  children: [
-                    Text('ISBN (no editable): ${_libro!.isbn}',
-                        style: const TextStyle(color: Colors.grey)),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _titulo,
-                      decoration: const InputDecoration(labelText: 'Título'),
-                      validator: (v) => (v == null || v.isEmpty) ? 'Obligatorio' : null,
-                    ),
-                    TextFormField(
-                      controller: _autor,
-                      decoration: const InputDecoration(labelText: 'Autor'),
-                      validator: (v) => (v == null || v.isEmpty) ? 'Obligatorio' : null,
-                    ),
-                    TextFormField(
-                      controller: _precio,
-                      decoration: const InputDecoration(labelText: 'Precio'),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      validator: (v) =>
-                          (v == null || double.tryParse(v) == null) ? 'Número inválido' : null,
-                    ),
-                    TextFormField(
-                      controller: _numeroPaginas,
-                      decoration: const InputDecoration(labelText: 'Número de páginas'),
-                      keyboardType: TextInputType.number,
-                      validator: (v) =>
-                          (v == null || int.tryParse(v) == null) ? 'Número inválido' : null,
-                    ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('Fecha de publicación: ${_fechaPublicacion!.toLocal()}'
-                          .split(' ')[0]),
-                      trailing: const Icon(Icons.calendar_today),
-                      onTap: _elegirFecha,
-                    ),
-                    DropdownButtonFormField<String>(
-                      value: _genero,
-                      decoration: const InputDecoration(labelText: 'Género'),
-                      items: generos.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
-                      onChanged: (v) => setState(() => _genero = v!),
-                    ),
-                    if (_error != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Text(_error!, style: const TextStyle(color: Colors.red)),
-                      ),
-                    const SizedBox(height: 20),
-                    Row(children: [
-                      FilledButton(
-                        onPressed: _cargando ? null : _guardarCambios,
-                        child: const Text('Guardar cambios'),
-                      ),
-                      const SizedBox(width: 12),
-                      OutlinedButton(
-                        onPressed: () => setState(() => _libro = null),
-                        child: const Text('Cancelar'),
-                      ),
-                    ]),
-                  ],
-                ),
-              ),
+        child: _libro == null ? _buildBusqueda() : _buildFormulario(),
+      ),
+    );
+  }
+
+  Widget _buildBusqueda() {
+    return ListView(
+      children: [
+        TextField(
+          controller: _isbnBusqueda,
+          decoration: const InputDecoration(labelText: 'ISBN del libro a actualizar'),
+          onSubmitted: (_) => _buscar(),
+        ),
+        const SizedBox(height: 12),
+        FilledButton(onPressed: _cargando ? null : _buscar, child: const Text('Buscar')),
+        if (_error != null) TextoError(_error!),
+      ],
+    );
+  }
+
+  Widget _buildFormulario() {
+    return Form(
+      key: _formKey,
+      child: ListView(
+        children: [
+          Text('ISBN (no editable): ${_libro!.isbn}', style: const TextStyle(color: Colors.grey)),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _titulo,
+            decoration: const InputDecoration(labelText: 'Título'),
+            validator: validarObligatorio,
+          ),
+          TextFormField(
+            controller: _autor,
+            decoration: const InputDecoration(labelText: 'Autor'),
+            validator: validarObligatorio,
+          ),
+          TextFormField(
+            controller: _precio,
+            decoration: const InputDecoration(labelText: 'Precio'),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            validator: validarDecimalPositivo,
+          ),
+          TextFormField(
+            controller: _numeroPaginas,
+            decoration: const InputDecoration(labelText: 'Número de páginas'),
+            keyboardType: TextInputType.number,
+            validator: validarEnteroPositivo,
+          ),
+          CampoFecha(
+            etiqueta: 'Fecha de publicación',
+            valor: _fechaPublicacion,
+            alCambiar: (fecha) => setState(() => _fechaPublicacion = fecha),
+          ),
+          DropdownButtonFormField<String>(
+            initialValue: _genero,
+            decoration: const InputDecoration(labelText: 'Género'),
+            items: generos.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+            onChanged: (v) => setState(() => _genero = v!),
+          ),
+          if (_error != null) TextoError(_error!),
+          const SizedBox(height: 20),
+          Row(children: [
+            FilledButton(
+              onPressed: _cargando ? null : _guardarCambios,
+              child: const Text('Guardar cambios'),
+            ),
+            const SizedBox(width: 12),
+            OutlinedButton(
+              onPressed: () => setState(() => _libro = null),
+              child: const Text('Cancelar'),
+            ),
+          ]),
+        ],
       ),
     );
   }

@@ -1,38 +1,43 @@
 import '../modelos/ejemplar.dart';
 import 'cliente_graphql.dart';
 
-const String _camposEjemplar =
-    'codigo estado ubicacion fechaIngreso precioReposicion isbnLibro';
+const String _camposEjemplar = 'codigo estado ubicacion fechaIngreso precioReposicion isbnLibro';
+
+List<Ejemplar> _aEjemplares(Object? lista) =>
+    (lista as List).map((e) => Ejemplar.desdeJson(e as Map<String, dynamic>)).toList();
 
 Future<List<Ejemplar>> listarEjemplares() async {
-  final data = await ejecutarGraphQL('query { ejemplares { $_camposEjemplar } }');
-  return (data['ejemplares'] as List)
-      .map((e) => Ejemplar.desdeJson(e as Map<String, dynamic>))
-      .toList();
+  final data = await ClienteGraphQL().ejecutar('query { ejemplares { $_camposEjemplar } }');
+  return _aEjemplares(data['ejemplares']);
 }
 
+/// Listar con filtro: el filtrado se hace del lado del servidor.
 Future<List<Ejemplar>> listarEjemplaresFiltrados({String? estado, String? isbnLibro}) async {
-  final data = await ejecutarGraphQL(
+  final data = await ClienteGraphQL().ejecutar(
     '''query (\$estado: EstadoEjemplar, \$isbnLibro: String) {
          ejemplaresFiltrados(estado: \$estado, isbnLibro: \$isbnLibro) { $_camposEjemplar }
        }''',
     variables: {
       'estado': (estado == null || estado.isEmpty) ? null : estado,
-      'isbnLibro': (isbnLibro == null || isbnLibro.isEmpty) ? null : isbnLibro,
+      'isbnLibro': (isbnLibro == null || isbnLibro.trim().isEmpty) ? null : isbnLibro.trim(),
     },
   );
-  return (data['ejemplaresFiltrados'] as List)
-      .map((e) => Ejemplar.desdeJson(e as Map<String, dynamic>))
-      .toList();
+  return _aEjemplares(data['ejemplaresFiltrados']);
 }
 
 Future<Ejemplar?> buscarEjemplarPorCodigo(String codigo) async {
-  final data = await ejecutarGraphQL(
+  final data = await ClienteGraphQL().ejecutar(
     'query (\$codigo: ID!) { ejemplarPorCodigo(codigo: \$codigo) { $_camposEjemplar } }',
-    variables: {'codigo': codigo},
+    variables: {'codigo': codigo.trim()},
   );
   final ejemplar = data['ejemplarPorCodigo'];
   return ejemplar == null ? null : Ejemplar.desdeJson(ejemplar as Map<String, dynamic>);
+}
+
+/// Número de revisión de la colección en el servidor (lo usa el Observer de Listar).
+Future<int> consultarRevisionEjemplares() async {
+  final data = await ClienteGraphQL().ejecutar('query { revisionEjemplares }');
+  return data['revisionEjemplares'] as int;
 }
 
 Future<Ejemplar> crearEjemplar({
@@ -43,7 +48,7 @@ Future<Ejemplar> crearEjemplar({
   required double precioReposicion,
   required String isbnLibro,
 }) async {
-  final data = await ejecutarGraphQL(
+  final data = await ClienteGraphQL().ejecutar(
     'mutation (\$input: EjemplarInput!) { crearEjemplar(input: \$input) { $_camposEjemplar } }',
     variables: {
       'input': {
@@ -66,7 +71,7 @@ Future<Ejemplar> actualizarEjemplar({
   required String fechaIngreso,
   required double precioReposicion,
 }) async {
-  final data = await ejecutarGraphQL(
+  final data = await ClienteGraphQL().ejecutar(
     '''mutation (\$codigo: ID!, \$input: EjemplarUpdateInput!) {
          actualizarEjemplar(codigo: \$codigo, input: \$input) { $_camposEjemplar }
        }''',
@@ -84,7 +89,7 @@ Future<Ejemplar> actualizarEjemplar({
 }
 
 Future<Ejemplar> eliminarEjemplar(String codigo) async {
-  final data = await ejecutarGraphQL(
+  final data = await ClienteGraphQL().ejecutar(
     'mutation (\$codigo: ID!) { eliminarEjemplar(codigo: \$codigo) { $_camposEjemplar } }',
     variables: {'codigo': codigo},
   );

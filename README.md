@@ -1,65 +1,197 @@
 # Segundo Proyecto — Diseño de Soluciones (Universidad de Ibagué, 2026B)
 
+[![CI](https://github.com/Milan32555/SegundoProyecto-Libreria/actions/workflows/ci.yml/badge.svg)](https://github.com/Milan32555/SegundoProyecto-Libreria/actions/workflows/ci.yml)
+
 Sistema de gestión de **Librería**, basado en el primer proyecto del curso (LibroFisico).
 Arquitectura web distribuida: un servidor central expone la lógica de negocio mediante
-**servicios web GraphQL**, y dos clientes desarrollados en tecnologías distintas entre sí
-y distintas a la del servidor la consumen.
+**servicios web GraphQL** y dos clientes, escritos en lenguajes distintos entre sí y distintos
+al del servidor, la consumen por la red.
 
 **Integrantes:** Misael Gallo Tangarife · Sara Zambrano · Santiago Guimel · Alejandra González
+**Versión:** 1.0.0
 
+| Componente | Tecnología | Carpeta | Documentación |
+|---|---|---|---|
+| Servidor | Java 17 · Spring Boot 4 · Spring for GraphQL (puerto 8081) | [`servidor/ServidorLibreria`](servidor/ServidorLibreria) | [README](servidor/ServidorLibreria/README.md) |
+| Cliente 1 | TypeScript · React 18 · Vite (navegador) | [`cliente-web-react`](cliente-web-react) | [README](cliente-web-react/README.md) |
+| Cliente 2 | Dart · Flutter (Android, web, Windows) | [`cliente-movil-flutter`](cliente-movil-flutter) | [README](cliente-movil-flutter/README.md) |
+
+## Arquitectura
+
+```mermaid
+flowchart LR
+    subgraph PC1["Cliente 1 (TypeScript)"]
+        R["React<br/>cliente-web-react"]
+    end
+    subgraph PC2["Cliente 2 (Dart)"]
+        F["Flutter<br/>cliente-movil-flutter"]
+    end
+    subgraph SRV["Servidor (Java)"]
+        C["Controllers GraphQL"] --> S["Servicios<br/>(lógica de negocio)"] --> REP["Repositorios Singleton<br/>(listas en memoria)"]
+    end
+    R -- "HTTP POST /graphql" --> C
+    F -- "HTTP POST /graphql" --> C
 ```
-├── servidor/ServidorLibreria/   → Java 17 + Spring Boot + GraphQL (puerto 8081)
-├── cliente-web-react/           → React + TypeScript (Vite)
-└── cliente-movil-flutter/       → Flutter (Dart)
-```
+
+Los dos clientes no comparten código: cada uno tiene su propio cliente GraphQL, modelos,
+pantallas y Observer. Toda la información vive en memoria, en colecciones `List` del servidor.
 
 ## Caso de estudio: Libro (maestro) → Ejemplar (detalle)
 
-Un `Libro` (isbn, título, autor, precio, número de páginas, fecha de publicación, género)
-puede tener **0..*** `Ejemplar` físicos en inventario (código, estado, ubicación, fecha de
-ingreso, precio de reposición); cada ejemplar pertenece a **un único** libro (1..1).
+```mermaid
+classDiagram
+    direction LR
+    class Libro {
+        String isbn
+        String titulo
+        String autor
+        double precio
+        int numeroPaginas
+        LocalDateTime fechaPublicacion
+        Genero genero
+    }
+    class Ejemplar {
+        String codigo
+        EstadoEjemplar estado
+        String ubicacion
+        LocalDateTime fechaIngreso
+        double precioReposicion
+        String isbnLibro
+    }
+    Libro "1..1" --> "0..*" Ejemplar : tiene
+```
 
-Los objetos se almacenan en memoria principal mediante colecciones (`List`).
+Un `Libro` es un título editorial; un `Ejemplar` es una copia física de ese libro en el
+inventario. Cada ejemplar pertenece a **un único** libro y un libro puede tener **0..\***
+ejemplares. Ambos objetos manejan los tipos exigidos: `int`, `double`, `String`,
+`LocalDateTime` y uno de elección (los enums `Genero` y `EstadoEjemplar`).
 
-## Casos de uso (para cada objeto)
+Reglas de negocio que valida el servidor: ISBN y código únicos (sin distinguir mayúsculas),
+campos obligatorios, precio y páginas mayores que cero, fechas no futuras, un ejemplar solo
+puede crearse para un libro existente, y **no se puede eliminar un libro que todavía tiene
+ejemplares** (quedarían huérfanos y se rompería la relación 1..1).
 
-Adicionar · Eliminar (con búsqueda previa y confirmación) · Actualizar (con búsqueda previa)
-· Listar con filtro · Buscar un objeto por criterio. Cada caso de uso tiene su propia
-pantalla, accesible desde el menú principal, que incluye **Ayuda → Acerca de...**
+## Cumplimiento del enunciado y la rúbrica
+
+| Requisito | Cómo se cumple |
+|---|---|
+| Servicios web **GraphQL** | Esquema en [`schema.graphqls`](servidor/ServidorLibreria/src/main/resources/graphql/schema.graphqls), controllers con `@QueryMapping` / `@MutationMapping` |
+| Dos clientes en lenguajes distintos al servidor y entre sí | Java (servidor), TypeScript/React y Dart/Flutter |
+| Información almacenada en una **Lista** | `RepositorioLibros` y `RepositorioEjemplares` guardan `ArrayList` en memoria |
+| Al menos 5 atributos (int, double, String, LocalDateTime y otro) | Ver diagrama de clases; escalar GraphQL propio `LocalDateTime` |
+| **Insertar** | Pantallas *Adicionar Libro / Ejemplar* |
+| **Eliminar** con búsqueda previa y mostrando TODA la información | Pantallas *Eliminar*: buscar → ficha completa → *Confirmar eliminación* |
+| **Actualizar** con búsqueda previa y mostrando TODA la información | Pantallas *Actualizar*: buscar → formulario con todos los datos actuales → guardar |
+| **Listar** en grilla con filtro (del lado del servidor) | Tabla/`DataTable`; Libros por autor y/o género, Ejemplares por estado y/o ISBN (`librosFiltrados`, `ejemplaresFiltrados`) |
+| **Consultar UN objeto** por parámetros | Libro por ISBN **o** por título; Ejemplar por código |
+| Una ventana por caso de uso | Cada opción del menú abre una pantalla/ruta dedicada a un solo caso de uso |
+| Menú principal + **Ayuda → Acerca de...** con integrantes y versión | `BarraMenu` (React) y `MenuLateral` (Flutter) |
+| Patrones MVC, Singleton, Builder, Observer y SOLID | Ver tabla siguiente |
+| Subido a GitHub y compartido con el docente | Este repositorio |
 
 ## Patrones de diseño
 
-| Patrón | Dónde |
-|---|---|
-| **MVC** | Servidor: `model` · `servicio` · `controller`. Clientes: modelos · servicios de acceso a datos · pantallas |
-| **Singleton** | `RepositorioLibros` y `RepositorioEjemplares`: única instancia dueña de cada colección |
-| **Builder** | `LibroBuilder` y `EjemplarBuilder` |
-| **Observer** | `ListadoObservable` en el servidor y en ambos clientes: las pantallas de Listar se suscriben y se refrescan cuando otra pantalla adiciona, actualiza o elimina |
-| **SOLID** | Una responsabilidad por clase, inyección de dependencias con Spring, DTOs de entrada separados de los modelos |
+| Patrón | Servidor (Java) | Cliente React | Cliente Flutter |
+|---|---|---|---|
+| **MVC** | `model` · `servicio` (lógica) · `controller` (GraphQL) | `types.ts` (modelo) · `graphql/` (acceso a datos) · `paginas/` y `componentes/` (vistas) | `modelos/` · `servicios/` · `pantallas/` |
+| **Singleton** | `RepositorioLibros`, `RepositorioEjemplares` (`getInstancia()`, constructor privado) | `ClienteGraphQL.getInstancia()` | `ClienteGraphQL()` (constructor `factory`) |
+| **Builder** | `LibroBuilder`, `EjemplarBuilder` | — | — |
+| **Observer** | `ListadoObservable` + observador `RevisionListado` (cuenta los cambios de cada colección) | `ListadoObservable` + hook `useListadoObservado` en las pantallas de Listar | `ListadoObservable`; las pantallas de Listar se suscriben en `initState` |
+| **SOLID** | Una responsabilidad por clase, inyección de dependencias por constructor, DTOs de entrada (`LibroInput`, …) separados de los modelos | Servicios por entidad, componentes de presentación reutilizables (`FichaLibro`, …) | Servicios por entidad, widgets reutilizables (`FichaLibro`, `CampoFecha`, …) |
+
+### Cómo funciona el Observer en el caso de uso Listar
+
+1. La pantalla *Listar* se **suscribe** al sujeto (`libroObservable` / `ejemplarObservable`)
+   al abrirse y se **desuscribe** al cerrarse.
+2. Las pantallas *Adicionar / Actualizar / Eliminar* llaman a `notificar()` tras una
+   operación exitosa.
+3. Mientras haya observadores, el sujeto consulta cada 3 s `revisionLibros` /
+   `revisionEjemplares` (un número que el servidor incrementa con cada cambio gracias a su
+   propio Observer). Si cambió, notifica a sus observadores.
+
+Así, si la pantalla *Listar* está abierta en el navegador y alguien agrega un libro **desde
+la app Flutter** (u otra pestaña), la grilla se actualiza sola en unos segundos, respetando
+los filtros que tenga escritos el usuario.
 
 ## Ejecución
+
+Requisitos: **JDK 17+**, **Node.js 22.12+** y **Flutter 3.41+** (Dart 3.8+). Maven no hace
+falta: el servidor incluye el Maven Wrapper (`mvnw`).
 
 ### 1. Servidor
 ```bash
 cd servidor/ServidorLibreria
-mvn spring-boot:run
+./mvnw spring-boot:run          # Windows: mvnw.cmd spring-boot:run
 ```
-GraphQL en `http://localhost:8081/graphql` · GraphiQL en `http://localhost:8081/graphiql`
+GraphQL en `http://localhost:8081/graphql` · consola GraphiQL en `http://localhost:8081/graphiql`.
+Arranca con datos de prueba: 3 libros (ISBN `978-0307474728`, `978-8420471839`,
+`978-9584276193`) y 3 ejemplares (`EJ-001`, `EJ-002`, `EJ-003`).
 
-### 2. Cliente web
+### 2. Cliente web (React)
 ```bash
 cd cliente-web-react
 npm install
 npm run dev
 ```
-Abrir `http://localhost:5173`
+Abrir `http://localhost:5173`. Si el servidor está en otra máquina, crear un archivo `.env`
+con `VITE_URL_GRAPHQL=http://<ip-del-servidor>:8081/graphql`.
 
-### 3. Cliente móvil
+### 3. Cliente móvil (Flutter)
 ```bash
 cd cliente-movil-flutter
 flutter pub get
-flutter run
+flutter run                      # emulador Android, Chrome (-d chrome) o Windows (-d windows)
 ```
-La URL del servidor está en `lib/servicios/cliente_graphql.dart`. Por defecto es
-`http://10.0.2.2:8081/graphql` (emulador Android). En un dispositivo físico, usar la IP
-del computador donde corre el servidor.
+URL del servidor por defecto: `http://10.0.2.2:8081/graphql` en el emulador Android y
+`http://localhost:8081/graphql` en web/Windows. En un **teléfono físico** (misma red Wi-Fi que
+el computador):
+```bash
+flutter run --dart-define=URL_GRAPHQL=http://<IP-del-computador>:8081/graphql
+```
+
+## Pruebas
+
+| Proyecto | Comando | Qué cubre |
+|---|---|---|
+| Servidor | `./mvnw test` | 37 pruebas: servicios (CRUD, validaciones, filtros, integridad, Observer), patrones, API GraphQL completa y servidor HTTP real con CORS |
+| Cliente web | `npm test` · `npm run lint` | 32 pruebas: cliente GraphQL, Observer (incluida la detección de cambios de otro cliente), formatos y flujos de las pantallas |
+| Cliente móvil | `flutter test` · `flutter analyze` | 20 pruebas: modelos, cliente GraphQL, Observer, validaciones y flujos de las pantallas con un servidor simulado |
+| Cliente móvil ↔ servidor real | `flutter test test/integracion_servidor_test.dart --dart-define=URL_GRAPHQL=http://localhost:8081/graphql` | CRUD completo de Libro y Ejemplar contra el servidor en ejecución |
+
+GitHub Actions ejecuta las pruebas, el lint y el build de los tres proyectos en cada push
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+
+## API GraphQL
+
+| Operación | Descripción |
+|---|---|
+| `libros` · `ejemplares` | Listar todos |
+| `librosFiltrados(autor, genero)` | Listar libros filtrando por autor (contiene, sin tildes) y/o género |
+| `ejemplaresFiltrados(estado, isbnLibro)` | Listar ejemplares filtrando por estado y/o libro |
+| `libroPorIsbn(isbn)` · `libroPorTitulo(titulo)` · `ejemplarPorCodigo(codigo)` | Consultar UN solo objeto |
+| `revisionLibros` · `revisionEjemplares` | Número de revisión de cada colección (Observer de los clientes) |
+| `crearLibro` · `actualizarLibro` · `eliminarLibro` | CRUD de Libro |
+| `crearEjemplar` · `actualizarEjemplar` · `eliminarEjemplar` | CRUD de Ejemplar |
+
+Además, `Libro.ejemplares` devuelve los ejemplares de un libro y `Ejemplar.libro` su libro.
+Ejemplo para probar en GraphiQL:
+
+```graphql
+query {
+  libroPorIsbn(isbn: "978-0307474728") {
+    titulo autor fechaPublicacion
+    ejemplares { codigo estado ubicacion }
+  }
+}
+```
+
+## Guía rápida para la sustentación
+
+1. Levantar el servidor y los dos clientes.
+2. En el navegador abrir **Libro → Listar**. En la app Flutter, **Adicionar** un libro.
+   En unos segundos aparece en la grilla del navegador sin recargar (Observer + interoperabilidad).
+3. **Eliminar** el libro `978-0307474728`: se muestra la ficha completa y, al confirmar, el
+   servidor rechaza la operación porque tiene ejemplares. Eliminar `978-9584276193` (sin
+   ejemplares) sí funciona.
+4. **Buscar por criterios**: consultar un libro por ISBN o por título (`la voragine`).
+5. **Ayuda → Acerca de...** muestra integrantes y versión.

@@ -1,0 +1,6 @@
+# Normaliza finales de línea; los scripts conservan el formato que necesita su sistema.
+* text=auto
+mvnw text eol=lf
+*.sh text eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf

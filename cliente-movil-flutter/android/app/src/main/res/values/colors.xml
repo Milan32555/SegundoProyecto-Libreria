@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Mismo fondo oscuro de la app: evita el destello blanco al abrirla. -->
-    <color name="fondo_app">#14120E</color>
+    <!-- Mismo fondo papel de la app: la pantalla de arranque no cambia de color al abrirla. -->
+    <color name="fondo_app">#F6F1E6</color>
     <!-- Fondo del ícono adaptativo. -->
-    <color name="fondo_icono">#1C1A15</color>
+    <color name="fondo_icono">#1F5C4A</color>
 </resources>

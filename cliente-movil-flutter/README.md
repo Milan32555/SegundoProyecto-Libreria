@@ -55,10 +55,16 @@ lib/
 
 ## Diseño
 
-Tema oscuro cálido con acento amarillo (`lib/tema/tema.dart`): tarjetas redondeadas, campos
-rellenos con ícono, chips para elegir género/estado, estados con color (Disponible, Prestado,
-Dañado, Dado de baja) y un indicador **En vivo** en las pantallas que se actualizan solas
-(Observer). La app tiene ícono propio (Android adaptativo, web y Windows) y fondo oscuro al abrir.
+Identidad propia de librería, "papel y tinta" (`lib/tema/tema.dart`):
+
+- Fondo crema como las páginas de un libro, texto color tinta y **verde biblioteca** como color
+  principal; **dorado** para precios. Títulos con la tipografía serif **Lora** (incluida en
+  `assets/fuentes`, licencia SIL OFL), por lo que no depende de internet.
+- Las fichas tienen un **lomo** de color a la izquierda, como un libro en la estantería (verde para
+  libros, el color del estado para ejemplares); el resumen de inicio es una "portada" verde.
+- Estados con color (Disponible, Prestado, Dañado, Dado de baja), chips para elegir género/estado e
+  indicador **En vivo** en las pantallas que se actualizan solas (Observer).
+- Ícono propio (Android adaptativo, web y Windows) y barra de navegación del sistema transparente.
 
 ## Problemas comunes
 

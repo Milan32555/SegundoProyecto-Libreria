@@ -20,3 +20,11 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # Lora (serif) para los títulos — SIL Open Font License, ver assets/fuentes/OFL-Lora.txt
+  fonts:
+    - family: Lora
+      fonts:
+        - asset: assets/fuentes/Lora-600.ttf
+          weight: 600
+        - asset: assets/fuentes/Lora-700.ttf
+          weight: 700

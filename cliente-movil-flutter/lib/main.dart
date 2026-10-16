@@ -33,6 +33,12 @@ class AplicacionLibreria extends StatelessWidget {
       title: 'Librería',
       debugShowCheckedModeBanner: false,
       theme: construirTema(),
+      // Android dibuja la app detrás de la barra de navegación del sistema: se deja ese espacio
+      // libre (con el color del papel) para que ningún botón ni texto quede tapado.
+      builder: (context, child) => ColoredBox(
+        color: kPapel,
+        child: SafeArea(top: false, left: false, right: false, child: child!),
+      ),
       initialRoute: rutaInicial,
       routes: {
         '/': (context) => const MenuPrincipal(),

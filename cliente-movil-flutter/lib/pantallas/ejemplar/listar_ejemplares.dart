@@ -102,7 +102,7 @@ class _ListarEjemplaresState extends State<ListarEjemplares> {
                   children: [
                     Text(
                       _ejemplares.length == 1 ? '1 ejemplar' : '${_ejemplares.length} ejemplares',
-                      style: const TextStyle(color: kTexto, fontWeight: FontWeight.w800, fontSize: 15),
+                      style: const TextStyle(color: kTinta, fontWeight: FontWeight.w800, fontSize: 15),
                     ),
                     const Spacer(),
                     const IndicadorEnVivo(),
@@ -146,11 +146,11 @@ class _ListarEjemplaresState extends State<ListarEjemplares> {
                                     DataCell(
                                       Text(
                                         formatearPrecio(e.precioReposicion),
-                                        style: const TextStyle(color: kAcento, fontWeight: FontWeight.w700),
+                                        style: const TextStyle(color: kDorado, fontWeight: FontWeight.w700),
                                       ),
                                     ),
                                     DataCell(Text(formatearFechaCortaIso(e.fechaIngreso))),
-                                    DataCell(Text(e.isbnLibro, style: const TextStyle(color: kTexto3))),
+                                    DataCell(Text(e.isbnLibro, style: const TextStyle(color: kTinta3))),
                                   ],
                                 ),
                             ],

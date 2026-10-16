@@ -27,9 +27,14 @@ class MenuLateral extends StatelessWidget {
                     children: [
                       Text(
                         'Librería',
-                        style: TextStyle(color: kTexto, fontSize: 20, fontWeight: FontWeight.w800),
+                        style: TextStyle(
+                          fontFamily: fuenteTitulos,
+                          color: kTinta,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                      Text('Versión 1.0.0', style: TextStyle(color: kTexto3, fontSize: 12)),
+                      Text('Versión 1.0.0', style: TextStyle(color: kTinta3, fontSize: 12)),
                     ],
                   ),
                 ],

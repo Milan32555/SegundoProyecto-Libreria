@@ -105,7 +105,7 @@ class _ListarLibrosState extends State<ListarLibros> {
                   children: [
                     Text(
                       _libros.length == 1 ? '1 libro' : '${_libros.length} libros',
-                      style: const TextStyle(color: kTexto, fontWeight: FontWeight.w800, fontSize: 15),
+                      style: const TextStyle(color: kTinta, fontWeight: FontWeight.w800, fontSize: 15),
                     ),
                     const Spacer(),
                     const IndicadorEnVivo(),
@@ -150,12 +150,12 @@ class _ListarLibrosState extends State<ListarLibros> {
                                     DataCell(
                                       Text(
                                         formatearPrecio(l.precio),
-                                        style: const TextStyle(color: kAcento, fontWeight: FontWeight.w700),
+                                        style: const TextStyle(color: kDorado, fontWeight: FontWeight.w700),
                                       ),
                                     ),
                                     DataCell(Text('${l.numeroPaginas}')),
                                     DataCell(Text(formatearFechaCortaIso(l.fechaPublicacion))),
-                                    DataCell(Text(l.isbn, style: const TextStyle(color: kTexto3))),
+                                    DataCell(Text(l.isbn, style: const TextStyle(color: kTinta3))),
                                   ],
                                 ),
                             ],

@@ -20,7 +20,10 @@ void main() {
 }
 
 class AplicacionLibreria extends StatelessWidget {
-  const AplicacionLibreria({super.key});
+  const AplicacionLibreria({super.key, this.rutaInicial = '/'});
+
+  /// Pantalla con la que abre la app (las pruebas la usan para ir directo a un caso de uso).
+  final String rutaInicial;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +34,7 @@ class AplicacionLibreria extends StatelessWidget {
         colorSchemeSeed: const Color(0xFF3A5BD9),
         useMaterial3: true,
       ),
-      initialRoute: '/',
+      initialRoute: rutaInicial,
       routes: {
         '/': (context) => const MenuPrincipal(),
         '/acerca-de': (context) => const AcercaDe(),

@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+
 import '../../modelos/libro.dart';
 import '../../observador/listado_observable.dart';
 import '../../servicios/cliente_graphql.dart';
 import '../../servicios/servicio_libro.dart';
+import '../../utilidades/formato.dart';
+import '../../utilidades/validaciones.dart';
+import '../comunes/campo_fecha.dart';
+import '../comunes/texto_error.dart';
 
 /// Caso de uso: Adicionar Libro (único propósito de esta pantalla).
 class AgregarLibro extends StatefulWidget {
@@ -23,6 +28,7 @@ class _AgregarLibroState extends State<AgregarLibro> {
   String _genero = generos.first;
 
   bool _enviando = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -34,35 +40,26 @@ class _AgregarLibroState extends State<AgregarLibro> {
     super.dispose();
   }
 
-  Future<void> _elegirFecha() async {
-    final fecha = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-    );
-    if (fecha != null) {
-      setState(() => _fechaPublicacion = fecha);
-    }
-  }
-
   Future<void> _guardar() async {
-    if (!_formKey.currentState!.validate() || _fechaPublicacion == null) {
-      if (_fechaPublicacion == null) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Selecciona la fecha de publicación.')));
-      }
+    final formularioValido = _formKey.currentState!.validate();
+    if (_fechaPublicacion == null) {
+      setState(() => _error = 'Seleccione la fecha de publicación.');
       return;
     }
-    setState(() => _enviando = true);
+    if (!formularioValido) return;
+
+    setState(() {
+      _enviando = true;
+      _error = null;
+    });
     try {
       final libro = await crearLibro(
         isbn: _isbn.text.trim(),
         titulo: _titulo.text.trim(),
         autor: _autor.text.trim(),
-        precio: double.parse(_precio.text),
-        numeroPaginas: int.parse(_numeroPaginas.text),
-        fechaPublicacion: _fechaPublicacion!.toIso8601String().substring(0, 19),
+        precio: double.parse(_precio.text.trim()),
+        numeroPaginas: int.parse(_numeroPaginas.text.trim()),
+        fechaPublicacion: aFechaServidor(_fechaPublicacion!),
         genero: _genero,
       );
       libroObservable.notificar(); // Observer: avisa a la pantalla Listar
@@ -71,10 +68,7 @@ class _AgregarLibroState extends State<AgregarLibro> {
           .showSnackBar(SnackBar(content: Text('Libro "${libro.titulo}" creado correctamente.')));
       Navigator.pop(context);
     } on ErrorGraphQL catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.mensaje)));
-    } catch (_) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Error de conexión con el servidor.')));
+      if (mounted) setState(() => _error = e.mensaje);
     } finally {
       if (mounted) setState(() => _enviando = false);
     }
@@ -93,45 +87,43 @@ class _AgregarLibroState extends State<AgregarLibro> {
               TextFormField(
                 controller: _isbn,
                 decoration: const InputDecoration(labelText: 'ISBN'),
-                validator: (v) => (v == null || v.isEmpty) ? 'Obligatorio' : null,
+                validator: validarObligatorio,
               ),
               TextFormField(
                 controller: _titulo,
                 decoration: const InputDecoration(labelText: 'Título'),
-                validator: (v) => (v == null || v.isEmpty) ? 'Obligatorio' : null,
+                validator: validarObligatorio,
               ),
               TextFormField(
                 controller: _autor,
                 decoration: const InputDecoration(labelText: 'Autor'),
-                validator: (v) => (v == null || v.isEmpty) ? 'Obligatorio' : null,
+                validator: validarObligatorio,
               ),
               TextFormField(
                 controller: _precio,
                 decoration: const InputDecoration(labelText: 'Precio'),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: (v) => (v == null || double.tryParse(v) == null) ? 'Número inválido' : null,
+                validator: validarDecimalPositivo,
               ),
               TextFormField(
                 controller: _numeroPaginas,
                 decoration: const InputDecoration(labelText: 'Número de páginas'),
                 keyboardType: TextInputType.number,
-                validator: (v) => (v == null || int.tryParse(v) == null) ? 'Número inválido' : null,
+                validator: validarEnteroPositivo,
               ),
               const SizedBox(height: 8),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(_fechaPublicacion == null
-                    ? 'Fecha de publicación: (sin elegir)'
-                    : 'Fecha de publicación: ${_fechaPublicacion!.toLocal()}'.split(' ')[0]),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: _elegirFecha,
+              CampoFecha(
+                etiqueta: 'Fecha de publicación',
+                valor: _fechaPublicacion,
+                alCambiar: (fecha) => setState(() => _fechaPublicacion = fecha),
               ),
               DropdownButtonFormField<String>(
-                value: _genero,
+                initialValue: _genero,
                 decoration: const InputDecoration(labelText: 'Género'),
                 items: generos.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
                 onChanged: (v) => setState(() => _genero = v!),
               ),
+              if (_error != null) TextoError(_error!),
               const SizedBox(height: 20),
               FilledButton(
                 onPressed: _enviando ? null : _guardar,

@@ -42,6 +42,10 @@ class MenuLateral extends StatelessWidget {
           _opcion(context, Icons.list_alt, 'Listar', '/ejemplares/listar'),
           _opcion(context, Icons.search, 'Buscar por criterios', '/ejemplares/consultar'),
           const Divider(),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 4, 16, 4),
+            child: Text('AYUDA', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          ),
           _opcion(context, Icons.help_outline, 'Acerca de...', '/acerca-de'),
         ],
       ),

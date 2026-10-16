@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+
 import '../../modelos/ejemplar.dart';
 import '../../servicios/cliente_graphql.dart';
 import '../../servicios/servicio_ejemplar.dart';
+import '../comunes/fichas.dart';
+import '../comunes/texto_error.dart';
 
+/// Caso de uso: Buscar/Consultar UN SOLO Ejemplar a partir de su código.
 class ConsultarEjemplar extends StatefulWidget {
   const ConsultarEjemplar({super.key});
 
@@ -17,15 +21,30 @@ class _ConsultarEjemplarState extends State<ConsultarEjemplar> {
   bool _cargando = false;
   String? _error;
 
+  @override
+  void dispose() {
+    _codigo.dispose();
+    super.dispose();
+  }
+
   Future<void> _buscar() async {
-    setState(() { _cargando = true; _error = null; _ejemplar = null; _buscado = false; });
+    setState(() {
+      _cargando = true;
+      _error = null;
+      _ejemplar = null;
+      _buscado = false;
+    });
     try {
-      final resultado = await buscarEjemplarPorCodigo(_codigo.text.trim());
-      setState(() { _ejemplar = resultado; _buscado = true; });
+      final resultado = await buscarEjemplarPorCodigo(_codigo.text);
+      if (!mounted) return;
+      setState(() {
+        _ejemplar = resultado;
+        _buscado = true;
+      });
     } on ErrorGraphQL catch (e) {
-      setState(() => _error = e.mensaje);
+      if (mounted) setState(() => _error = e.mensaje);
     } finally {
-      setState(() => _cargando = false);
+      if (mounted) setState(() => _cargando = false);
     }
   }
 
@@ -37,34 +56,20 @@ class _ConsultarEjemplarState extends State<ConsultarEjemplar> {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            TextField(controller: _codigo, decoration: const InputDecoration(labelText: 'Código')),
+            TextField(
+              controller: _codigo,
+              decoration: const InputDecoration(labelText: 'Código del ejemplar'),
+              onSubmitted: (_) => _buscar(),
+            ),
             const SizedBox(height: 12),
             FilledButton(onPressed: _cargando ? null : _buscar, child: const Text('Buscar')),
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(_error!, style: const TextStyle(color: Colors.red)),
-              ),
+            if (_error != null) TextoError(_error!),
             if (_buscado && _ejemplar == null)
               const Padding(
                 padding: EdgeInsets.only(top: 12),
                 child: Text('No se encontró ningún ejemplar con ese código.'),
               ),
-            if (_ejemplar != null)
-              Card(
-                margin: const EdgeInsets.only(top: 16),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Código: ${_ejemplar!.codigo}'),
-                    Text('Estado: ${_ejemplar!.estado}'),
-                    Text('Ubicación: ${_ejemplar!.ubicacion}'),
-                    Text('Ingreso: ${_ejemplar!.fechaIngreso}'),
-                    Text('Reposición: \$${_ejemplar!.precioReposicion.toStringAsFixed(0)}'),
-                    Text('Libro (ISBN): ${_ejemplar!.isbnLibro}'),
-                  ]),
-                ),
-              ),
+            if (_ejemplar != null) FichaEjemplar(ejemplar: _ejemplar!),
           ],
         ),
       ),

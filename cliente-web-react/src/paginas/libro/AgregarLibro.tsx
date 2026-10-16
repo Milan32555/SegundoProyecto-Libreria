@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { crearLibro } from "../../graphql/servicioLibro";
-import { ErrorGraphQL } from "../../graphql/clienteGraphQL";
+import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { libroObservable } from "../../observer/Observable";
 import { GENEROS, Genero } from "../../types";
 
@@ -38,7 +38,7 @@ export default function AgregarLibro() {
       setIsbn(""); setTitulo(""); setAutor(""); setPrecio("");
       setNumeroPaginas(""); setFechaPublicacion("");
     } catch (err) {
-      setError(err instanceof ErrorGraphQL ? err.message : "Error de conexión con el servidor.");
+      setError(mensajeDeError(err));
     } finally {
       setEnviando(false);
     }
@@ -60,11 +60,11 @@ export default function AgregarLibro() {
           <input value={autor} onChange={(e) => setAutor(e.target.value)} required />
         </label>
         <label>Precio
-          <input type="number" min="0" step="0.01" value={precio}
+          <input type="number" min="0.01" step="0.01" value={precio}
                  onChange={(e) => setPrecio(e.target.value)} required />
         </label>
         <label>Número de páginas
-          <input type="number" min="1" value={numeroPaginas}
+          <input type="number" min="1" step="1" value={numeroPaginas}
                  onChange={(e) => setNumeroPaginas(e.target.value)} required />
         </label>
         <label>Fecha de publicación

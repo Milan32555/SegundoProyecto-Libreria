@@ -1,16 +1,17 @@
-import { useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { listarLibrosFiltrados } from "../../graphql/servicioLibro";
-import { ErrorGraphQL } from "../../graphql/clienteGraphQL";
+import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { libroObservable } from "../../observer/Observable";
+import { useListadoObservado } from "../../observer/useListadoObservado";
+import { formatearFecha, formatearPrecio } from "../../formato";
 import { GENEROS, Genero, Libro } from "../../types";
 
 /**
- * Caso de uso: Listar Libros, con filtro por autor y/o género.
+ * Caso de uso: Listar Libros en una grilla, con filtro (del lado del servidor) por autor y/o género.
  *
- * Patrón Observer: esta pantalla se SUSCRIBE a `libroObservable`. Cada vez que otra
- * pantalla (Agregar/Actualizar/Eliminar) notifica un cambio, el useEffect de abajo
- * vuelve a pedir el listado al servidor automáticamente, sin que el usuario tenga
- * que navegar de nuevo a esta pantalla ni pulsar un botón de "refrescar".
+ * Patrón Observer: esta pantalla se SUSCRIBE a `libroObservable` mientras está abierta.
+ * Cuando el sujeto notifica un cambio (una mutación en este cliente o un cambio hecho
+ * desde otro cliente), la lista se vuelve a pedir al servidor automáticamente.
  */
 export default function ListarLibros() {
   const [libros, setLibros] = useState<Libro[]>([]);
@@ -23,29 +24,27 @@ export default function ListarLibros() {
     setCargando(true);
     setError(null);
     try {
-      const resultado = await listarLibrosFiltrados(autor, genero);
-      setLibros(resultado);
+      setLibros(await listarLibrosFiltrados(autor, genero));
     } catch (err) {
-      setError(err instanceof ErrorGraphQL ? err.message : "Error de conexión con el servidor.");
+      setError(mensajeDeError(err));
     } finally {
       setCargando(false);
     }
   }
 
-  useEffect(() => {
-    cargar();
-    // Suscripción Observer: al desmontar la pantalla nos desuscribimos (evita fugas de memoria).
-    const desuscribir = libroObservable.suscribir(cargar);
-    return desuscribir;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useListadoObservado(libroObservable, cargar);
+
+  function filtrar(e: FormEvent) {
+    e.preventDefault();
+    void cargar();
+  }
 
   return (
     <div className="tarjeta">
       <h1>Listar Libros</h1>
       {error && <p className="mensaje-error">{error}</p>}
 
-      <div className="filtros">
+      <form className="filtros" onSubmit={filtrar}>
         <label>Autor contiene
           <input value={autor} onChange={(e) => setAutor(e.target.value)} placeholder="ej. García" />
         </label>
@@ -55,9 +54,10 @@ export default function ListarLibros() {
             {GENEROS.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
         </label>
-        <button onClick={cargar} disabled={cargando}>Filtrar</button>
-      </div>
+        <button type="submit" disabled={cargando}>Filtrar</button>
+      </form>
 
+      <p className="conteo">{libros.length} libro(s)</p>
       <table>
         <thead>
           <tr>
@@ -71,14 +71,14 @@ export default function ListarLibros() {
               <td>{l.isbn}</td>
               <td>{l.titulo}</td>
               <td>{l.autor}</td>
-              <td>${l.precio.toLocaleString()}</td>
+              <td>{formatearPrecio(l.precio)}</td>
               <td>{l.numeroPaginas}</td>
-              <td>{l.fechaPublicacion}</td>
+              <td>{formatearFecha(l.fechaPublicacion)}</td>
               <td>{l.genero}</td>
             </tr>
           ))}
           {libros.length === 0 && !cargando && (
-            <tr><td colSpan={7} style={{ color: "#8a91a3" }}>No hay libros para mostrar.</td></tr>
+            <tr><td colSpan={7} className="sin-datos">No hay libros para mostrar.</td></tr>
           )}
         </tbody>
       </table>

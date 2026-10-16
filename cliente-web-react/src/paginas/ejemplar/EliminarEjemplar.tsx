@@ -1,9 +1,14 @@
 import { FormEvent, useState } from "react";
 import { buscarEjemplarPorCodigo, eliminarEjemplar } from "../../graphql/servicioEjemplar";
-import { ErrorGraphQL } from "../../graphql/clienteGraphQL";
+import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { ejemplarObservable } from "../../observer/Observable";
+import FichaEjemplar from "../../componentes/FichaEjemplar";
 import { Ejemplar } from "../../types";
 
+/**
+ * Caso de uso: Eliminar Ejemplar. Primero se busca y se muestra TODA su información;
+ * solo después de confirmar se elimina.
+ */
 export default function EliminarEjemplar() {
   const [codigo, setCodigo] = useState("");
   const [ejemplar, setEjemplar] = useState<Ejemplar | null>(null);
@@ -23,7 +28,7 @@ export default function EliminarEjemplar() {
         setEjemplar(resultado);
       }
     } catch (err) {
-      setError(err instanceof ErrorGraphQL ? err.message : "Error de conexión con el servidor.");
+      setError(mensajeDeError(err));
     } finally {
       setCargando(false);
     }
@@ -39,7 +44,7 @@ export default function EliminarEjemplar() {
       setEjemplar(null);
       setCodigo("");
     } catch (err) {
-      setError(err instanceof ErrorGraphQL ? err.message : "Error de conexión con el servidor.");
+      setError(mensajeDeError(err));
     } finally {
       setCargando(false);
     }
@@ -60,19 +65,13 @@ export default function EliminarEjemplar() {
 
       {ejemplar && (
         <>
-          <div className="ficha-objeto">
-            <p><strong>Código:</strong> {ejemplar.codigo}</p>
-            <p><strong>Estado:</strong> {ejemplar.estado}</p>
-            <p><strong>Ubicación:</strong> {ejemplar.ubicacion}</p>
-            <p><strong>Fecha de ingreso:</strong> {ejemplar.fechaIngreso}</p>
-            <p><strong>Precio de reposición:</strong> ${ejemplar.precioReposicion.toLocaleString()}</p>
-            <p><strong>ISBN del libro:</strong> {ejemplar.isbnLibro}</p>
-          </div>
+          <p>¿Seguro que desea eliminar este ejemplar?</p>
+          <FichaEjemplar ejemplar={ejemplar} />
           <div className="acciones">
-            <button className="peligro" onClick={confirmarEliminacion} disabled={cargando}>
+            <button type="button" className="peligro" onClick={confirmarEliminacion} disabled={cargando}>
               Confirmar eliminación
             </button>
-            <button className="secundario" onClick={() => setEjemplar(null)}>Cancelar</button>
+            <button type="button" className="secundario" onClick={() => setEjemplar(null)}>Cancelar</button>
           </div>
         </>
       )}

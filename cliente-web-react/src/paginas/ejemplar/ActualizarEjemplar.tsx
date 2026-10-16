@@ -1,9 +1,14 @@
 import { FormEvent, useState } from "react";
 import { actualizarEjemplar, buscarEjemplarPorCodigo } from "../../graphql/servicioEjemplar";
-import { ErrorGraphQL } from "../../graphql/clienteGraphQL";
+import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { ejemplarObservable } from "../../observer/Observable";
+import { aValorDeInputFecha } from "../../formato";
 import { ESTADOS_EJEMPLAR, EstadoEjemplar, Ejemplar } from "../../types";
 
+/**
+ * Caso de uso: Actualizar Ejemplar. Primero se busca y se muestra TODA su información
+ * actual; luego el usuario la modifica y confirma.
+ */
 export default function ActualizarEjemplar() {
   const [codigo, setCodigo] = useState("");
   const [ejemplar, setEjemplar] = useState<Ejemplar | null>(null);
@@ -29,11 +34,11 @@ export default function ActualizarEjemplar() {
         setEjemplar(resultado);
         setEstado(resultado.estado);
         setUbicacion(resultado.ubicacion);
-        setFechaIngreso(resultado.fechaIngreso.slice(0, 16));
+        setFechaIngreso(aValorDeInputFecha(resultado.fechaIngreso));
         setPrecioReposicion(String(resultado.precioReposicion));
       }
     } catch (err) {
-      setError(err instanceof ErrorGraphQL ? err.message : "Error de conexión con el servidor.");
+      setError(mensajeDeError(err));
     } finally {
       setCargando(false);
     }
@@ -53,7 +58,7 @@ export default function ActualizarEjemplar() {
       setEjemplar(null);
       setCodigo("");
     } catch (err) {
-      setError(err instanceof ErrorGraphQL ? err.message : "Error de conexión con el servidor.");
+      setError(mensajeDeError(err));
     } finally {
       setCargando(false);
     }
@@ -76,7 +81,7 @@ export default function ActualizarEjemplar() {
 
       {ejemplar && (
         <form onSubmit={guardarCambios}>
-          <p style={{ color: "#5a6378" }}>
+          <p className="dato-fijo">
             Código (no editable): <strong>{ejemplar.codigo}</strong> — Libro: <strong>{ejemplar.isbnLibro}</strong>
           </p>
           <label>Estado
@@ -92,7 +97,7 @@ export default function ActualizarEjemplar() {
                    onChange={(e) => setFechaIngreso(e.target.value)} required />
           </label>
           <label>Precio de reposición
-            <input type="number" min="0" step="0.01" value={precioReposicion}
+            <input type="number" min="0.01" step="0.01" value={precioReposicion}
                    onChange={(e) => setPrecioReposicion(e.target.value)} required />
           </label>
           <div className="acciones">

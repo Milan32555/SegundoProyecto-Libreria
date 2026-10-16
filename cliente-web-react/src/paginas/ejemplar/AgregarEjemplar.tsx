@@ -2,7 +2,9 @@ import { FormEvent, useState } from "react";
 import { crearEjemplar } from "../../graphql/servicioEjemplar";
 import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { ejemplarObservable } from "../../observer/Observable";
-import { ESTADOS_EJEMPLAR, EstadoEjemplar } from "../../types";
+import { Aviso, Encabezado, SelectorChips } from "../../componentes/Basicos";
+import Icono from "../../componentes/Icono";
+import { ESTADOS_EJEMPLAR, EstadoEjemplar, etiquetaEstado } from "../../types";
 
 /** Caso de uso: Adicionar Ejemplar a un Libro existente. */
 export default function AgregarEjemplar() {
@@ -38,35 +40,41 @@ export default function AgregarEjemplar() {
   }
 
   return (
-    <div className="tarjeta">
-      <h1>Adicionar Ejemplar</h1>
-      {error && <p className="mensaje-error">{error}</p>}
-      {exito && <p className="mensaje-exito">{exito}</p>}
-      <form onSubmit={manejarEnvio}>
-        <label>Código del ejemplar
-          <input value={codigo} onChange={(e) => setCodigo(e.target.value)} required />
-        </label>
-        <label>ISBN del libro al que pertenece
-          <input value={isbnLibro} onChange={(e) => setIsbnLibro(e.target.value)} required />
-        </label>
-        <label>Estado
-          <select value={estado} onChange={(e) => setEstado(e.target.value as EstadoEjemplar)}>
-            {ESTADOS_EJEMPLAR.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </label>
-        <label>Ubicación
-          <input value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} required />
-        </label>
-        <label>Fecha de ingreso
-          <input type="datetime-local" value={fechaIngreso}
-                 onChange={(e) => setFechaIngreso(e.target.value)} required />
-        </label>
-        <label>Precio de reposición
-          <input type="number" min="0.01" step="0.01" value={precioReposicion}
-                 onChange={(e) => setPrecioReposicion(e.target.value)} required />
-        </label>
-        <button type="submit" disabled={enviando}>{enviando ? "Guardando..." : "Adicionar"}</button>
+    <>
+      <Encabezado etiqueta="Ejemplar" titulo="Nuevo ejemplar">
+        Registra una copia física de un libro que ya exista en el sistema.
+      </Encabezado>
+      {error && <Aviso>{error}</Aviso>}
+      {exito && <Aviso tipo="exito">{exito}</Aviso>}
+
+      <form className="tarjeta" onSubmit={manejarEnvio}>
+        <div className="campos">
+          <label>Código del ejemplar
+            <input value={codigo} onChange={(e) => setCodigo(e.target.value)} required />
+          </label>
+          <label>ISBN del libro al que pertenece
+            <input value={isbnLibro} onChange={(e) => setIsbnLibro(e.target.value)} required />
+          </label>
+          <label className="campo-ancho">Ubicación
+            <input value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} required />
+          </label>
+          <label>Fecha de ingreso
+            <input type="datetime-local" value={fechaIngreso}
+                   onChange={(e) => setFechaIngreso(e.target.value)} required />
+          </label>
+          <label>Precio de reposición
+            <input type="number" min="0.01" step="0.01" value={precioReposicion}
+                   onChange={(e) => setPrecioReposicion(e.target.value)} required />
+          </label>
+        </div>
+        <SelectorChips etiqueta="Estado" nombre="estado" opciones={ESTADOS_EJEMPLAR} valor={estado}
+                       etiquetaDe={etiquetaEstado} alCambiar={(s) => setEstado(s || "DISPONIBLE")} />
+        <div className="acciones">
+          <button type="submit" disabled={enviando}>
+            <Icono nombre="listo" /> {enviando ? "Guardando..." : "Adicionar"}
+          </button>
+        </div>
       </form>
-    </div>
+    </>
   );
 }

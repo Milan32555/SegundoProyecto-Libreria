@@ -1,16 +1,26 @@
+import { CSSProperties } from "react";
 import { formatearFecha, formatearPrecio } from "../formato";
-import { Ejemplar } from "../types";
+import { Ejemplar, etiquetaEstado } from "../types";
+import { Pastilla, colorEstado } from "./Basicos";
 
 /** Muestra TODA la información de un Ejemplar (se usa al consultar y antes de eliminar). */
 export default function FichaEjemplar({ ejemplar }: { ejemplar: Ejemplar }) {
+  const color = colorEstado(ejemplar.estado);
   return (
-    <div className="ficha-objeto">
-      <p><strong>Código:</strong> {ejemplar.codigo}</p>
-      <p><strong>Estado:</strong> {ejemplar.estado}</p>
-      <p><strong>Ubicación:</strong> {ejemplar.ubicacion}</p>
-      <p><strong>Fecha de ingreso:</strong> {formatearFecha(ejemplar.fechaIngreso)}</p>
-      <p><strong>Precio de reposición:</strong> {formatearPrecio(ejemplar.precioReposicion)}</p>
-      <p><strong>ISBN del libro:</strong> {ejemplar.isbnLibro}</p>
-    </div>
+    <article className="ficha" style={{ "--lomo": color } as CSSProperties} aria-label={`Ejemplar ${ejemplar.codigo}`}>
+      <div className="ficha-cabecera">
+        <span className="etiqueta etiqueta-acento">Ejemplar</span>
+        <Pastilla color={color}>{etiquetaEstado(ejemplar.estado)}</Pastilla>
+      </div>
+      <h2 className="ficha-titulo">{ejemplar.codigo}</h2>
+      <p className="ficha-subtitulo">Ubicación: {ejemplar.ubicacion}</p>
+      <p className="ficha-precio">{formatearPrecio(ejemplar.precioReposicion)}</p>
+      <span className="leyenda">Precio de reposición</span>
+      <dl className="ficha-datos">
+        <div><dt className="etiqueta">Estado</dt><dd>{etiquetaEstado(ejemplar.estado)}</dd></div>
+        <div><dt className="etiqueta">Ingreso</dt><dd>{formatearFecha(ejemplar.fechaIngreso)}</dd></div>
+        <div><dt className="etiqueta">Libro (ISBN)</dt><dd>{ejemplar.isbnLibro}</dd></div>
+      </dl>
+    </article>
   );
 }

@@ -2,7 +2,9 @@ import { FormEvent, useState } from "react";
 import { buscarEjemplarPorCodigo, eliminarEjemplar } from "../../graphql/servicioEjemplar";
 import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { ejemplarObservable } from "../../observer/Observable";
+import { Aviso, Encabezado } from "../../componentes/Basicos";
 import FichaEjemplar from "../../componentes/FichaEjemplar";
+import Icono from "../../componentes/Icono";
 import { Ejemplar } from "../../types";
 
 /**
@@ -51,30 +53,34 @@ export default function EliminarEjemplar() {
   }
 
   return (
-    <div className="tarjeta">
-      <h1>Eliminar Ejemplar</h1>
-      {error && <p className="mensaje-error">{error}</p>}
-      {exito && <p className="mensaje-exito">{exito}</p>}
+    <>
+      <Encabezado etiqueta="Ejemplar" titulo="Eliminar ejemplar">
+        Busca el ejemplar por su código para revisar toda su información antes de eliminarlo.
+      </Encabezado>
+      {exito && <Aviso tipo="exito">{exito}</Aviso>}
 
-      <form onSubmit={buscar}>
+      <form className="tarjeta filtros-fila" role="search" onSubmit={buscar}>
         <label>Código del ejemplar a eliminar
           <input value={codigo} onChange={(e) => setCodigo(e.target.value)} required />
         </label>
-        <button type="submit" disabled={cargando}>Buscar</button>
+        <button type="submit" disabled={cargando}><Icono nombre="buscar" /> Buscar</button>
       </form>
+
+      {!ejemplar && error && <Aviso>{error}</Aviso>}
 
       {ejemplar && (
         <>
-          <p>¿Seguro que desea eliminar este ejemplar?</p>
           <FichaEjemplar ejemplar={ejemplar} />
+          <Aviso tipo="advertencia">¿Seguro que desea eliminar este ejemplar? Esta acción no se puede deshacer.</Aviso>
+          {error && <Aviso>{error}</Aviso>}
           <div className="acciones">
             <button type="button" className="peligro" onClick={confirmarEliminacion} disabled={cargando}>
-              Confirmar eliminación
+              <Icono nombre="eliminar" /> Confirmar eliminación
             </button>
             <button type="button" className="secundario" onClick={() => setEjemplar(null)}>Cancelar</button>
           </div>
         </>
       )}
-    </div>
+    </>
   );
 }

@@ -36,7 +36,8 @@ src/
 ├── observer/
 │   ├── Observable.ts        Sujeto del patrón Observer (uno por colección)
 │   └── useListadoObservado.ts  Hook que suscribe las pantallas de Listar
-├── componentes/             BarraMenu (menú + Ayuda), FichaLibro, FichaEjemplar
+├── componentes/             BarraMenu (menú + Ayuda), FichaLibro, FichaEjemplar, Basicos
+│                            (Encabezado, Aviso, Pastilla, SelectorChips…) e Icono (SVG)
 ├── paginas/                 Vistas: una pantalla por caso de uso
 │   ├── libro/               Agregar, Eliminar, Actualizar, Listar, Consultar
 │   ├── ejemplar/            Agregar, Eliminar, Actualizar, Listar, Consultar
@@ -47,6 +48,14 @@ src/
 
 Cada pantalla implementa un solo caso de uso y se abre desde el menú superior
 (**Libro**, **Ejemplar**, **Ayuda → Acerca de...**).
+
+## Diseño
+
+Misma identidad "papel y tinta" que el cliente móvil: fondo crema, texto color tinta, verde
+biblioteca como color principal, dorado para precios y títulos con la tipografía serif **Lora**
+(incluida en el proyecto, no depende de internet). Las fichas tienen un lomo de color como un libro,
+el inicio muestra el inventario en una "portada" que se actualiza sola y el diseño se adapta a
+pantallas de celular. Los colores están definidos como variables en `src/estilos.css`.
 
 ## Observer
 

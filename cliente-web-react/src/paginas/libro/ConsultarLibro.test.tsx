@@ -34,7 +34,7 @@ describe("ConsultarLibro", () => {
     const user = userEvent.setup();
     render(<ConsultarLibro />);
 
-    await user.selectOptions(screen.getByLabelText(/^Buscar por/), "titulo");
+    await user.click(screen.getByRole("radio", { name: "Por título" }));
     await user.type(screen.getByLabelText("Título"), "la voragine");
     await user.click(screen.getByRole("button", { name: "Buscar" }));
 

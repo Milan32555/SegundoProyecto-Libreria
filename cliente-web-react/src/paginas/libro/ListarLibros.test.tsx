@@ -31,37 +31,41 @@ describe("ListarLibros", () => {
   it("muestra todos los libros en una grilla al abrir la pantalla", async () => {
     render(<ListarLibros />);
 
-    expect(await screen.findByRole("cell", { name: "Cien años de soledad" })).toBeInTheDocument();
-    expect(screen.getByRole("cell", { name: "Gabriel García Márquez" })).toBeInTheDocument();
+    expect(await screen.findByText("Cien años de soledad")).toBeInTheDocument();
+    expect(screen.getByText("Gabriel García Márquez")).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "496" })).toBeInTheDocument();
-    expect(screen.getByText("1 libro(s)")).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "Ficción" })).toBeInTheDocument();
+    expect(screen.getByText("1 libro")).toBeInTheDocument();
     expect(listarLibrosFiltrados).toHaveBeenCalledWith("", "");
   });
 
   it("filtra en el servidor por autor y género", async () => {
     const user = userEvent.setup();
     render(<ListarLibros />);
-    await screen.findByRole("cell", { name: "Cien años de soledad" });
+    await screen.findByText("Cien años de soledad");
 
     await user.type(screen.getByLabelText("Autor contiene"), "garcia");
-    await user.selectOptions(screen.getByLabelText(/^Género/), "FICCION");
     await user.click(screen.getByRole("button", { name: "Filtrar" }));
+    await waitFor(() => expect(listarLibrosFiltrados).toHaveBeenLastCalledWith("garcia", ""));
 
+    // Elegir un género filtra de inmediato (sin perder el autor escrito).
+    await user.click(screen.getByRole("radio", { name: "Ficción" }));
     await waitFor(() => expect(listarLibrosFiltrados).toHaveBeenLastCalledWith("garcia", "FICCION"));
+    expect(screen.getByRole("radio", { name: "Ficción" })).toBeChecked();
   });
 
   it("Observer: se refresca sola, con los filtros actuales, cuando el sujeto notifica", async () => {
     const user = userEvent.setup();
     render(<ListarLibros />);
-    await screen.findByRole("cell", { name: "Cien años de soledad" });
+    await screen.findByText("Cien años de soledad");
     await user.type(screen.getByLabelText("Autor contiene"), "rulfo");
     vi.mocked(listarLibrosFiltrados).mockResolvedValue([PEDRO_PARAMO]);
 
     act(() => libroObservable.notificar());
 
-    expect(await screen.findByRole("cell", { name: "Pedro Páramo" })).toBeInTheDocument();
+    expect(await screen.findByText("Pedro Páramo")).toBeInTheDocument();
     expect(listarLibrosFiltrados).toHaveBeenLastCalledWith("rulfo", "");
-    expect(screen.queryByRole("cell", { name: "Cien años de soledad" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Cien años de soledad")).not.toBeInTheDocument();
   });
 
   it("muestra un mensaje cuando no hay datos o hay un error", async () => {

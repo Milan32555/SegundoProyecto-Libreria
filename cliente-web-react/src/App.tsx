@@ -18,9 +18,9 @@ import BarraMenu from "./componentes/BarraMenu";
 
 export default function App() {
   return (
-    <div>
+    <>
       <BarraMenu />
-      <div className="contenedor">
+      <main className="contenedor">
         <Routes>
           <Route path="/" element={<MenuPrincipal />} />
 
@@ -38,7 +38,7 @@ export default function App() {
 
           <Route path="/acerca-de" element={<AcercaDe />} />
         </Routes>
-      </div>
-    </div>
+      </main>
+    </>
   );
 }

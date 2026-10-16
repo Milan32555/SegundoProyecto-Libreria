@@ -2,7 +2,9 @@ import { FormEvent, useState } from "react";
 import { crearLibro } from "../../graphql/servicioLibro";
 import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { libroObservable } from "../../observer/Observable";
-import { GENEROS, Genero } from "../../types";
+import { Aviso, Encabezado, SelectorChips } from "../../componentes/Basicos";
+import Icono from "../../componentes/Icono";
+import { GENEROS, Genero, etiquetaGenero } from "../../types";
 
 /** Caso de uso: Adicionar Libro (único propósito de esta pantalla). */
 export default function AgregarLibro() {
@@ -45,39 +47,45 @@ export default function AgregarLibro() {
   }
 
   return (
-    <div className="tarjeta">
-      <h1>Adicionar Libro</h1>
-      {error && <p className="mensaje-error">{error}</p>}
-      {exito && <p className="mensaje-exito">{exito}</p>}
-      <form onSubmit={manejarEnvio}>
-        <label>ISBN
-          <input value={isbn} onChange={(e) => setIsbn(e.target.value)} required />
-        </label>
-        <label>Título
-          <input value={titulo} onChange={(e) => setTitulo(e.target.value)} required />
-        </label>
-        <label>Autor
-          <input value={autor} onChange={(e) => setAutor(e.target.value)} required />
-        </label>
-        <label>Precio
-          <input type="number" min="0.01" step="0.01" value={precio}
-                 onChange={(e) => setPrecio(e.target.value)} required />
-        </label>
-        <label>Número de páginas
-          <input type="number" min="1" step="1" value={numeroPaginas}
-                 onChange={(e) => setNumeroPaginas(e.target.value)} required />
-        </label>
-        <label>Fecha de publicación
-          <input type="datetime-local" value={fechaPublicacion}
-                 onChange={(e) => setFechaPublicacion(e.target.value)} required />
-        </label>
-        <label>Género
-          <select value={genero} onChange={(e) => setGenero(e.target.value as Genero)}>
-            {GENEROS.map((g) => <option key={g} value={g}>{g}</option>)}
-          </select>
-        </label>
-        <button type="submit" disabled={enviando}>{enviando ? "Guardando..." : "Adicionar"}</button>
+    <>
+      <Encabezado etiqueta="Libro" titulo="Nuevo libro">
+        Completa los datos para registrarlo en el servidor.
+      </Encabezado>
+      {error && <Aviso>{error}</Aviso>}
+      {exito && <Aviso tipo="exito">{exito}</Aviso>}
+
+      <form className="tarjeta" onSubmit={manejarEnvio}>
+        <div className="campos">
+          <label>ISBN
+            <input value={isbn} onChange={(e) => setIsbn(e.target.value)} required />
+          </label>
+          <label>Título
+            <input value={titulo} onChange={(e) => setTitulo(e.target.value)} required />
+          </label>
+          <label>Autor
+            <input value={autor} onChange={(e) => setAutor(e.target.value)} required />
+          </label>
+          <label>Fecha de publicación
+            <input type="datetime-local" value={fechaPublicacion}
+                   onChange={(e) => setFechaPublicacion(e.target.value)} required />
+          </label>
+          <label>Precio
+            <input type="number" min="0.01" step="0.01" value={precio}
+                   onChange={(e) => setPrecio(e.target.value)} required />
+          </label>
+          <label>Número de páginas
+            <input type="number" min="1" step="1" value={numeroPaginas}
+                   onChange={(e) => setNumeroPaginas(e.target.value)} required />
+          </label>
+        </div>
+        <SelectorChips etiqueta="Género" nombre="genero" opciones={GENEROS} valor={genero}
+                       etiquetaDe={etiquetaGenero} alCambiar={(g) => setGenero(g || "FICCION")} />
+        <div className="acciones">
+          <button type="submit" disabled={enviando}>
+            <Icono nombre="listo" /> {enviando ? "Guardando..." : "Adicionar"}
+          </button>
+        </div>
       </form>
-    </div>
+    </>
   );
 }

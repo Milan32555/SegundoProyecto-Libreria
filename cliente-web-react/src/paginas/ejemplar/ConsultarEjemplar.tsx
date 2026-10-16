@@ -1,7 +1,9 @@
 import { FormEvent, useState } from "react";
 import { buscarEjemplarPorCodigo } from "../../graphql/servicioEjemplar";
 import { mensajeDeError } from "../../graphql/clienteGraphQL";
+import { Aviso, Encabezado } from "../../componentes/Basicos";
 import FichaEjemplar from "../../componentes/FichaEjemplar";
+import Icono from "../../componentes/Icono";
 import { Ejemplar } from "../../types";
 
 /** Caso de uso: Buscar/Consultar UN SOLO Ejemplar a partir de su código. */
@@ -30,18 +32,21 @@ export default function ConsultarEjemplar() {
   }
 
   return (
-    <div className="tarjeta">
-      <h1>Consultar Ejemplar</h1>
-      {error && <p className="mensaje-error">{error}</p>}
-      <form onSubmit={buscar}>
+    <>
+      <Encabezado etiqueta="Ejemplar" titulo="Buscar un ejemplar">
+        Consulta un solo ejemplar por su código.
+      </Encabezado>
+
+      <form className="tarjeta filtros-fila" role="search" onSubmit={buscar}>
         <label>Código del ejemplar
           <input value={codigo} onChange={(e) => setCodigo(e.target.value)} required />
         </label>
-        <button type="submit" disabled={cargando}>Buscar</button>
+        <button type="submit" disabled={cargando}><Icono nombre="buscar" /> Buscar</button>
       </form>
 
-      {sinResultado && <p className="sin-datos">{sinResultado}</p>}
+      {error && <Aviso>{error}</Aviso>}
+      {sinResultado && <Aviso tipo="advertencia">{sinResultado}</Aviso>}
       {ejemplar && <FichaEjemplar ejemplar={ejemplar} />}
-    </div>
+    </>
   );
 }

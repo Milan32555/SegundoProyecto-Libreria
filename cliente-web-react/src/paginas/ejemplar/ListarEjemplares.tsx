@@ -3,8 +3,10 @@ import { listarEjemplaresFiltrados } from "../../graphql/servicioEjemplar";
 import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { ejemplarObservable } from "../../observer/Observable";
 import { useListadoObservado } from "../../observer/useListadoObservado";
-import { formatearFecha, formatearPrecio } from "../../formato";
-import { ESTADOS_EJEMPLAR, EstadoEjemplar, Ejemplar } from "../../types";
+import { formatearFechaCorta, formatearPrecio } from "../../formato";
+import { Aviso, Encabezado, EnVivo, Pastilla, SelectorChips, colorEstado } from "../../componentes/Basicos";
+import Icono from "../../componentes/Icono";
+import { ESTADOS_EJEMPLAR, EstadoEjemplar, Ejemplar, etiquetaEstado } from "../../types";
 
 /**
  * Caso de uso: Listar Ejemplares en una grilla, con filtro (del lado del servidor) por estado
@@ -17,11 +19,11 @@ export default function ListarEjemplares() {
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
 
-  async function cargar() {
+  async function cargar(filtroEstado: EstadoEjemplar | "" = estado) {
     setCargando(true);
     setError(null);
     try {
-      setEjemplares(await listarEjemplaresFiltrados(estado, isbnLibro));
+      setEjemplares(await listarEjemplaresFiltrados(filtroEstado, isbnLibro));
     } catch (err) {
       setError(mensajeDeError(err));
     } finally {
@@ -36,48 +38,58 @@ export default function ListarEjemplares() {
     void cargar();
   }
 
+  function cambiarEstado(nuevo: EstadoEjemplar | "") {
+    setEstado(nuevo);
+    void cargar(nuevo);
+  }
+
   return (
-    <div className="tarjeta">
-      <h1>Listar Ejemplares</h1>
-      {error && <p className="mensaje-error">{error}</p>}
+    <>
+      <Encabezado etiqueta="Ejemplares" titulo="Listar ejemplares">
+        Todas las copias físicas en inventario. El filtro se aplica en el servidor.
+      </Encabezado>
 
-      <form className="filtros" onSubmit={filtrar}>
-        <label>Estado
-          <select value={estado} onChange={(e) => setEstado(e.target.value as EstadoEjemplar | "")}>
-            <option value="">(todos)</option>
-            {ESTADOS_EJEMPLAR.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </label>
-        <label>ISBN del libro
-          <input value={isbnLibro} onChange={(e) => setIsbnLibro(e.target.value)} placeholder="opcional" />
-        </label>
-        <button type="submit" disabled={cargando}>Filtrar</button>
-      </form>
+      <section className="tarjeta filtros">
+        <form className="filtros-fila" role="search" onSubmit={filtrar}>
+          <label>ISBN del libro
+            <input value={isbnLibro} onChange={(e) => setIsbnLibro(e.target.value)} placeholder="opcional" />
+          </label>
+          <button type="submit" disabled={cargando}><Icono nombre="buscar" /> Filtrar</button>
+        </form>
+        <SelectorChips etiqueta="Estado" nombre="estado" opciones={ESTADOS_EJEMPLAR} valor={estado}
+                       etiquetaDe={etiquetaEstado} alCambiar={cambiarEstado} textoTodos="Todos" />
+      </section>
 
-      <p className="conteo">{ejemplares.length} ejemplar(es)</p>
-      <table>
-        <thead>
-          <tr>
-            <th>Código</th><th>Estado</th><th>Ubicación</th>
-            <th>Ingreso</th><th>Reposición</th><th>Libro (ISBN)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {ejemplares.map((e) => (
-            <tr key={e.codigo}>
-              <td>{e.codigo}</td>
-              <td>{e.estado}</td>
-              <td>{e.ubicacion}</td>
-              <td>{formatearFecha(e.fechaIngreso)}</td>
-              <td>{formatearPrecio(e.precioReposicion)}</td>
-              <td>{e.isbnLibro}</td>
+      {error && <Aviso>{error}</Aviso>}
+
+      <div className="resumen-lista">
+        <span className="conteo">{ejemplares.length === 1 ? "1 ejemplar" : `${ejemplares.length} ejemplares`}</span>
+        <EnVivo />
+      </div>
+      <div className="tabla-contenedor">
+        <table>
+          <thead>
+            <tr>
+              <th>Ejemplar</th><th>Estado</th><th className="numero">Reposición</th>
+              <th>Ingreso</th><th>Libro (ISBN)</th>
             </tr>
-          ))}
-          {ejemplares.length === 0 && !cargando && (
-            <tr><td colSpan={6} className="sin-datos">No hay ejemplares para mostrar.</td></tr>
-          )}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {ejemplares.map((e) => (
+              <tr key={e.codigo}>
+                <td className="celda-doble"><strong>{e.codigo}</strong><small>{e.ubicacion}</small></td>
+                <td><Pastilla color={colorEstado(e.estado)}>{etiquetaEstado(e.estado)}</Pastilla></td>
+                <td className="numero precio">{formatearPrecio(e.precioReposicion)}</td>
+                <td>{formatearFechaCorta(e.fechaIngreso)}</td>
+                <td className="apagado">{e.isbnLibro}</td>
+              </tr>
+            ))}
+            {ejemplares.length === 0 && !cargando && (
+              <tr><td colSpan={5} className="sin-datos">No hay ejemplares para mostrar.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

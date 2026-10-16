@@ -3,7 +3,9 @@ import { actualizarLibro, buscarLibroPorIsbn } from "../../graphql/servicioLibro
 import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { libroObservable } from "../../observer/Observable";
 import { aValorDeInputFecha } from "../../formato";
-import { GENEROS, Genero, Libro } from "../../types";
+import { Aviso, Encabezado, SelectorChips } from "../../componentes/Basicos";
+import Icono from "../../componentes/Icono";
+import { GENEROS, Genero, Libro, etiquetaGenero } from "../../types";
 
 /**
  * Caso de uso: Actualizar Libro. Primero se busca el objeto y se muestra TODA su
@@ -72,52 +74,55 @@ export default function ActualizarLibro() {
   }
 
   return (
-    <div className="tarjeta">
-      <h1>Actualizar Libro</h1>
-      {error && <p className="mensaje-error">{error}</p>}
-      {exito && <p className="mensaje-exito">{exito}</p>}
+    <>
+      <Encabezado etiqueta="Libro" titulo="Actualizar libro">
+        Busca el libro por su ISBN: verás sus datos actuales y podrás modificarlos.
+      </Encabezado>
+      {error && <Aviso>{error}</Aviso>}
+      {exito && <Aviso tipo="exito">{exito}</Aviso>}
 
       {!libro && (
-        <form onSubmit={buscar}>
+        <form className="tarjeta filtros-fila" role="search" onSubmit={buscar}>
           <label>ISBN del libro a actualizar
             <input value={isbn} onChange={(e) => setIsbn(e.target.value)} required />
           </label>
-          <button type="submit" disabled={cargando}>Buscar</button>
+          <button type="submit" disabled={cargando}><Icono nombre="buscar" /> Buscar</button>
         </form>
       )}
 
       {libro && (
-        <form onSubmit={guardarCambios}>
-          <p className="dato-fijo">ISBN (no editable): <strong>{libro.isbn}</strong></p>
-          <label>Título
-            <input value={titulo} onChange={(e) => setTitulo(e.target.value)} required />
-          </label>
-          <label>Autor
-            <input value={autor} onChange={(e) => setAutor(e.target.value)} required />
-          </label>
-          <label>Precio
-            <input type="number" min="0.01" step="0.01" value={precio}
-                   onChange={(e) => setPrecio(e.target.value)} required />
-          </label>
-          <label>Número de páginas
-            <input type="number" min="1" step="1" value={numeroPaginas}
-                   onChange={(e) => setNumeroPaginas(e.target.value)} required />
-          </label>
-          <label>Fecha de publicación
-            <input type="datetime-local" value={fechaPublicacion}
-                   onChange={(e) => setFechaPublicacion(e.target.value)} required />
-          </label>
-          <label>Género
-            <select value={genero} onChange={(e) => setGenero(e.target.value as Genero)}>
-              {GENEROS.map((g) => <option key={g} value={g}>{g}</option>)}
-            </select>
-          </label>
+        <form className="tarjeta" onSubmit={guardarCambios}>
+          <p className="nota-edicion">
+            Editando el libro con ISBN <strong>{libro.isbn}</strong>. El ISBN no se puede modificar.
+          </p>
+          <div className="campos">
+            <label>Título
+              <input value={titulo} onChange={(e) => setTitulo(e.target.value)} required />
+            </label>
+            <label>Autor
+              <input value={autor} onChange={(e) => setAutor(e.target.value)} required />
+            </label>
+            <label>Precio
+              <input type="number" min="0.01" step="0.01" value={precio}
+                     onChange={(e) => setPrecio(e.target.value)} required />
+            </label>
+            <label>Número de páginas
+              <input type="number" min="1" step="1" value={numeroPaginas}
+                     onChange={(e) => setNumeroPaginas(e.target.value)} required />
+            </label>
+            <label className="campo-ancho">Fecha de publicación
+              <input type="datetime-local" value={fechaPublicacion}
+                     onChange={(e) => setFechaPublicacion(e.target.value)} required />
+            </label>
+          </div>
+          <SelectorChips etiqueta="Género" nombre="genero" opciones={GENEROS} valor={genero}
+                         etiquetaDe={etiquetaGenero} alCambiar={(g) => setGenero(g || genero)} />
           <div className="acciones">
-            <button type="submit" disabled={cargando}>Guardar cambios</button>
+            <button type="submit" disabled={cargando}><Icono nombre="guardar" /> Guardar cambios</button>
             <button type="button" className="secundario" onClick={() => setLibro(null)}>Cancelar</button>
           </div>
         </form>
       )}
-    </div>
+    </>
   );
 }

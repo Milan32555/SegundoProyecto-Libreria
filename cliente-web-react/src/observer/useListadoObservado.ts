@@ -9,8 +9,13 @@ import { ListadoObservable } from "./Observable";
  *
  * Siempre se invoca la versión más reciente de `cargar`, así que el refresco respeta
  * los filtros que el usuario tiene escritos en ese momento.
+ * Con `cargarAlInicio: false` solo se suscribe (útil si la pantalla observa dos sujetos).
  */
-export function useListadoObservado(observable: ListadoObservable, cargar: () => void): void {
+export function useListadoObservado(
+  observable: ListadoObservable,
+  cargar: () => void,
+  { cargarAlInicio = true }: { cargarAlInicio?: boolean } = {}
+): void {
   const ultimaCarga = useRef(cargar);
 
   useEffect(() => {
@@ -18,7 +23,9 @@ export function useListadoObservado(observable: ListadoObservable, cargar: () =>
   });
 
   useEffect(() => {
-    ultimaCarga.current();
+    if (cargarAlInicio) {
+      ultimaCarga.current();
+    }
     return observable.suscribir(() => ultimaCarga.current());
-  }, [observable]);
+  }, [observable, cargarAlInicio]);
 }

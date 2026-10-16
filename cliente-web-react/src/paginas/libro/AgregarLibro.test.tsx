@@ -20,7 +20,7 @@ async function llenarFormulario() {
   await user.type(screen.getByLabelText("Precio"), "39000.5");
   await user.type(screen.getByLabelText("Número de páginas"), "124");
   fireEvent.change(screen.getByLabelText("Fecha de publicación"), { target: { value: "1955-03-19T10:30" } });
-  await user.selectOptions(screen.getByLabelText(/^Género/), "NO_FICCION");
+  await user.click(screen.getByRole("radio", { name: "No ficción" }));
   await user.click(screen.getByRole("button", { name: "Adicionar" }));
 }
 

@@ -1,9 +1,10 @@
 import { FormEvent, useState } from "react";
 import { crearEjemplar } from "../../graphql/servicioEjemplar";
-import { ErrorGraphQL } from "../../graphql/clienteGraphQL";
+import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { ejemplarObservable } from "../../observer/Observable";
 import { ESTADOS_EJEMPLAR, EstadoEjemplar } from "../../types";
 
+/** Caso de uso: Adicionar Ejemplar a un Libro existente. */
 export default function AgregarEjemplar() {
   const [codigo, setCodigo] = useState("");
   const [estado, setEstado] = useState<EstadoEjemplar>("DISPONIBLE");
@@ -30,7 +31,7 @@ export default function AgregarEjemplar() {
       setCodigo(""); setUbicacion(""); setFechaIngreso("");
       setPrecioReposicion(""); setIsbnLibro("");
     } catch (err) {
-      setError(err instanceof ErrorGraphQL ? err.message : "Error de conexión con el servidor.");
+      setError(mensajeDeError(err));
     } finally {
       setEnviando(false);
     }
@@ -61,7 +62,7 @@ export default function AgregarEjemplar() {
                  onChange={(e) => setFechaIngreso(e.target.value)} required />
         </label>
         <label>Precio de reposición
-          <input type="number" min="0" step="0.01" value={precioReposicion}
+          <input type="number" min="0.01" step="0.01" value={precioReposicion}
                  onChange={(e) => setPrecioReposicion(e.target.value)} required />
         </label>
         <button type="submit" disabled={enviando}>{enviando ? "Guardando..." : "Adicionar"}</button>

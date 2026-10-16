@@ -1,7 +1,8 @@
 import { FormEvent, useState } from "react";
 import { buscarLibroPorIsbn, eliminarLibro } from "../../graphql/servicioLibro";
-import { ErrorGraphQL } from "../../graphql/clienteGraphQL";
+import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { libroObservable } from "../../observer/Observable";
+import FichaLibro from "../../componentes/FichaLibro";
 import { Libro } from "../../types";
 
 /**
@@ -27,7 +28,7 @@ export default function EliminarLibro() {
         setLibro(resultado);
       }
     } catch (err) {
-      setError(err instanceof ErrorGraphQL ? err.message : "Error de conexión con el servidor.");
+      setError(mensajeDeError(err));
     } finally {
       setCargando(false);
     }
@@ -44,7 +45,7 @@ export default function EliminarLibro() {
       setLibro(null);
       setIsbn("");
     } catch (err) {
-      setError(err instanceof ErrorGraphQL ? err.message : "Error de conexión con el servidor.");
+      setError(mensajeDeError(err));
     } finally {
       setCargando(false);
     }
@@ -65,20 +66,13 @@ export default function EliminarLibro() {
 
       {libro && (
         <>
-          <div className="ficha-objeto">
-            <p><strong>ISBN:</strong> {libro.isbn}</p>
-            <p><strong>Título:</strong> {libro.titulo}</p>
-            <p><strong>Autor:</strong> {libro.autor}</p>
-            <p><strong>Precio:</strong> ${libro.precio.toLocaleString()}</p>
-            <p><strong>Páginas:</strong> {libro.numeroPaginas}</p>
-            <p><strong>Fecha de publicación:</strong> {libro.fechaPublicacion}</p>
-            <p><strong>Género:</strong> {libro.genero}</p>
-          </div>
+          <p>¿Seguro que desea eliminar este libro?</p>
+          <FichaLibro libro={libro} />
           <div className="acciones">
-            <button className="peligro" onClick={confirmarEliminacion} disabled={cargando}>
+            <button type="button" className="peligro" onClick={confirmarEliminacion} disabled={cargando}>
               Confirmar eliminación
             </button>
-            <button className="secundario" onClick={() => setLibro(null)}>Cancelar</button>
+            <button type="button" className="secundario" onClick={() => setLibro(null)}>Cancelar</button>
           </div>
         </>
       )}

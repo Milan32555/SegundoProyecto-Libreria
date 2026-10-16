@@ -1,26 +1,36 @@
 import { FormEvent, useState } from "react";
-import { buscarLibroPorIsbn } from "../../graphql/servicioLibro";
-import { ErrorGraphQL } from "../../graphql/clienteGraphQL";
+import { buscarLibroPorIsbn, buscarLibroPorTitulo } from "../../graphql/servicioLibro";
+import { mensajeDeError } from "../../graphql/clienteGraphQL";
+import FichaLibro from "../../componentes/FichaLibro";
 import { Libro } from "../../types";
 
-/** Caso de uso: Buscar/Consultar UN SOLO Libro a partir de un criterio (el ISBN). */
+type Criterio = "isbn" | "titulo";
+
+const ETIQUETAS: Record<Criterio, string> = { isbn: "ISBN", titulo: "Título" };
+
+/** Caso de uso: Buscar/Consultar UN SOLO Libro a partir de un criterio (ISBN o título). */
 export default function ConsultarLibro() {
-  const [isbn, setIsbn] = useState("");
+  const [criterio, setCriterio] = useState<Criterio>("isbn");
+  const [valor, setValor] = useState("");
   const [libro, setLibro] = useState<Libro | null>(null);
-  const [buscado, setBuscado] = useState(false);
+  const [sinResultado, setSinResultado] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
 
   async function buscar(e: FormEvent) {
     e.preventDefault();
-    setError(null); setLibro(null); setBuscado(false);
+    setError(null); setLibro(null); setSinResultado(null);
     setCargando(true);
     try {
-      const resultado = await buscarLibroPorIsbn(isbn);
+      const resultado = criterio === "isbn"
+        ? await buscarLibroPorIsbn(valor)
+        : await buscarLibroPorTitulo(valor);
       setLibro(resultado);
-      setBuscado(true);
+      if (!resultado) {
+        setSinResultado(`No se encontró ningún libro con ${criterio === "isbn" ? "el ISBN" : "el título"} "${valor}".`);
+      }
     } catch (err) {
-      setError(err instanceof ErrorGraphQL ? err.message : "Error de conexión con el servidor.");
+      setError(mensajeDeError(err));
     } finally {
       setCargando(false);
     }
@@ -31,27 +41,20 @@ export default function ConsultarLibro() {
       <h1>Consultar Libro</h1>
       {error && <p className="mensaje-error">{error}</p>}
       <form onSubmit={buscar}>
-        <label>ISBN
-          <input value={isbn} onChange={(e) => setIsbn(e.target.value)} required />
+        <label>Buscar por
+          <select value={criterio} onChange={(e) => setCriterio(e.target.value as Criterio)}>
+            <option value="isbn">ISBN</option>
+            <option value="titulo">Título</option>
+          </select>
+        </label>
+        <label>{ETIQUETAS[criterio]}
+          <input value={valor} onChange={(e) => setValor(e.target.value)} required />
         </label>
         <button type="submit" disabled={cargando}>Buscar</button>
       </form>
 
-      {buscado && !libro && (
-        <p style={{ marginTop: "1rem" }}>No se encontró ningún libro con el ISBN "{isbn}".</p>
-      )}
-
-      {libro && (
-        <div className="ficha-objeto">
-          <p><strong>ISBN:</strong> {libro.isbn}</p>
-          <p><strong>Título:</strong> {libro.titulo}</p>
-          <p><strong>Autor:</strong> {libro.autor}</p>
-          <p><strong>Precio:</strong> ${libro.precio.toLocaleString()}</p>
-          <p><strong>Páginas:</strong> {libro.numeroPaginas}</p>
-          <p><strong>Fecha de publicación:</strong> {libro.fechaPublicacion}</p>
-          <p><strong>Género:</strong> {libro.genero}</p>
-        </div>
-      )}
+      {sinResultado && <p className="sin-datos">{sinResultado}</p>}
+      {libro && <FichaLibro libro={libro} />}
     </div>
   );
 }

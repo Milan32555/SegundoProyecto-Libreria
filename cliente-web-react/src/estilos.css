@@ -164,13 +164,31 @@ th {
 
 .filtros {
   display: flex;
+  flex-direction: row;
+  max-width: none;
   gap: 0.8rem;
   flex-wrap: wrap;
   align-items: flex-end;
   margin-bottom: 1rem;
 }
 
+.conteo {
+  color: #5a6378;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.sin-datos {
+  color: #8a91a3;
+  margin-top: 1rem;
+}
+
+.dato-fijo {
+  color: #5a6378;
+}
+
 .ficha-objeto {
+  margin-top: 1rem;
   background: #f7f8fb;
   border: 1px solid #e1e5ef;
   border-radius: 8px;

@@ -1,7 +1,8 @@
 import { FormEvent, useState } from "react";
 import { actualizarLibro, buscarLibroPorIsbn } from "../../graphql/servicioLibro";
-import { ErrorGraphQL } from "../../graphql/clienteGraphQL";
+import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { libroObservable } from "../../observer/Observable";
+import { aValorDeInputFecha } from "../../formato";
 import { GENEROS, Genero, Libro } from "../../types";
 
 /**
@@ -37,11 +38,11 @@ export default function ActualizarLibro() {
         setAutor(resultado.autor);
         setPrecio(String(resultado.precio));
         setNumeroPaginas(String(resultado.numeroPaginas));
-        setFechaPublicacion(resultado.fechaPublicacion.slice(0, 16));
+        setFechaPublicacion(aValorDeInputFecha(resultado.fechaPublicacion));
         setGenero(resultado.genero);
       }
     } catch (err) {
-      setError(err instanceof ErrorGraphQL ? err.message : "Error de conexión con el servidor.");
+      setError(mensajeDeError(err));
     } finally {
       setCargando(false);
     }
@@ -64,7 +65,7 @@ export default function ActualizarLibro() {
       setLibro(null);
       setIsbn("");
     } catch (err) {
-      setError(err instanceof ErrorGraphQL ? err.message : "Error de conexión con el servidor.");
+      setError(mensajeDeError(err));
     } finally {
       setCargando(false);
     }
@@ -87,7 +88,7 @@ export default function ActualizarLibro() {
 
       {libro && (
         <form onSubmit={guardarCambios}>
-          <p style={{ color: "#5a6378" }}>ISBN (no editable): <strong>{libro.isbn}</strong></p>
+          <p className="dato-fijo">ISBN (no editable): <strong>{libro.isbn}</strong></p>
           <label>Título
             <input value={titulo} onChange={(e) => setTitulo(e.target.value)} required />
           </label>
@@ -95,11 +96,11 @@ export default function ActualizarLibro() {
             <input value={autor} onChange={(e) => setAutor(e.target.value)} required />
           </label>
           <label>Precio
-            <input type="number" min="0" step="0.01" value={precio}
+            <input type="number" min="0.01" step="0.01" value={precio}
                    onChange={(e) => setPrecio(e.target.value)} required />
           </label>
           <label>Número de páginas
-            <input type="number" min="1" value={numeroPaginas}
+            <input type="number" min="1" step="1" value={numeroPaginas}
                    onChange={(e) => setNumeroPaginas(e.target.value)} required />
           </label>
           <label>Fecha de publicación

@@ -1,10 +1,15 @@
-import { useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { listarEjemplaresFiltrados } from "../../graphql/servicioEjemplar";
-import { ErrorGraphQL } from "../../graphql/clienteGraphQL";
+import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { ejemplarObservable } from "../../observer/Observable";
+import { useListadoObservado } from "../../observer/useListadoObservado";
+import { formatearFecha, formatearPrecio } from "../../formato";
 import { ESTADOS_EJEMPLAR, EstadoEjemplar, Ejemplar } from "../../types";
 
-/** Caso de uso: Listar Ejemplares, con filtro por estado y/o isbn del libro. Observer igual que en Libros. */
+/**
+ * Caso de uso: Listar Ejemplares en una grilla, con filtro (del lado del servidor) por estado
+ * y/o ISBN del libro. Observer igual que en ListarLibros.
+ */
 export default function ListarEjemplares() {
   const [ejemplares, setEjemplares] = useState<Ejemplar[]>([]);
   const [estado, setEstado] = useState<EstadoEjemplar | "">("");
@@ -16,28 +21,27 @@ export default function ListarEjemplares() {
     setCargando(true);
     setError(null);
     try {
-      const resultado = await listarEjemplaresFiltrados(estado, isbnLibro);
-      setEjemplares(resultado);
+      setEjemplares(await listarEjemplaresFiltrados(estado, isbnLibro));
     } catch (err) {
-      setError(err instanceof ErrorGraphQL ? err.message : "Error de conexión con el servidor.");
+      setError(mensajeDeError(err));
     } finally {
       setCargando(false);
     }
   }
 
-  useEffect(() => {
-    cargar();
-    const desuscribir = ejemplarObservable.suscribir(cargar);
-    return desuscribir;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useListadoObservado(ejemplarObservable, cargar);
+
+  function filtrar(e: FormEvent) {
+    e.preventDefault();
+    void cargar();
+  }
 
   return (
     <div className="tarjeta">
       <h1>Listar Ejemplares</h1>
       {error && <p className="mensaje-error">{error}</p>}
 
-      <div className="filtros">
+      <form className="filtros" onSubmit={filtrar}>
         <label>Estado
           <select value={estado} onChange={(e) => setEstado(e.target.value as EstadoEjemplar | "")}>
             <option value="">(todos)</option>
@@ -47,9 +51,10 @@ export default function ListarEjemplares() {
         <label>ISBN del libro
           <input value={isbnLibro} onChange={(e) => setIsbnLibro(e.target.value)} placeholder="opcional" />
         </label>
-        <button onClick={cargar} disabled={cargando}>Filtrar</button>
-      </div>
+        <button type="submit" disabled={cargando}>Filtrar</button>
+      </form>
 
+      <p className="conteo">{ejemplares.length} ejemplar(es)</p>
       <table>
         <thead>
           <tr>
@@ -63,13 +68,13 @@ export default function ListarEjemplares() {
               <td>{e.codigo}</td>
               <td>{e.estado}</td>
               <td>{e.ubicacion}</td>
-              <td>{e.fechaIngreso}</td>
-              <td>${e.precioReposicion.toLocaleString()}</td>
+              <td>{formatearFecha(e.fechaIngreso)}</td>
+              <td>{formatearPrecio(e.precioReposicion)}</td>
               <td>{e.isbnLibro}</td>
             </tr>
           ))}
           {ejemplares.length === 0 && !cargando && (
-            <tr><td colSpan={6} style={{ color: "#8a91a3" }}>No hay ejemplares para mostrar.</td></tr>
+            <tr><td colSpan={6} className="sin-datos">No hay ejemplares para mostrar.</td></tr>
           )}
         </tbody>
       </table>

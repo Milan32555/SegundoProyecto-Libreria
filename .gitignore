@@ -14,7 +14,14 @@ dist/
 build/
 .flutter-plugins
 .flutter-plugins-dependencies
-pubspec.lock
+# (pubspec.lock SÍ se versiona: es una aplicación, no una librería)
+
+# Variables de entorno locales
+.env
+.env.local
+
+# Logs
+*.log
 
 # Sistema
 .DS_Store

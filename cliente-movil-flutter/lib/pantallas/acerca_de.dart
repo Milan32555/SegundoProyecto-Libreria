@@ -48,8 +48,8 @@ class AcercaDe extends StatelessWidget {
                   if (i > 0) const Divider(indent: 72),
                   ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: kAcento.withValues(alpha: 0.15),
-                      foregroundColor: kAcento,
+                      backgroundColor: kPrimario.withValues(alpha: 0.15),
+                      foregroundColor: kPrimario,
                       child: Text(_iniciales(nombre), style: const TextStyle(fontWeight: FontWeight.w800)),
                     ),
                     title: Text(nombre, style: const TextStyle(fontWeight: FontWeight.w600)),

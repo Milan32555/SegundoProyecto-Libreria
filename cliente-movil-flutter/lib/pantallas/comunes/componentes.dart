@@ -8,12 +8,12 @@ Color colorEstado(String estado) => switch (estado) {
   'PRESTADO' => kAzul,
   'DANIADO' => kNaranja,
   'DADO_DE_BAJA' => kRojo,
-  _ => kTexto2,
+  _ => kTinta2,
 };
 
 /// Etiqueta pequeña en mayúsculas que encabeza una sección.
 class EtiquetaSeccion extends StatelessWidget {
-  const EtiquetaSeccion(this.texto, {super.key, this.color = kTexto3});
+  const EtiquetaSeccion(this.texto, {super.key, this.color = kTinta3});
 
   final String texto;
   final Color color;
@@ -38,7 +38,7 @@ class EncabezadoPantalla extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          EtiquetaSeccion(etiqueta, color: kAcento),
+          EtiquetaSeccion(etiqueta, color: kPrimario),
           const SizedBox(height: Espacio.xs),
           Text(titulo, style: texto.headlineSmall),
           if (descripcion != null) ...[const SizedBox(height: Espacio.xs), Text(descripcion!, style: texto.bodyMedium)],
@@ -48,35 +48,73 @@ class EncabezadoPantalla extends StatelessWidget {
   }
 }
 
-/// Tarjeta principal de una pantalla: superficie con degradado suave y radio 20.
+/// Tarjeta principal de una pantalla, con un "lomo" de color a la izquierda
+/// como un libro en la estantería.
 class TarjetaHero extends StatelessWidget {
-  const TarjetaHero({super.key, required this.child, this.colorBorde = kBorde2});
+  const TarjetaHero({super.key, required this.child, this.lomo = kPrimario});
 
   final Widget child;
-  final Color colorBorde;
+  final Color lomo;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+    return DecoratedBox(
+      decoration: const BoxDecoration(borderRadius: Redondeo.hero, boxShadow: sombraSuave),
+      child: ClipRRect(
         borderRadius: Redondeo.hero,
-        border: Border.all(color: colorBorde),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [kSuperficie3, kSuperficie],
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(22, 20, 20, 20),
+          decoration: BoxDecoration(
+            color: kHoja,
+            border: Border(left: BorderSide(color: lomo, width: 6)),
+          ),
+          child: child,
         ),
       ),
-      child: child,
+    );
+  }
+}
+
+/// Tarjeta "portada": verde biblioteca con un libro de marca de agua.
+/// El contenido debe usar colores claros (kCrema / blanco).
+class TarjetaPortada extends StatelessWidget {
+  const TarjetaPortada({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        borderRadius: Redondeo.hero,
+        boxShadow: sombraSuave,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [kPrimario, kPrimarioOscuro],
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: Redondeo.hero,
+        child: Stack(
+          children: [
+            Positioned(
+              right: -24,
+              bottom: -30,
+              child: Icon(Icons.auto_stories_rounded, size: 170, color: Colors.white.withValues(alpha: 0.07)),
+            ),
+            Padding(padding: const EdgeInsets.all(20), child: child),
+          ],
+        ),
+      ),
     );
   }
 }
 
 /// Ícono dentro de un cuadro redondeado con el color de acento tenue.
 class IconoAcento extends StatelessWidget {
-  const IconoAcento(this.icono, {super.key, this.color = kAcento, this.tamano = 44});
+  const IconoAcento(this.icono, {super.key, this.color = kPrimario, this.tamano = 44});
 
   final IconData icono;
   final Color color;
@@ -98,7 +136,7 @@ class IconoAcento extends StatelessWidget {
 
 /// Pastilla de color para estados y categorías (Disponible, Ficción…).
 class Pastilla extends StatelessWidget {
-  const Pastilla(this.texto, {super.key, this.color = kAcento});
+  const Pastilla(this.texto, {super.key, this.color = kPrimario});
 
   final String texto;
   final Color color;
@@ -172,7 +210,7 @@ class EstadoVacio extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconoAcento(icono, color: kTexto3, tamano: 64),
+          IconoAcento(icono, color: kTinta3, tamano: 64),
           const SizedBox(height: Espacio.md),
           Text(mensaje, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
         ],
@@ -214,7 +252,7 @@ class BuscadorClave extends StatelessWidget {
         FilledButton.icon(
           onPressed: cargando ? null : onBuscar,
           icon: cargando
-              ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2.4, color: kTexto3))
+              ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2.4, color: kTinta3))
               : const Icon(Icons.search_rounded),
           label: const Text('Buscar'),
         ),
@@ -249,11 +287,14 @@ class SelectorChips extends StatelessWidget {
       selected: activo,
       showCheckmark: false,
       onSelected: (_) => alTocar(),
-      backgroundColor: kSuperficie2,
-      selectedColor: kAcento,
-      side: BorderSide(color: activo ? kAcento : kBorde2),
+      backgroundColor: kHoja,
+      selectedColor: kPrimario,
+      side: BorderSide(color: activo ? kPrimario : kBorde2),
       shape: const StadiumBorder(),
-      labelStyle: TextStyle(color: activo ? kFondo : kTexto2, fontWeight: activo ? FontWeight.w800 : FontWeight.w600),
+      labelStyle: TextStyle(
+        color: activo ? Colors.white : kTinta2,
+        fontWeight: activo ? FontWeight.w700 : FontWeight.w600,
+      ),
     );
   }
 
@@ -283,7 +324,9 @@ class SelectorChips extends StatelessWidget {
 
 /// Muestra que la lista se actualiza sola (patrón Observer).
 class IndicadorEnVivo extends StatelessWidget {
-  const IndicadorEnVivo({super.key});
+  const IndicadorEnVivo({super.key, this.color = kVerde});
+
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -294,15 +337,15 @@ class IndicadorEnVivo extends StatelessWidget {
           width: 8,
           height: 8,
           decoration: BoxDecoration(
-            color: kVerde,
+            color: color,
             shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: kVerde.withValues(alpha: 0.6), blurRadius: 6)],
+            boxShadow: [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 6)],
           ),
         ),
         const SizedBox(width: 6),
-        const Text(
+        Text(
           'En vivo',
-          style: TextStyle(color: kVerde, fontSize: 12, fontWeight: FontWeight.w700),
+          style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w700),
         ),
       ],
     );
@@ -324,10 +367,10 @@ class CeldaDoble extends StatelessWidget {
       children: [
         Text(
           principal,
-          style: const TextStyle(color: kTexto, fontWeight: FontWeight.w700, fontSize: 14),
+          style: const TextStyle(color: kTinta, fontWeight: FontWeight.w700, fontSize: 14),
         ),
         const SizedBox(height: 2),
-        Text(secundario, style: const TextStyle(color: kTexto3, fontSize: 12)),
+        Text(secundario, style: const TextStyle(color: kTinta3, fontSize: 12)),
       ],
     );
   }
@@ -341,9 +384,9 @@ class PistaDesplazamiento extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Row(
       children: [
-        Icon(Icons.swipe_left_rounded, size: 16, color: kTexto3),
+        Icon(Icons.swipe_left_rounded, size: 16, color: kTinta3),
         SizedBox(width: 6),
-        Text('Desliza la tabla para ver todas las columnas', style: TextStyle(color: kTexto3, fontSize: 12)),
+        Text('Desliza la tabla para ver todas las columnas', style: TextStyle(color: kTinta3, fontSize: 12)),
       ],
     );
   }

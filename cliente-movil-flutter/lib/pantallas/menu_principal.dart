@@ -74,12 +74,12 @@ class _MenuPrincipalState extends State<MenuPrincipal> {
       ),
       drawer: const MenuLateral(),
       body: RefreshIndicator(
-        color: kAcento,
+        color: kPrimario,
         onRefresh: _cargar,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(Espacio.md, Espacio.sm, Espacio.md, Espacio.xl),
           children: [
-            const EtiquetaSeccion('Segundo proyecto · 2026B', color: kAcento),
+            const EtiquetaSeccion('Segundo proyecto · 2026B', color: kPrimario),
             const SizedBox(height: Espacio.xs),
             Text('Tu librería,\nen orden.', style: Theme.of(context).textTheme.displaySmall),
             const SizedBox(height: Espacio.sm),
@@ -130,16 +130,14 @@ class _TarjetaResumen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TarjetaHero(
-      colorBorde: error == null ? kBorde2 : kRojo.withValues(alpha: 0.4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [const EtiquetaSeccion('Inventario'), const Spacer(), if (error == null) const IndicadorEnVivo()],
-          ),
-          const SizedBox(height: Espacio.md),
-          if (error != null) ...[
+    if (error != null) {
+      return TarjetaHero(
+        lomo: kRojo,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const EtiquetaSeccion('Inventario'),
+            const SizedBox(height: Espacio.sm),
             Text(error!, style: const TextStyle(color: kRojo, fontSize: 14, height: 1.35)),
             const SizedBox(height: Espacio.md),
             OutlinedButton.icon(
@@ -147,29 +145,43 @@ class _TarjetaResumen extends StatelessWidget {
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Reintentar'),
             ),
-          ] else ...[
-            Row(
-              children: [
-                Expanded(
-                  child: _Cifra(valor: libros, leyenda: 'libros'),
-                ),
-                Container(width: 1, height: 48, color: kBorde2),
-                const SizedBox(width: Espacio.lg),
-                Expanded(
-                  child: _Cifra(valor: ejemplares, leyenda: 'ejemplares'),
-                ),
-              ],
-            ),
-            const SizedBox(height: Espacio.md),
-            Wrap(
-              spacing: Espacio.sm,
-              runSpacing: Espacio.sm,
-              children: [
-                Pastilla(disponibles == 1 ? '1 disponible' : '$disponibles disponibles', color: kVerde),
-                Pastilla(prestados == 1 ? '1 prestado' : '$prestados prestados', color: kAzul),
-              ],
-            ),
           ],
+        ),
+      );
+    }
+    return TarjetaPortada(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              EtiquetaSeccion('Inventario', color: kCrema),
+              Spacer(),
+              IndicadorEnVivo(color: Color(0xFF9FE6BE)),
+            ],
+          ),
+          const SizedBox(height: Espacio.md),
+          Row(
+            children: [
+              Expanded(
+                child: _Cifra(valor: libros, leyenda: 'libros'),
+              ),
+              Container(width: 1, height: 52, color: kCrema.withValues(alpha: 0.25)),
+              const SizedBox(width: Espacio.lg),
+              Expanded(
+                child: _Cifra(valor: ejemplares, leyenda: 'ejemplares'),
+              ),
+            ],
+          ),
+          const SizedBox(height: Espacio.md),
+          Wrap(
+            spacing: Espacio.sm,
+            runSpacing: Espacio.sm,
+            children: [
+              Pastilla(disponibles == 1 ? '1 disponible' : '$disponibles disponibles', color: const Color(0xFF9FE6BE)),
+              Pastilla(prestados == 1 ? '1 prestado' : '$prestados prestados', color: const Color(0xFFBCD4FF)),
+            ],
+          ),
         ],
       ),
     );
@@ -189,10 +201,16 @@ class _Cifra extends StatelessWidget {
       children: [
         Text(
           valor?.toString() ?? '—',
-          style: const TextStyle(color: kAcento, fontSize: 40, fontWeight: FontWeight.w900, height: 1),
+          style: const TextStyle(
+            fontFamily: fuenteTitulos,
+            color: kCrema,
+            fontSize: 44,
+            fontWeight: FontWeight.w700,
+            height: 1,
+          ),
         ),
         const SizedBox(height: 4),
-        Text(leyenda, style: Theme.of(context).textTheme.bodyMedium),
+        Text(leyenda, style: TextStyle(color: kCrema.withValues(alpha: 0.8), fontSize: 14)),
       ],
     );
   }
@@ -272,7 +290,7 @@ class _TarjetaAccion extends StatelessWidget {
     required this.titulo,
     required this.descripcion,
     required this.ruta,
-    this.color = kAcento,
+    this.color = kPrimario,
     this.destacada = false,
   });
 
@@ -288,7 +306,7 @@ class _TarjetaAccion extends StatelessWidget {
     final textos = [
       Text(
         titulo,
-        style: const TextStyle(color: kTexto, fontSize: 16, fontWeight: FontWeight.w800),
+        style: const TextStyle(color: kTinta, fontSize: 16, fontWeight: FontWeight.w800),
       ),
       const SizedBox(height: 2),
       Text(descripcion, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
@@ -296,7 +314,7 @@ class _TarjetaAccion extends StatelessWidget {
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: Redondeo.tarjeta,
-        side: BorderSide(color: destacada ? kAcento.withValues(alpha: 0.45) : kBorde),
+        side: BorderSide(color: destacada ? kPrimario.withValues(alpha: 0.45) : kBorde),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -311,7 +329,7 @@ class _TarjetaAccion extends StatelessWidget {
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: textos),
                     ),
-                    const Icon(Icons.chevron_right_rounded, color: kTexto3),
+                    const Icon(Icons.chevron_right_rounded, color: kTinta3),
                   ],
                 )
               : Column(

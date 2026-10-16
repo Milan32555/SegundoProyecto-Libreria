@@ -6,8 +6,14 @@ import '../../tema/tema.dart';
 import '../../utilidades/formato.dart';
 import 'componentes.dart';
 
-const _estiloTitulo = TextStyle(color: kTexto, fontSize: 22, fontWeight: FontWeight.w800, height: 1.2);
-const _estiloPrecio = TextStyle(color: kAcento, fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.5);
+const _estiloTitulo = TextStyle(
+  fontFamily: fuenteTitulos,
+  color: kTinta,
+  fontSize: 24,
+  fontWeight: FontWeight.w700,
+  height: 1.2,
+);
+const _estiloPrecio = TextStyle(color: kDorado, fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.5);
 
 /// Muestra TODA la información de un Libro (se usa al consultar y antes de eliminar).
 class FichaLibro extends StatelessWidget {
@@ -18,6 +24,7 @@ class FichaLibro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _MarcoFicha(
+      lomo: kPrimario,
       etiqueta: 'Libro',
       pastilla: Pastilla(etiquetaGenero(libro.genero)),
       titulo: libro.titulo,
@@ -43,6 +50,7 @@ class FichaEjemplar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _MarcoFicha(
+      lomo: colorEstado(ejemplar.estado),
       etiqueta: 'Ejemplar',
       pastilla: Pastilla(etiquetaEstado(ejemplar.estado), color: colorEstado(ejemplar.estado)),
       titulo: ejemplar.codigo,
@@ -60,6 +68,7 @@ class FichaEjemplar extends StatelessWidget {
 
 class _MarcoFicha extends StatelessWidget {
   const _MarcoFicha({
+    required this.lomo,
     required this.etiqueta,
     required this.pastilla,
     required this.titulo,
@@ -69,6 +78,7 @@ class _MarcoFicha extends StatelessWidget {
     required this.datos,
   });
 
+  final Color lomo;
   final String etiqueta;
   final Widget pastilla;
   final String titulo;
@@ -82,12 +92,13 @@ class _MarcoFicha extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: Espacio.lg),
       child: TarjetaHero(
+        lomo: lomo,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                EtiquetaSeccion(etiqueta, color: kAcento),
+                EtiquetaSeccion(etiqueta, color: kPrimario),
                 const Spacer(),
                 pastilla,
               ],
@@ -136,7 +147,7 @@ class _CuadriculaDatos extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       valor,
-                      style: const TextStyle(color: kTexto, fontSize: 14, fontWeight: FontWeight.w600),
+                      style: const TextStyle(color: kTinta, fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),

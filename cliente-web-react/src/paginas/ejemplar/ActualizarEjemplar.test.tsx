@@ -29,13 +29,13 @@ describe("ActualizarEjemplar", () => {
     await user.click(screen.getByRole("button", { name: "Buscar" }));
 
     // Datos actuales visibles antes de modificar.
-    expect(await screen.findByLabelText(/^Estado/)).toHaveValue("DISPONIBLE");
+    expect(await screen.findByRole("radio", { name: "Disponible" })).toBeChecked();
     expect(screen.getByLabelText("Ubicación")).toHaveValue("Estante A1");
     expect(screen.getByLabelText("Fecha de ingreso")).toHaveValue("2024-02-10T09:00");
     expect(screen.getByLabelText("Precio de reposición")).toHaveValue(65000);
     expect(screen.getByText("978-0307474728")).toBeInTheDocument();
 
-    await user.selectOptions(screen.getByLabelText(/^Estado/), "PRESTADO");
+    await user.click(screen.getByRole("radio", { name: "Prestado" }));
     await user.clear(screen.getByLabelText("Ubicación"));
     await user.type(screen.getByLabelText("Ubicación"), "Mostrador");
     await user.click(screen.getByRole("button", { name: "Guardar cambios" }));

@@ -17,6 +17,21 @@ export const GENEROS: Genero[] = [
   "OTRO"
 ];
 
+const ETIQUETAS_GENERO: Record<Genero, string> = {
+  FICCION: "Ficción",
+  NO_FICCION: "No ficción",
+  CIENCIA: "Ciencia",
+  HISTORIA: "Historia",
+  INFANTIL: "Infantil",
+  POESIA: "Poesía",
+  OTRO: "Otro"
+};
+
+/** Nombre legible del género (al servidor se envía el valor del enum). */
+export function etiquetaGenero(genero: Genero): string {
+  return ETIQUETAS_GENERO[genero];
+}
+
 export type EstadoEjemplar = "DISPONIBLE" | "PRESTADO" | "DANIADO" | "DADO_DE_BAJA";
 
 export const ESTADOS_EJEMPLAR: EstadoEjemplar[] = [
@@ -25,6 +40,18 @@ export const ESTADOS_EJEMPLAR: EstadoEjemplar[] = [
   "DANIADO",
   "DADO_DE_BAJA"
 ];
+
+const ETIQUETAS_ESTADO: Record<EstadoEjemplar, string> = {
+  DISPONIBLE: "Disponible",
+  PRESTADO: "Prestado",
+  DANIADO: "Dañado",
+  DADO_DE_BAJA: "Dado de baja"
+};
+
+/** Nombre legible del estado (al servidor se envía el valor del enum). */
+export function etiquetaEstado(estado: EstadoEjemplar): string {
+  return ETIQUETAS_ESTADO[estado];
+}
 
 export interface Libro {
   isbn: string;

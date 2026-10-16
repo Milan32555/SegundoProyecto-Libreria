@@ -3,7 +3,9 @@ import { actualizarEjemplar, buscarEjemplarPorCodigo } from "../../graphql/servi
 import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { ejemplarObservable } from "../../observer/Observable";
 import { aValorDeInputFecha } from "../../formato";
-import { ESTADOS_EJEMPLAR, EstadoEjemplar, Ejemplar } from "../../types";
+import { Aviso, Encabezado, SelectorChips } from "../../componentes/Basicos";
+import Icono from "../../componentes/Icono";
+import { ESTADOS_EJEMPLAR, EstadoEjemplar, Ejemplar, etiquetaEstado } from "../../types";
 
 /**
  * Caso de uso: Actualizar Ejemplar. Primero se busca y se muestra TODA su información
@@ -65,47 +67,49 @@ export default function ActualizarEjemplar() {
   }
 
   return (
-    <div className="tarjeta">
-      <h1>Actualizar Ejemplar</h1>
-      {error && <p className="mensaje-error">{error}</p>}
-      {exito && <p className="mensaje-exito">{exito}</p>}
+    <>
+      <Encabezado etiqueta="Ejemplar" titulo="Actualizar ejemplar">
+        Busca el ejemplar por su código: verás sus datos actuales y podrás modificarlos.
+      </Encabezado>
+      {error && <Aviso>{error}</Aviso>}
+      {exito && <Aviso tipo="exito">{exito}</Aviso>}
 
       {!ejemplar && (
-        <form onSubmit={buscar}>
+        <form className="tarjeta filtros-fila" role="search" onSubmit={buscar}>
           <label>Código del ejemplar a actualizar
             <input value={codigo} onChange={(e) => setCodigo(e.target.value)} required />
           </label>
-          <button type="submit" disabled={cargando}>Buscar</button>
+          <button type="submit" disabled={cargando}><Icono nombre="buscar" /> Buscar</button>
         </form>
       )}
 
       {ejemplar && (
-        <form onSubmit={guardarCambios}>
-          <p className="dato-fijo">
-            Código (no editable): <strong>{ejemplar.codigo}</strong> — Libro: <strong>{ejemplar.isbnLibro}</strong>
+        <form className="tarjeta" onSubmit={guardarCambios}>
+          <p className="nota-edicion">
+            Editando el ejemplar <strong>{ejemplar.codigo}</strong> del libro <strong>{ejemplar.isbnLibro}</strong>.
+            El código no se puede modificar.
           </p>
-          <label>Estado
-            <select value={estado} onChange={(e) => setEstado(e.target.value as EstadoEjemplar)}>
-              {ESTADOS_EJEMPLAR.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </label>
-          <label>Ubicación
-            <input value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} required />
-          </label>
-          <label>Fecha de ingreso
-            <input type="datetime-local" value={fechaIngreso}
-                   onChange={(e) => setFechaIngreso(e.target.value)} required />
-          </label>
-          <label>Precio de reposición
-            <input type="number" min="0.01" step="0.01" value={precioReposicion}
-                   onChange={(e) => setPrecioReposicion(e.target.value)} required />
-          </label>
+          <SelectorChips etiqueta="Estado" nombre="estado" opciones={ESTADOS_EJEMPLAR} valor={estado}
+                         etiquetaDe={etiquetaEstado} alCambiar={(s) => setEstado(s || estado)} />
+          <div className="campos">
+            <label className="campo-ancho">Ubicación
+              <input value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} required />
+            </label>
+            <label>Fecha de ingreso
+              <input type="datetime-local" value={fechaIngreso}
+                     onChange={(e) => setFechaIngreso(e.target.value)} required />
+            </label>
+            <label>Precio de reposición
+              <input type="number" min="0.01" step="0.01" value={precioReposicion}
+                     onChange={(e) => setPrecioReposicion(e.target.value)} required />
+            </label>
+          </div>
           <div className="acciones">
-            <button type="submit" disabled={cargando}>Guardar cambios</button>
+            <button type="submit" disabled={cargando}><Icono nombre="guardar" /> Guardar cambios</button>
             <button type="button" className="secundario" onClick={() => setEjemplar(null)}>Cancelar</button>
           </div>
         </form>
       )}
-    </div>
+    </>
   );
 }

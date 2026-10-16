@@ -38,7 +38,8 @@ describe("EliminarLibro", () => {
     expect(await screen.findByText("Delirio")).toBeInTheDocument();
     expect(screen.getByText("Laura Restrepo")).toBeInTheDocument();
     expect(screen.getByText("352")).toBeInTheDocument();
-    expect(screen.getByText("FICCION")).toBeInTheDocument();
+    expect(screen.getAllByText("Ficción")).toHaveLength(2); // pastilla + dato "Género"
+    expect(screen.getByText("por Laura Restrepo")).toBeInTheDocument();
     expect(screen.getByText(/55\.000/)).toBeInTheDocument();
     expect(screen.getByText(/2004/)).toBeInTheDocument();
     expect(eliminarLibro).not.toHaveBeenCalled();

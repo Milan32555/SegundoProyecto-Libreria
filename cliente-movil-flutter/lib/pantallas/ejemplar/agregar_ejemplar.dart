@@ -4,10 +4,11 @@ import '../../modelos/ejemplar.dart';
 import '../../observador/listado_observable.dart';
 import '../../servicios/cliente_graphql.dart';
 import '../../servicios/servicio_ejemplar.dart';
+import '../../tema/tema.dart';
 import '../../utilidades/formato.dart';
 import '../../utilidades/validaciones.dart';
 import '../comunes/campo_fecha.dart';
-import '../comunes/texto_error.dart';
+import '../comunes/componentes.dart';
 
 /// Caso de uso: Adicionar Ejemplar a un Libro existente.
 class AgregarEjemplar extends StatefulWidget {
@@ -62,8 +63,9 @@ class _AgregarEjemplarState extends State<AgregarEjemplar> {
       );
       ejemplarObservable.notificar();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ejemplar "${ejemplar.codigo}" creado correctamente.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Ejemplar "${ejemplar.codigo}" creado correctamente.')));
       Navigator.pop(context);
     } on ErrorGraphQL catch (e) {
       if (mounted) setState(() => _error = e.mensaje);
@@ -75,53 +77,82 @@ class _AgregarEjemplarState extends State<AgregarEjemplar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Adicionar Ejemplar')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: _codigo,
-                decoration: const InputDecoration(labelText: 'Código del ejemplar'),
-                validator: validarObligatorio,
+      appBar: AppBar(),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(Espacio.md, Espacio.sm, Espacio.md, Espacio.xl),
+          children: [
+            const EncabezadoPantalla(
+              etiqueta: 'Ejemplar',
+              titulo: 'Nuevo ejemplar',
+              descripcion: 'Registra una copia física de un libro que ya exista en el sistema.',
+            ),
+            TextFormField(
+              controller: _codigo,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(labelText: 'Código del ejemplar', prefixIcon: Icon(Icons.tag_rounded)),
+              validator: validarObligatorio,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _isbnLibro,
+              decoration: const InputDecoration(
+                labelText: 'ISBN del libro al que pertenece',
+                prefixIcon: Icon(Icons.qr_code_2_rounded),
               ),
-              TextFormField(
-                controller: _isbnLibro,
-                decoration: const InputDecoration(labelText: 'ISBN del libro al que pertenece'),
-                validator: validarObligatorio,
-              ),
-              DropdownButtonFormField<String>(
-                initialValue: _estado,
-                decoration: const InputDecoration(labelText: 'Estado'),
-                items: estadosEjemplar.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                onChanged: (v) => setState(() => _estado = v!),
-              ),
-              TextFormField(
-                controller: _ubicacion,
-                decoration: const InputDecoration(labelText: 'Ubicación'),
-                validator: validarObligatorio,
-              ),
-              CampoFecha(
-                etiqueta: 'Fecha de ingreso',
-                valor: _fechaIngreso,
-                alCambiar: (fecha) => setState(() => _fechaIngreso = fecha),
-              ),
-              TextFormField(
-                controller: _precioReposicion,
-                decoration: const InputDecoration(labelText: 'Precio de reposición'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: validarDecimalPositivo,
-              ),
-              if (_error != null) TextoError(_error!),
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: _enviando ? null : _guardar,
-                child: Text(_enviando ? 'Guardando...' : 'Adicionar'),
-              ),
-            ],
-          ),
+              validator: validarObligatorio,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _ubicacion,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(labelText: 'Ubicación', prefixIcon: Icon(Icons.place_outlined)),
+              validator: validarObligatorio,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: CampoFecha(
+                    etiqueta: 'Fecha de ingreso',
+                    valor: _fechaIngreso,
+                    alCambiar: (fecha) => setState(() => _fechaIngreso = fecha),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _precioReposicion,
+                    decoration: const InputDecoration(
+                      labelText: 'Precio de reposición',
+                      prefixIcon: Icon(Icons.payments_outlined),
+                      prefixText: '\$ ',
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    validator: validarDecimalPositivo,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: Espacio.lg),
+            const EtiquetaSeccion('Estado'),
+            const SizedBox(height: Espacio.sm),
+            SelectorChips(
+              opciones: estadosEjemplar,
+              seleccionado: _estado,
+              etiquetaDe: etiquetaEstado,
+              alSeleccionar: (e) => setState(() => _estado = e!),
+            ),
+            if (_error != null) Aviso(_error!),
+            const SizedBox(height: Espacio.lg),
+            FilledButton.icon(
+              onPressed: _enviando ? null : _guardar,
+              icon: const Icon(Icons.check_rounded),
+              label: Text(_enviando ? 'Guardando...' : 'Adicionar'),
+            ),
+          ],
         ),
       ),
     );

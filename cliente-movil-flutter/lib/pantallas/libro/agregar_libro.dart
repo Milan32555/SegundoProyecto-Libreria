@@ -4,10 +4,11 @@ import '../../modelos/libro.dart';
 import '../../observador/listado_observable.dart';
 import '../../servicios/cliente_graphql.dart';
 import '../../servicios/servicio_libro.dart';
+import '../../tema/tema.dart';
 import '../../utilidades/formato.dart';
 import '../../utilidades/validaciones.dart';
 import '../comunes/campo_fecha.dart';
-import '../comunes/texto_error.dart';
+import '../comunes/componentes.dart';
 
 /// Caso de uso: Adicionar Libro (único propósito de esta pantalla).
 class AgregarLibro extends StatefulWidget {
@@ -65,8 +66,9 @@ class _AgregarLibroState extends State<AgregarLibro> {
       );
       libroObservable.notificar(); // Observer: avisa a la pantalla Listar
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Libro "${libro.titulo}" creado correctamente.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Libro "${libro.titulo}" creado correctamente.')));
       Navigator.pop(context);
     } on ErrorGraphQL catch (e) {
       if (mounted) setState(() => _error = e.mensaje);
@@ -78,60 +80,86 @@ class _AgregarLibroState extends State<AgregarLibro> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Adicionar Libro')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: _isbn,
-                decoration: const InputDecoration(labelText: 'ISBN'),
-                validator: validarObligatorio,
-              ),
-              TextFormField(
-                controller: _titulo,
-                decoration: const InputDecoration(labelText: 'Título'),
-                validator: validarObligatorio,
-              ),
-              TextFormField(
-                controller: _autor,
-                decoration: const InputDecoration(labelText: 'Autor'),
-                validator: validarObligatorio,
-              ),
-              TextFormField(
-                controller: _precio,
-                decoration: const InputDecoration(labelText: 'Precio'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: validarDecimalPositivo,
-              ),
-              TextFormField(
-                controller: _numeroPaginas,
-                decoration: const InputDecoration(labelText: 'Número de páginas'),
-                keyboardType: TextInputType.number,
-                validator: validarEnteroPositivo,
-              ),
-              const SizedBox(height: 8),
-              CampoFecha(
-                etiqueta: 'Fecha de publicación',
-                valor: _fechaPublicacion,
-                alCambiar: (fecha) => setState(() => _fechaPublicacion = fecha),
-              ),
-              DropdownButtonFormField<String>(
-                initialValue: _genero,
-                decoration: const InputDecoration(labelText: 'Género'),
-                items: generos.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
-                onChanged: (v) => setState(() => _genero = v!),
-              ),
-              if (_error != null) TextoError(_error!),
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: _enviando ? null : _guardar,
-                child: Text(_enviando ? 'Guardando...' : 'Adicionar'),
-              ),
-            ],
-          ),
+      appBar: AppBar(),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(Espacio.md, Espacio.sm, Espacio.md, Espacio.xl),
+          children: [
+            const EncabezadoPantalla(
+              etiqueta: 'Libro',
+              titulo: 'Nuevo libro',
+              descripcion: 'Completa los datos para registrarlo en el servidor.',
+            ),
+            TextFormField(
+              controller: _isbn,
+              decoration: const InputDecoration(labelText: 'ISBN', prefixIcon: Icon(Icons.qr_code_2_rounded)),
+              validator: validarObligatorio,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _titulo,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(labelText: 'Título', prefixIcon: Icon(Icons.title_rounded)),
+              validator: validarObligatorio,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _autor,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(labelText: 'Autor', prefixIcon: Icon(Icons.person_outline_rounded)),
+              validator: validarObligatorio,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _precio,
+                    decoration: const InputDecoration(
+                      labelText: 'Precio',
+                      prefixIcon: Icon(Icons.payments_outlined),
+                      prefixText: '\$ ',
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    validator: validarDecimalPositivo,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _numeroPaginas,
+                    decoration: const InputDecoration(labelText: 'Páginas', prefixIcon: Icon(Icons.menu_book_rounded)),
+                    keyboardType: TextInputType.number,
+                    validator: validarEnteroPositivo,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            CampoFecha(
+              etiqueta: 'Fecha de publicación',
+              valor: _fechaPublicacion,
+              alCambiar: (fecha) => setState(() => _fechaPublicacion = fecha),
+            ),
+            const SizedBox(height: Espacio.lg),
+            const EtiquetaSeccion('Género'),
+            const SizedBox(height: Espacio.sm),
+            SelectorChips(
+              opciones: generos,
+              seleccionado: _genero,
+              etiquetaDe: etiquetaGenero,
+              alSeleccionar: (g) => setState(() => _genero = g!),
+            ),
+            if (_error != null) Aviso(_error!),
+            const SizedBox(height: Espacio.lg),
+            FilledButton.icon(
+              onPressed: _enviando ? null : _guardar,
+              icon: const Icon(Icons.check_rounded),
+              label: Text(_enviando ? 'Guardando...' : 'Adicionar'),
+            ),
+          ],
         ),
       ),
     );

@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import '../../modelos/libro.dart';
 import '../../servicios/cliente_graphql.dart';
 import '../../servicios/servicio_libro.dart';
+import '../../tema/tema.dart';
+import '../comunes/componentes.dart';
 import '../comunes/fichas.dart';
-import '../comunes/texto_error.dart';
 
 enum _Criterio { isbn, titulo }
 
@@ -56,37 +57,43 @@ class _ConsultarLibroState extends State<ConsultarLibro> {
 
   @override
   Widget build(BuildContext context) {
-    final etiqueta = _criterio == _Criterio.isbn ? 'ISBN' : 'Título';
+    final porIsbn = _criterio == _Criterio.isbn;
+    final etiqueta = porIsbn ? 'ISBN' : 'Título';
     return Scaffold(
-      appBar: AppBar(title: const Text('Consultar Libro')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            SegmentedButton<_Criterio>(
-              segments: const [
-                ButtonSegment(value: _Criterio.isbn, label: Text('Por ISBN')),
-                ButtonSegment(value: _Criterio.titulo, label: Text('Por título')),
-              ],
-              selected: {_criterio},
-              onSelectionChanged: (seleccion) => setState(() => _criterio = seleccion.first),
+      appBar: AppBar(),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(Espacio.md, Espacio.sm, Espacio.md, Espacio.xl),
+        children: [
+          const EncabezadoPantalla(
+            etiqueta: 'Libro',
+            titulo: 'Buscar un libro',
+            descripcion: 'Consulta un solo libro por su ISBN o por su título exacto.',
+          ),
+          SegmentedButton<_Criterio>(
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment(value: _Criterio.isbn, label: Text('Por ISBN'), icon: Icon(Icons.qr_code_2_rounded)),
+              ButtonSegment(value: _Criterio.titulo, label: Text('Por título'), icon: Icon(Icons.title_rounded)),
+            ],
+            selected: {_criterio},
+            onSelectionChanged: (seleccion) => setState(() => _criterio = seleccion.first),
+          ),
+          const SizedBox(height: Espacio.md),
+          BuscadorClave(
+            controller: _valor,
+            etiqueta: etiqueta,
+            icono: porIsbn ? Icons.qr_code_2_rounded : Icons.title_rounded,
+            onBuscar: _buscar,
+            cargando: _cargando,
+          ),
+          if (_error != null) Aviso(_error!),
+          if (_buscado && _libro == null)
+            EstadoVacio(
+              icono: Icons.search_off_rounded,
+              mensaje: 'No se encontró ningún libro con ese ${etiqueta.toLowerCase()}.',
             ),
-            TextField(
-              controller: _valor,
-              decoration: InputDecoration(labelText: etiqueta),
-              onSubmitted: (_) => _buscar(),
-            ),
-            const SizedBox(height: 12),
-            FilledButton(onPressed: _cargando ? null : _buscar, child: const Text('Buscar')),
-            if (_error != null) TextoError(_error!),
-            if (_buscado && _libro == null)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text('No se encontró ningún libro con ese ${etiqueta.toLowerCase()}.'),
-              ),
-            if (_libro != null) FichaLibro(libro: _libro!),
-          ],
-        ),
+          if (_libro != null) FichaLibro(libro: _libro!),
+        ],
       ),
     );
   }

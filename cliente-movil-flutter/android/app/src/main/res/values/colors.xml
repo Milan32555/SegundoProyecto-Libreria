@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mismo fondo oscuro de la app: evita el destello blanco al abrirla. -->
+    <color name="fondo_app">#14120E</color>
+    <!-- Fondo del ícono adaptativo. -->
+    <color name="fondo_icono">#1C1A15</color>
+</resources>

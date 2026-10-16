@@ -4,8 +4,9 @@ import '../../modelos/libro.dart';
 import '../../observador/listado_observable.dart';
 import '../../servicios/cliente_graphql.dart';
 import '../../servicios/servicio_libro.dart';
+import '../../tema/tema.dart';
 import '../../utilidades/formato.dart';
-import '../comunes/texto_error.dart';
+import '../comunes/componentes.dart';
 
 /// Caso de uso: Listar Libros en una grilla, con filtro (del lado del servidor) por autor y/o género.
 ///
@@ -64,78 +65,107 @@ class _ListarLibrosState extends State<ListarLibros> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Listar Libros')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(children: [
-              Expanded(
-                child: TextField(
+      appBar: AppBar(title: const Text('Libros')),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Espacio.md, Espacio.sm, Espacio.md, Espacio.sm),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
                   controller: _autor,
-                  decoration: const InputDecoration(labelText: 'Autor contiene'),
-                  onSubmitted: (_) => _cargar(),
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    labelText: 'Autor contiene',
+                    prefixIcon: const Icon(Icons.person_search_rounded),
+                    suffixIcon: IconButton(
+                      tooltip: 'Filtrar',
+                      onPressed: _cargando ? null : _filtrar,
+                      icon: const Icon(Icons.tune_rounded),
+                    ),
+                  ),
+                  onSubmitted: (_) => _filtrar(),
                 ),
-              ),
-              const SizedBox(width: 8),
-              DropdownButton<String?>(
-                value: _genero,
-                hint: const Text('Género'),
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('(todos)')),
-                  ...generos.map((g) => DropdownMenuItem(value: g, child: Text(g))),
-                ],
-                onChanged: (v) => setState(() => _genero = v),
-              ),
-              IconButton(
-                tooltip: 'Filtrar',
-                onPressed: _cargando ? null : _filtrar,
-                icon: const Icon(Icons.filter_alt),
-              ),
-            ]),
-            if (_error != null) TextoError(_error!),
-            if (_cargando) const LinearProgressIndicator(),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text('${_libros.length} libro(s)', style: const TextStyle(color: Colors.grey)),
+                const SizedBox(height: 12),
+                SelectorChips(
+                  opciones: generos,
+                  seleccionado: _genero,
+                  etiquetaDe: etiquetaGenero,
+                  textoTodos: 'Todos',
+                  desplazable: true,
+                  alSeleccionar: (genero) {
+                    setState(() => _genero = genero);
+                    _filtrar();
+                  },
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Text(
+                      _libros.length == 1 ? '1 libro' : '${_libros.length} libros',
+                      style: const TextStyle(color: kTexto, fontWeight: FontWeight.w800, fontSize: 15),
+                    ),
+                    const Spacer(),
+                    const IndicadorEnVivo(),
+                  ],
+                ),
+              ],
             ),
-            Expanded(
-              child: _libros.isEmpty
-                  ? const Center(child: Text('No hay libros para mostrar.'))
-                  : SingleChildScrollView(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          columnSpacing: 24,
-                          horizontalMargin: 8,
-                          columns: const [
-                            DataColumn(label: Text('ISBN')),
-                            DataColumn(label: Text('Título')),
-                            DataColumn(label: Text('Autor')),
-                            DataColumn(label: Text('Precio'), numeric: true),
-                            DataColumn(label: Text('Páginas'), numeric: true),
-                            DataColumn(label: Text('Publicación')),
-                            DataColumn(label: Text('Género')),
-                          ],
-                          rows: [
-                            for (final l in _libros)
-                              DataRow(cells: [
-                                DataCell(Text(l.isbn)),
-                                DataCell(Text(l.titulo)),
-                                DataCell(Text(l.autor)),
-                                DataCell(Text(formatearPrecio(l.precio))),
-                                DataCell(Text('${l.numeroPaginas}')),
-                                DataCell(Text(formatearFechaIso(l.fechaPublicacion))),
-                                DataCell(Text(l.genero)),
-                              ]),
-                          ],
+          ),
+          SizedBox(height: 2, child: _cargando ? const LinearProgressIndicator() : null),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Espacio.md),
+              child: Aviso(_error!),
+            ),
+          Expanded(
+            child: _libros.isEmpty
+                ? const EstadoVacio(icono: Icons.menu_book_rounded, mensaje: 'No hay libros para mostrar.')
+                : ListView(
+                    padding: const EdgeInsets.all(Espacio.md),
+                    children: [
+                      const PistaDesplazamiento(),
+                      const SizedBox(height: Espacio.sm),
+                      Card(
+                        clipBehavior: Clip.antiAlias,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            columns: const [
+                              DataColumn(label: Text('LIBRO')),
+                              DataColumn(label: Text('GÉNERO')),
+                              DataColumn(label: Text('PRECIO'), numeric: true),
+                              DataColumn(label: Text('PÁGINAS'), numeric: true),
+                              DataColumn(label: Text('PUBLICACIÓN')),
+                              DataColumn(label: Text('ISBN')),
+                            ],
+                            rows: [
+                              for (final l in _libros)
+                                DataRow(
+                                  cells: [
+                                    DataCell(CeldaDoble(principal: l.titulo, secundario: l.autor)),
+                                    DataCell(Pastilla(etiquetaGenero(l.genero))),
+                                    DataCell(
+                                      Text(
+                                        formatearPrecio(l.precio),
+                                        style: const TextStyle(color: kAcento, fontWeight: FontWeight.w700),
+                                      ),
+                                    ),
+                                    DataCell(Text('${l.numeroPaginas}')),
+                                    DataCell(Text(formatearFechaCortaIso(l.fechaPublicacion))),
+                                    DataCell(Text(l.isbn, style: const TextStyle(color: kTexto3))),
+                                  ],
+                                ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-            ),
-          ],
-        ),
+                    ],
+                  ),
+          ),
+        ],
       ),
     );
   }

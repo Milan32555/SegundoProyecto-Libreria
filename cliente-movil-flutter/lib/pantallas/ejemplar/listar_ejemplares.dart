@@ -4,8 +4,9 @@ import '../../modelos/ejemplar.dart';
 import '../../observador/listado_observable.dart';
 import '../../servicios/cliente_graphql.dart';
 import '../../servicios/servicio_ejemplar.dart';
+import '../../tema/tema.dart';
 import '../../utilidades/formato.dart';
-import '../comunes/texto_error.dart';
+import '../comunes/componentes.dart';
 
 /// Caso de uso: Listar Ejemplares en una grilla, con filtro (del lado del servidor)
 /// por estado y/o ISBN del libro. Observer: igual patrón que ListarLibros.
@@ -61,76 +62,105 @@ class _ListarEjemplaresState extends State<ListarEjemplares> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Listar Ejemplares')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(children: [
-              Expanded(
-                child: TextField(
+      appBar: AppBar(title: const Text('Ejemplares')),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Espacio.md, Espacio.sm, Espacio.md, Espacio.sm),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
                   controller: _isbnLibro,
-                  decoration: const InputDecoration(labelText: 'ISBN del libro (opcional)'),
-                  onSubmitted: (_) => _cargar(),
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    labelText: 'ISBN del libro (opcional)',
+                    prefixIcon: const Icon(Icons.qr_code_2_rounded),
+                    suffixIcon: IconButton(
+                      tooltip: 'Filtrar',
+                      onPressed: _cargando ? null : _filtrar,
+                      icon: const Icon(Icons.tune_rounded),
+                    ),
+                  ),
+                  onSubmitted: (_) => _filtrar(),
                 ),
-              ),
-              const SizedBox(width: 8),
-              DropdownButton<String?>(
-                value: _estado,
-                hint: const Text('Estado'),
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('(todos)')),
-                  ...estadosEjemplar.map((s) => DropdownMenuItem(value: s, child: Text(s))),
-                ],
-                onChanged: (v) => setState(() => _estado = v),
-              ),
-              IconButton(
-                tooltip: 'Filtrar',
-                onPressed: _cargando ? null : _filtrar,
-                icon: const Icon(Icons.filter_alt),
-              ),
-            ]),
-            if (_error != null) TextoError(_error!),
-            if (_cargando) const LinearProgressIndicator(),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text('${_ejemplares.length} ejemplar(es)', style: const TextStyle(color: Colors.grey)),
+                const SizedBox(height: 12),
+                SelectorChips(
+                  opciones: estadosEjemplar,
+                  seleccionado: _estado,
+                  etiquetaDe: etiquetaEstado,
+                  textoTodos: 'Todos',
+                  desplazable: true,
+                  alSeleccionar: (estado) {
+                    setState(() => _estado = estado);
+                    _filtrar();
+                  },
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Text(
+                      _ejemplares.length == 1 ? '1 ejemplar' : '${_ejemplares.length} ejemplares',
+                      style: const TextStyle(color: kTexto, fontWeight: FontWeight.w800, fontSize: 15),
+                    ),
+                    const Spacer(),
+                    const IndicadorEnVivo(),
+                  ],
+                ),
+              ],
             ),
-            Expanded(
-              child: _ejemplares.isEmpty
-                  ? const Center(child: Text('No hay ejemplares para mostrar.'))
-                  : SingleChildScrollView(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          columnSpacing: 24,
-                          horizontalMargin: 8,
-                          columns: const [
-                            DataColumn(label: Text('Código')),
-                            DataColumn(label: Text('Estado')),
-                            DataColumn(label: Text('Ubicación')),
-                            DataColumn(label: Text('Ingreso')),
-                            DataColumn(label: Text('Reposición'), numeric: true),
-                            DataColumn(label: Text('Libro (ISBN)')),
-                          ],
-                          rows: [
-                            for (final e in _ejemplares)
-                              DataRow(cells: [
-                                DataCell(Text(e.codigo)),
-                                DataCell(Text(e.estado)),
-                                DataCell(Text(e.ubicacion)),
-                                DataCell(Text(formatearFechaIso(e.fechaIngreso))),
-                                DataCell(Text(formatearPrecio(e.precioReposicion))),
-                                DataCell(Text(e.isbnLibro)),
-                              ]),
-                          ],
+          ),
+          SizedBox(height: 2, child: _cargando ? const LinearProgressIndicator() : null),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Espacio.md),
+              child: Aviso(_error!),
+            ),
+          Expanded(
+            child: _ejemplares.isEmpty
+                ? const EstadoVacio(icono: Icons.inventory_2_outlined, mensaje: 'No hay ejemplares para mostrar.')
+                : ListView(
+                    padding: const EdgeInsets.all(Espacio.md),
+                    children: [
+                      const PistaDesplazamiento(),
+                      const SizedBox(height: Espacio.sm),
+                      Card(
+                        clipBehavior: Clip.antiAlias,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            columns: const [
+                              DataColumn(label: Text('EJEMPLAR')),
+                              DataColumn(label: Text('ESTADO')),
+                              DataColumn(label: Text('REPOSICIÓN'), numeric: true),
+                              DataColumn(label: Text('INGRESO')),
+                              DataColumn(label: Text('LIBRO (ISBN)')),
+                            ],
+                            rows: [
+                              for (final e in _ejemplares)
+                                DataRow(
+                                  cells: [
+                                    DataCell(CeldaDoble(principal: e.codigo, secundario: e.ubicacion)),
+                                    DataCell(Pastilla(etiquetaEstado(e.estado), color: colorEstado(e.estado))),
+                                    DataCell(
+                                      Text(
+                                        formatearPrecio(e.precioReposicion),
+                                        style: const TextStyle(color: kAcento, fontWeight: FontWeight.w700),
+                                      ),
+                                    ),
+                                    DataCell(Text(formatearFechaCortaIso(e.fechaIngreso))),
+                                    DataCell(Text(e.isbnLibro, style: const TextStyle(color: kTexto3))),
+                                  ],
+                                ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-            ),
-          ],
-        ),
+                    ],
+                  ),
+          ),
+        ],
       ),
     );
   }

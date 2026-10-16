@@ -2,8 +2,7 @@
 /// El servidor vuelve a validar todo; esto solo le da al usuario una respuesta inmediata.
 library;
 
-String? validarObligatorio(String? valor) =>
-    (valor == null || valor.trim().isEmpty) ? 'Obligatorio' : null;
+String? validarObligatorio(String? valor) => (valor == null || valor.trim().isEmpty) ? 'Obligatorio' : null;
 
 String? validarDecimalPositivo(String? valor) {
   final numero = double.tryParse(valor?.trim() ?? '');

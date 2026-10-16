@@ -4,10 +4,11 @@ import '../../modelos/ejemplar.dart';
 import '../../observador/listado_observable.dart';
 import '../../servicios/cliente_graphql.dart';
 import '../../servicios/servicio_ejemplar.dart';
+import '../../tema/tema.dart';
 import '../../utilidades/formato.dart';
 import '../../utilidades/validaciones.dart';
 import '../comunes/campo_fecha.dart';
-import '../comunes/texto_error.dart';
+import '../comunes/componentes.dart';
 
 /// Caso de uso: Actualizar Ejemplar. Primero se busca y se muestra TODA la
 /// información actual; luego el usuario la modifica y confirma.
@@ -83,8 +84,7 @@ class _ActualizarEjemplarState extends State<ActualizarEjemplar> {
       );
       ejemplarObservable.notificar();
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Ejemplar actualizado correctamente.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ejemplar actualizado correctamente.')));
       Navigator.pop(context);
     } on ErrorGraphQL catch (e) {
       if (mounted) setState(() => _error = e.mensaje);
@@ -95,26 +95,26 @@ class _ActualizarEjemplarState extends State<ActualizarEjemplar> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Actualizar Ejemplar')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: _ejemplar == null ? _buildBusqueda() : _buildFormulario(),
-      ),
-    );
+    return Scaffold(appBar: AppBar(), body: _ejemplar == null ? _buildBusqueda() : _buildFormulario());
   }
 
   Widget _buildBusqueda() {
     return ListView(
+      padding: const EdgeInsets.fromLTRB(Espacio.md, Espacio.sm, Espacio.md, Espacio.xl),
       children: [
-        TextField(
-          controller: _codigoBusqueda,
-          decoration: const InputDecoration(labelText: 'Código del ejemplar a actualizar'),
-          onSubmitted: (_) => _buscar(),
+        const EncabezadoPantalla(
+          etiqueta: 'Ejemplar',
+          titulo: 'Actualizar ejemplar',
+          descripcion: 'Busca el ejemplar por su código: verás sus datos actuales y podrás modificarlos.',
         ),
-        const SizedBox(height: 12),
-        FilledButton(onPressed: _cargando ? null : _buscar, child: const Text('Buscar')),
-        if (_error != null) TextoError(_error!),
+        BuscadorClave(
+          controller: _codigoBusqueda,
+          etiqueta: 'Código del ejemplar a actualizar',
+          icono: Icons.tag_rounded,
+          onBuscar: _buscar,
+          cargando: _cargando,
+        ),
+        if (_error != null) Aviso(_error!),
       ],
     );
   }
@@ -123,45 +123,54 @@ class _ActualizarEjemplarState extends State<ActualizarEjemplar> {
     return Form(
       key: _formKey,
       child: ListView(
+        padding: const EdgeInsets.fromLTRB(Espacio.md, Espacio.sm, Espacio.md, Espacio.xl),
         children: [
-          Text('Código (no editable): ${_ejemplar!.codigo}', style: const TextStyle(color: Colors.grey)),
-          Text('Libro (ISBN): ${_ejemplar!.isbnLibro}', style: const TextStyle(color: Colors.grey)),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            initialValue: _estado,
-            decoration: const InputDecoration(labelText: 'Estado'),
-            items: estadosEjemplar.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-            onChanged: (v) => setState(() => _estado = v!),
+          EncabezadoPantalla(
+            etiqueta: 'Ejemplar · ${_ejemplar!.codigo}',
+            titulo: 'Editar datos',
+            descripcion: 'Pertenece al libro ${_ejemplar!.isbnLibro}. El código no se puede modificar.',
           ),
+          const EtiquetaSeccion('Estado'),
+          const SizedBox(height: Espacio.sm),
+          SelectorChips(
+            opciones: estadosEjemplar,
+            seleccionado: _estado,
+            etiquetaDe: etiquetaEstado,
+            alSeleccionar: (e) => setState(() => _estado = e!),
+          ),
+          const SizedBox(height: Espacio.lg),
           TextFormField(
             controller: _ubicacion,
-            decoration: const InputDecoration(labelText: 'Ubicación'),
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(labelText: 'Ubicación', prefixIcon: Icon(Icons.place_outlined)),
             validator: validarObligatorio,
           ),
+          const SizedBox(height: 12),
           CampoFecha(
             etiqueta: 'Fecha de ingreso',
             valor: _fechaIngreso,
             alCambiar: (fecha) => setState(() => _fechaIngreso = fecha),
           ),
+          const SizedBox(height: 12),
           TextFormField(
             controller: _precioReposicion,
-            decoration: const InputDecoration(labelText: 'Precio de reposición'),
+            decoration: const InputDecoration(
+              labelText: 'Precio de reposición',
+              prefixIcon: Icon(Icons.payments_outlined),
+              prefixText: '\$ ',
+            ),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             validator: validarDecimalPositivo,
           ),
-          if (_error != null) TextoError(_error!),
-          const SizedBox(height: 20),
-          Row(children: [
-            FilledButton(
-              onPressed: _cargando ? null : _guardarCambios,
-              child: const Text('Guardar cambios'),
-            ),
-            const SizedBox(width: 12),
-            OutlinedButton(
-              onPressed: () => setState(() => _ejemplar = null),
-              child: const Text('Cancelar'),
-            ),
-          ]),
+          if (_error != null) Aviso(_error!),
+          const SizedBox(height: Espacio.lg),
+          FilledButton.icon(
+            onPressed: _cargando ? null : _guardarCambios,
+            icon: const Icon(Icons.save_rounded),
+            label: const Text('Guardar cambios'),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton(onPressed: () => setState(() => _ejemplar = null), child: const Text('Cancelar')),
         ],
       ),
     );

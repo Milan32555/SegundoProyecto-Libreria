@@ -4,8 +4,9 @@ import '../../modelos/libro.dart';
 import '../../observador/listado_observable.dart';
 import '../../servicios/cliente_graphql.dart';
 import '../../servicios/servicio_libro.dart';
+import '../../tema/tema.dart';
+import '../comunes/componentes.dart';
 import '../comunes/fichas.dart';
-import '../comunes/texto_error.dart';
 
 /// Caso de uso: Eliminar Libro. Primero se busca y se muestra TODA la información
 /// del objeto; solo después de confirmar se elimina.
@@ -59,8 +60,9 @@ class _EliminarLibroState extends State<EliminarLibro> {
       final eliminado = await eliminarLibro(_libro!.isbn);
       libroObservable.notificar();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Libro "${eliminado.titulo}" eliminado correctamente.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Libro "${eliminado.titulo}" eliminado correctamente.')));
       Navigator.pop(context);
     } on ErrorGraphQL catch (e) {
       if (mounted) setState(() => _error = e.mensaje);
@@ -72,39 +74,41 @@ class _EliminarLibroState extends State<EliminarLibro> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Eliminar Libro')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            TextField(
-              controller: _isbn,
-              decoration: const InputDecoration(labelText: 'ISBN del libro a eliminar'),
-              onSubmitted: (_) => _buscar(),
+      appBar: AppBar(),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(Espacio.md, Espacio.sm, Espacio.md, Espacio.xl),
+        children: [
+          const EncabezadoPantalla(
+            etiqueta: 'Libro',
+            titulo: 'Eliminar libro',
+            descripcion: 'Busca el libro por su ISBN para revisar toda su información antes de eliminarlo.',
+          ),
+          BuscadorClave(
+            controller: _isbn,
+            etiqueta: 'ISBN del libro a eliminar',
+            icono: Icons.qr_code_2_rounded,
+            onBuscar: _buscar,
+            cargando: _cargando,
+          ),
+          if (_libro == null && _error != null) Aviso(_error!),
+          if (_libro != null) ...[
+            FichaLibro(libro: _libro!),
+            const Aviso(
+              '¿Seguro que desea eliminar este libro? Esta acción no se puede deshacer.',
+              tipo: TipoAviso.advertencia,
+            ),
+            if (_error != null) Aviso(_error!),
+            const SizedBox(height: Espacio.lg),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(backgroundColor: kRojo, foregroundColor: Colors.white),
+              onPressed: _cargando ? null : _confirmarEliminacion,
+              icon: const Icon(Icons.delete_forever_rounded),
+              label: const Text('Confirmar eliminación'),
             ),
             const SizedBox(height: 12),
-            FilledButton(onPressed: _cargando ? null : _buscar, child: const Text('Buscar')),
-            if (_error != null) TextoError(_error!),
-            if (_libro != null) ...[
-              const SizedBox(height: 8),
-              const Text('¿Seguro que desea eliminar este libro?'),
-              FichaLibro(libro: _libro!),
-              const SizedBox(height: 12),
-              Row(children: [
-                FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                  onPressed: _cargando ? null : _confirmarEliminacion,
-                  child: const Text('Confirmar eliminación'),
-                ),
-                const SizedBox(width: 12),
-                OutlinedButton(
-                  onPressed: () => setState(() => _libro = null),
-                  child: const Text('Cancelar'),
-                ),
-              ]),
-            ],
+            OutlinedButton(onPressed: () => setState(() => _libro = null), child: const Text('Cancelar')),
           ],
-        ),
+        ],
       ),
     );
   }

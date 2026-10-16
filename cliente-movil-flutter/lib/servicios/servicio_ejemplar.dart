@@ -58,7 +58,7 @@ Future<Ejemplar> crearEjemplar({
         'fechaIngreso': fechaIngreso,
         'precioReposicion': precioReposicion,
         'isbnLibro': isbnLibro,
-      }
+      },
     },
   );
   return Ejemplar.desdeJson(data['crearEjemplar'] as Map<String, dynamic>);
@@ -82,7 +82,7 @@ Future<Ejemplar> actualizarEjemplar({
         'ubicacion': ubicacion,
         'fechaIngreso': fechaIngreso,
         'precioReposicion': precioReposicion,
-      }
+      },
     },
   );
   return Ejemplar.desdeJson(data['actualizarEjemplar'] as Map<String, dynamic>);

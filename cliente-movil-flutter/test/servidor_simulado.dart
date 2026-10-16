@@ -25,8 +25,10 @@ class ServidorSimulado {
   /// Conecta el Singleton ClienteGraphQL a este servidor simulado.
   void instalar() => ClienteGraphQL().clienteHttp = MockClient(_responder);
 
-  List<Map<String, dynamic>> variablesDe(String campo) =>
-      [for (final p in peticiones) if (p.campo == campo) p.variables];
+  List<Map<String, dynamic>> variablesDe(String campo) => [
+    for (final p in peticiones)
+      if (p.campo == campo) p.variables,
+  ];
 
   Future<http.Response> _responder(http.Request request) async {
     final cuerpo = jsonDecode(request.body) as Map<String, dynamic>;
@@ -36,20 +38,28 @@ class ServidorSimulado {
 
     final resolver = resolvers[campo];
     if (resolver == null) {
-      return _json({'errors': [{'message': 'Campo no simulado: $campo'}]}, 400);
+      return _json({
+        'errors': [
+          {'message': 'Campo no simulado: $campo'},
+        ],
+      }, 400);
     }
     try {
-      return _json({'data': {campo: resolver(variables)}});
+      return _json({
+        'data': {campo: resolver(variables)},
+      });
     } on ErrorSimulado catch (e) {
-      return _json({'errors': [{'message': e.mensaje}], 'data': {campo: null}});
+      return _json({
+        'errors': [
+          {'message': e.mensaje},
+        ],
+        'data': {campo: null},
+      });
     }
   }
 
-  static http.Response _json(Object cuerpo, [int estado = 200]) => http.Response(
-        jsonEncode(cuerpo),
-        estado,
-        headers: {'content-type': 'application/json; charset=utf-8'},
-      );
+  static http.Response _json(Object cuerpo, [int estado = 200]) =>
+      http.Response(jsonEncode(cuerpo), estado, headers: {'content-type': 'application/json; charset=utf-8'});
 }
 
 Map<String, dynamic> libroJson({
@@ -60,16 +70,15 @@ Map<String, dynamic> libroJson({
   int numeroPaginas = 352,
   String fechaPublicacion = '2004-03-01T00:00:00',
   String genero = 'FICCION',
-}) =>
-    {
-      'isbn': isbn,
-      'titulo': titulo,
-      'autor': autor,
-      'precio': precio,
-      'numeroPaginas': numeroPaginas,
-      'fechaPublicacion': fechaPublicacion,
-      'genero': genero,
-    };
+}) => {
+  'isbn': isbn,
+  'titulo': titulo,
+  'autor': autor,
+  'precio': precio,
+  'numeroPaginas': numeroPaginas,
+  'fechaPublicacion': fechaPublicacion,
+  'genero': genero,
+};
 
 Map<String, dynamic> ejemplarJson({
   String codigo = 'EJ-001',
@@ -78,12 +87,11 @@ Map<String, dynamic> ejemplarJson({
   String fechaIngreso = '2024-02-10T09:00:00',
   num precioReposicion = 65000,
   String isbnLibro = '978-0307474728',
-}) =>
-    {
-      'codigo': codigo,
-      'estado': estado,
-      'ubicacion': ubicacion,
-      'fechaIngreso': fechaIngreso,
-      'precioReposicion': precioReposicion,
-      'isbnLibro': isbnLibro,
-    };
+}) => {
+  'codigo': codigo,
+  'estado': estado,
+  'ubicacion': ubicacion,
+  'fechaIngreso': fechaIngreso,
+  'precioReposicion': precioReposicion,
+  'isbnLibro': isbnLibro,
+};

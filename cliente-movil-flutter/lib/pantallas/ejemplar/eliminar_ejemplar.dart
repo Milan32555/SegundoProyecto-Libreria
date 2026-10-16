@@ -4,8 +4,9 @@ import '../../modelos/ejemplar.dart';
 import '../../observador/listado_observable.dart';
 import '../../servicios/cliente_graphql.dart';
 import '../../servicios/servicio_ejemplar.dart';
+import '../../tema/tema.dart';
+import '../comunes/componentes.dart';
 import '../comunes/fichas.dart';
-import '../comunes/texto_error.dart';
 
 /// Caso de uso: Eliminar Ejemplar. Primero se busca y se muestra TODA su información;
 /// solo después de confirmar se elimina.
@@ -59,8 +60,9 @@ class _EliminarEjemplarState extends State<EliminarEjemplar> {
       final eliminado = await eliminarEjemplar(_ejemplar!.codigo);
       ejemplarObservable.notificar();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ejemplar "${eliminado.codigo}" eliminado correctamente.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Ejemplar "${eliminado.codigo}" eliminado correctamente.')));
       Navigator.pop(context);
     } on ErrorGraphQL catch (e) {
       if (mounted) setState(() => _error = e.mensaje);
@@ -72,39 +74,41 @@ class _EliminarEjemplarState extends State<EliminarEjemplar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Eliminar Ejemplar')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            TextField(
-              controller: _codigo,
-              decoration: const InputDecoration(labelText: 'Código del ejemplar a eliminar'),
-              onSubmitted: (_) => _buscar(),
+      appBar: AppBar(),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(Espacio.md, Espacio.sm, Espacio.md, Espacio.xl),
+        children: [
+          const EncabezadoPantalla(
+            etiqueta: 'Ejemplar',
+            titulo: 'Eliminar ejemplar',
+            descripcion: 'Busca el ejemplar por su código para revisar toda su información antes de eliminarlo.',
+          ),
+          BuscadorClave(
+            controller: _codigo,
+            etiqueta: 'Código del ejemplar a eliminar',
+            icono: Icons.tag_rounded,
+            onBuscar: _buscar,
+            cargando: _cargando,
+          ),
+          if (_ejemplar == null && _error != null) Aviso(_error!),
+          if (_ejemplar != null) ...[
+            FichaEjemplar(ejemplar: _ejemplar!),
+            const Aviso(
+              '¿Seguro que desea eliminar este ejemplar? Esta acción no se puede deshacer.',
+              tipo: TipoAviso.advertencia,
+            ),
+            if (_error != null) Aviso(_error!),
+            const SizedBox(height: Espacio.lg),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(backgroundColor: kRojo, foregroundColor: Colors.white),
+              onPressed: _cargando ? null : _confirmarEliminacion,
+              icon: const Icon(Icons.delete_forever_rounded),
+              label: const Text('Confirmar eliminación'),
             ),
             const SizedBox(height: 12),
-            FilledButton(onPressed: _cargando ? null : _buscar, child: const Text('Buscar')),
-            if (_error != null) TextoError(_error!),
-            if (_ejemplar != null) ...[
-              const SizedBox(height: 8),
-              const Text('¿Seguro que desea eliminar este ejemplar?'),
-              FichaEjemplar(ejemplar: _ejemplar!),
-              const SizedBox(height: 12),
-              Row(children: [
-                FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                  onPressed: _cargando ? null : _confirmarEliminacion,
-                  child: const Text('Confirmar eliminación'),
-                ),
-                const SizedBox(width: 12),
-                OutlinedButton(
-                  onPressed: () => setState(() => _ejemplar = null),
-                  child: const Text('Cancelar'),
-                ),
-              ]),
-            ],
+            OutlinedButton(onPressed: () => setState(() => _ejemplar = null), child: const Text('Cancelar')),
           ],
-        ),
+        ],
       ),
     );
   }

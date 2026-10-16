@@ -3,11 +3,9 @@ import 'cliente_graphql.dart';
 
 const String _camposLibro = 'isbn titulo autor precio numeroPaginas fechaPublicacion genero';
 
-List<Libro> _aLibros(Object? lista) =>
-    (lista as List).map((e) => Libro.desdeJson(e as Map<String, dynamic>)).toList();
+List<Libro> _aLibros(Object? lista) => (lista as List).map((e) => Libro.desdeJson(e as Map<String, dynamic>)).toList();
 
-Libro? _aLibroOpcional(Object? json) =>
-    json == null ? null : Libro.desdeJson(json as Map<String, dynamic>);
+Libro? _aLibroOpcional(Object? json) => json == null ? null : Libro.desdeJson(json as Map<String, dynamic>);
 
 Future<List<Libro>> listarLibros() async {
   final data = await ClienteGraphQL().ejecutar('query { libros { $_camposLibro } }');
@@ -70,7 +68,7 @@ Future<Libro> crearLibro({
         'numeroPaginas': numeroPaginas,
         'fechaPublicacion': fechaPublicacion,
         'genero': genero,
-      }
+      },
     },
   );
   return Libro.desdeJson(data['crearLibro'] as Map<String, dynamic>);
@@ -98,7 +96,7 @@ Future<Libro> actualizarLibro({
         'numeroPaginas': numeroPaginas,
         'fechaPublicacion': fechaPublicacion,
         'genero': genero,
-      }
+      },
     },
   );
   return Libro.desdeJson(data['actualizarLibro'] as Map<String, dynamic>);

@@ -43,12 +43,22 @@ lib/
 ├── observador/
 │   └── listado_observable.dart  Sujeto del patrón Observer (uno por colección)
 ├── pantallas/                   Vistas
-│   ├── menu_principal.dart · menu_lateral.dart (menú + Ayuda) · acerca_de.dart
+│   ├── menu_principal.dart      Resumen del inventario en vivo + accesos a cada caso de uso
+│   ├── menu_lateral.dart        Menú con todas las opciones y "Ayuda → Acerca de..."
+│   ├── acerca_de.dart           Integrantes y versión
 │   ├── libro/                   agregar, eliminar, actualizar, listar, consultar
 │   ├── ejemplar/                agregar, eliminar, actualizar, listar, consultar
-│   └── comunes/                 FichaLibro, FichaEjemplar, CampoFecha, TextoError
+│   └── comunes/                 Fichas, campo de fecha y componentes visuales reutilizables
+├── tema/tema.dart               Sistema de diseño: paleta, medidas y ThemeData
 └── utilidades/                  Formatos de fecha/precio y validaciones de formularios
 ```
+
+## Diseño
+
+Tema oscuro cálido con acento amarillo (`lib/tema/tema.dart`): tarjetas redondeadas, campos
+rellenos con ícono, chips para elegir género/estado, estados con color (Disponible, Prestado,
+Dañado, Dado de baja) y un indicador **En vivo** en las pantallas que se actualizan solas
+(Observer). La app tiene ícono propio (Android adaptativo, web y Windows) y fondo oscuro al abrir.
 
 ## Problemas comunes
 

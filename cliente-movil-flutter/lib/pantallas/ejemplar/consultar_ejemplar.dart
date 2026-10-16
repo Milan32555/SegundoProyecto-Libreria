@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import '../../modelos/ejemplar.dart';
 import '../../servicios/cliente_graphql.dart';
 import '../../servicios/servicio_ejemplar.dart';
+import '../../tema/tema.dart';
+import '../comunes/componentes.dart';
 import '../comunes/fichas.dart';
-import '../comunes/texto_error.dart';
 
 /// Caso de uso: Buscar/Consultar UN SOLO Ejemplar a partir de su código.
 class ConsultarEjemplar extends StatefulWidget {
@@ -52,27 +53,30 @@ class _ConsultarEjemplarState extends State<ConsultarEjemplar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Consultar Ejemplar')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            TextField(
-              controller: _codigo,
-              decoration: const InputDecoration(labelText: 'Código del ejemplar'),
-              onSubmitted: (_) => _buscar(),
+      appBar: AppBar(),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(Espacio.md, Espacio.sm, Espacio.md, Espacio.xl),
+        children: [
+          const EncabezadoPantalla(
+            etiqueta: 'Ejemplar',
+            titulo: 'Buscar un ejemplar',
+            descripcion: 'Consulta un solo ejemplar por su código.',
+          ),
+          BuscadorClave(
+            controller: _codigo,
+            etiqueta: 'Código del ejemplar',
+            icono: Icons.tag_rounded,
+            onBuscar: _buscar,
+            cargando: _cargando,
+          ),
+          if (_error != null) Aviso(_error!),
+          if (_buscado && _ejemplar == null)
+            const EstadoVacio(
+              icono: Icons.search_off_rounded,
+              mensaje: 'No se encontró ningún ejemplar con ese código.',
             ),
-            const SizedBox(height: 12),
-            FilledButton(onPressed: _cargando ? null : _buscar, child: const Text('Buscar')),
-            if (_error != null) TextoError(_error!),
-            if (_buscado && _ejemplar == null)
-              const Padding(
-                padding: EdgeInsets.only(top: 12),
-                child: Text('No se encontró ningún ejemplar con ese código.'),
-              ),
-            if (_ejemplar != null) FichaEjemplar(ejemplar: _ejemplar!),
-          ],
-        ),
+          if (_ejemplar != null) FichaEjemplar(ejemplar: _ejemplar!),
+        ],
       ),
     );
   }

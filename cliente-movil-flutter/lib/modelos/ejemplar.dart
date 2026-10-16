@@ -1,10 +1,15 @@
 /// Estados posibles de un Ejemplar (enum EstadoEjemplar en el schema GraphQL).
-const List<String> estadosEjemplar = [
-  'DISPONIBLE',
-  'PRESTADO',
-  'DANIADO',
-  'DADO_DE_BAJA',
-];
+const List<String> estadosEjemplar = ['DISPONIBLE', 'PRESTADO', 'DANIADO', 'DADO_DE_BAJA'];
+
+const Map<String, String> _etiquetasEstado = {
+  'DISPONIBLE': 'Disponible',
+  'PRESTADO': 'Prestado',
+  'DANIADO': 'Dañado',
+  'DADO_DE_BAJA': 'Dado de baja',
+};
+
+/// Nombre legible del estado para la interfaz (al servidor se envía el valor del enum).
+String etiquetaEstado(String estado) => _etiquetasEstado[estado] ?? estado;
 
 /// Objeto detalle: Ejemplar (1..1 con su Libro, un Libro tiene 0..* Ejemplares).
 class Ejemplar {
@@ -25,11 +30,11 @@ class Ejemplar {
   });
 
   factory Ejemplar.desdeJson(Map<String, dynamic> json) => Ejemplar(
-        codigo: json['codigo'] as String,
-        estado: json['estado'] as String,
-        ubicacion: json['ubicacion'] as String,
-        fechaIngreso: json['fechaIngreso'] as String,
-        precioReposicion: (json['precioReposicion'] as num).toDouble(),
-        isbnLibro: json['isbnLibro'] as String,
-      );
+    codigo: json['codigo'] as String,
+    estado: json['estado'] as String,
+    ubicacion: json['ubicacion'] as String,
+    fechaIngreso: json['fechaIngreso'] as String,
+    precioReposicion: (json['precioReposicion'] as num).toDouble(),
+    isbnLibro: json['isbnLibro'] as String,
+  );
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'tema/tema.dart';
+
 import 'pantallas/menu_principal.dart';
 import 'pantallas/acerca_de.dart';
 
@@ -30,10 +32,7 @@ class AplicacionLibreria extends StatelessWidget {
     return MaterialApp(
       title: 'Librería',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: const Color(0xFF3A5BD9),
-        useMaterial3: true,
-      ),
+      theme: construirTema(),
       initialRoute: rutaInicial,
       routes: {
         '/': (context) => const MenuPrincipal(),

@@ -29,6 +29,15 @@ void main() {
       expect(ejemplar.precioReposicion, 65000.5);
       expect(ejemplar.isbnLibro, '978-0307474728');
     });
+
+    test('los valores de los enums tienen una etiqueta legible', () {
+      expect(etiquetaGenero('NO_FICCION'), 'No ficción');
+      expect(etiquetaGenero('POESIA'), 'Poesía');
+      expect(etiquetaEstado('DANIADO'), 'Dañado');
+      expect(etiquetaEstado('DADO_DE_BAJA'), 'Dado de baja');
+      expect(generos.every((g) => etiquetaGenero(g) != g), isTrue);
+      expect(estadosEjemplar.every((e) => etiquetaEstado(e) != e), isTrue);
+    });
   });
 
   group('ClienteGraphQL', () {
@@ -37,8 +46,7 @@ void main() {
     });
 
     test('envía variables y devuelve data', () async {
-      final servidor = ServidorSimulado({'libroPorIsbn': (v) => libroJson(isbn: v['isbn'] as String)})
-        ..instalar();
+      final servidor = ServidorSimulado({'libroPorIsbn': (v) => libroJson(isbn: v['isbn'] as String)})..instalar();
 
       final libro = await buscarLibroPorIsbn('  123  ');
 
@@ -47,14 +55,18 @@ void main() {
     });
 
     test('convierte los errores del servidor en ErrorGraphQL con su mensaje', () async {
-      ServidorSimulado({
-        'crearLibro': (_) => throw ErrorSimulado('Ya existe un libro con el ISBN 1.'),
-      }).instalar();
+      ServidorSimulado({'crearLibro': (_) => throw ErrorSimulado('Ya existe un libro con el ISBN 1.')}).instalar();
 
       expect(
         () => crearLibro(
-            isbn: '1', titulo: 't', autor: 'a', precio: 1, numeroPaginas: 1,
-            fechaPublicacion: '2020-01-01T00:00:00', genero: 'OTRO'),
+          isbn: '1',
+          titulo: 't',
+          autor: 'a',
+          precio: 1,
+          numeroPaginas: 1,
+          fechaPublicacion: '2020-01-01T00:00:00',
+          genero: 'OTRO',
+        ),
         throwsA(isA<ErrorGraphQL>().having((e) => e.mensaje, 'mensaje', 'Ya existe un libro con el ISBN 1.')),
       );
     });
@@ -62,15 +74,19 @@ void main() {
     test('informa el código HTTP cuando la respuesta no es GraphQL', () async {
       ClienteGraphQL().clienteHttp = MockClient((_) async => http.Response('Error interno', 500));
 
-      expect(() => listarLibros(),
-          throwsA(isA<ErrorGraphQL>().having((e) => e.mensaje, 'mensaje', contains('HTTP 500'))));
+      expect(
+        () => listarLibros(),
+        throwsA(isA<ErrorGraphQL>().having((e) => e.mensaje, 'mensaje', contains('HTTP 500'))),
+      );
     });
 
     test('da un mensaje claro si el servidor no está disponible', () async {
       ClienteGraphQL().clienteHttp = MockClient((_) async => throw http.ClientException('Connection refused'));
 
-      expect(() => listarLibros(),
-          throwsA(isA<ErrorGraphQL>().having((e) => e.mensaje, 'mensaje', contains('No se pudo conectar'))));
+      expect(
+        () => listarLibros(),
+        throwsA(isA<ErrorGraphQL>().having((e) => e.mensaje, 'mensaje', contains('No se pudo conectar'))),
+      );
     });
   });
 

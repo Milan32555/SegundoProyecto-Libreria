@@ -14,6 +14,12 @@ String formatearFechaIso(String iso) {
   return fecha == null ? iso : _formatoFechaHora.format(fecha);
 }
 
+/// Solo el día de una fecha ISO del servidor (para tablas).
+String formatearFechaCortaIso(String iso) {
+  final fecha = DateTime.tryParse(iso);
+  return fecha == null ? iso : _formatoFecha.format(fecha);
+}
+
 /// Fecha en el formato ISO-8601 que espera el escalar LocalDateTime del servidor.
 String aFechaServidor(DateTime fecha) => _formatoServidor.format(fecha);
 

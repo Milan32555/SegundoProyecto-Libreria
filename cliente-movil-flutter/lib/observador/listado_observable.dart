@@ -67,7 +67,5 @@ class ListadoObservable {
 }
 
 // Un sujeto observable por cada colección (maestro y detalle).
-final ListadoObservable libroObservable =
-    ListadoObservable(consultarRevision: consultarRevisionLibros);
-final ListadoObservable ejemplarObservable =
-    ListadoObservable(consultarRevision: consultarRevisionEjemplares);
+final ListadoObservable libroObservable = ListadoObservable(consultarRevision: consultarRevisionLibros);
+final ListadoObservable ejemplarObservable = ListadoObservable(consultarRevision: consultarRevisionEjemplares);

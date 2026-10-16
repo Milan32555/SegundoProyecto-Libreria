@@ -49,6 +49,16 @@ public class LibroController {
         return servicioLibro.buscarPorIsbn(isbn);
     }
 
+    @QueryMapping
+    public Optional<Libro> libroPorTitulo(@Argument String titulo) {
+        return servicioLibro.buscarPorTitulo(titulo);
+    }
+
+    @QueryMapping
+    public int revisionLibros() {
+        return servicioLibro.revision();
+    }
+
     // ---------- Mutations ----------
 
     @MutationMapping

@@ -9,9 +9,8 @@ import java.time.LocalDateTime;
  * Atributos: isbn (String), titulo (String), autor (String), precio (double),
  * numeroPaginas (int), fechaPublicacion (LocalDateTime), genero (Genero - "otro de elección").
  *
- * El constructor es package-private a propósito: la única forma soportada de construir
- * un Libro "desde cero" es a través de {@link com.libreria.servidor.builder.LibroBuilder}
- * (patrón Builder exigido por el enunciado).
+ * En la aplicación los Libros se construyen con {@link com.libreria.servidor.builder.LibroBuilder}
+ * (patrón Builder) en lugar de usar directamente el constructor de 7 parámetros.
  */
 public class Libro {
 

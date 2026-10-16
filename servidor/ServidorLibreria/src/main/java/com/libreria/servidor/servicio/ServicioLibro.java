@@ -8,6 +8,8 @@ import com.libreria.servidor.model.LibroInput;
 import com.libreria.servidor.model.LibroUpdateInput;
 import com.libreria.servidor.observer.ListadoObservable;
 import com.libreria.servidor.observer.ObservadorListado;
+import com.libreria.servidor.observer.RevisionListado;
+import com.libreria.servidor.repositorio.RepositorioEjemplares;
 import com.libreria.servidor.repositorio.RepositorioLibros;
 import org.springframework.stereotype.Service;
 
@@ -19,14 +21,24 @@ import java.util.Optional;
 /**
  * Lógica de negocio (capa "Model" de MVC) del CRUD de Libro.
  * Usa el repositorio Singleton como única fuente de verdad de los datos en memoria,
- * y expone un ListadoObservable para que los clientes puedan suscribirse a cambios
- * en el listado (patrón Observer, exigido en el caso de uso Listar).
+ * y expone un ListadoObservable para que se puedan suscribir observadores a los cambios
+ * del listado (patrón Observer, exigido en el caso de uso Listar).
+ *
+ * Las operaciones que modifican la colección son synchronized: "verificar y luego
+ * modificar" (p. ej. que el ISBN no exista antes de agregarlo) debe ser atómico cuando
+ * varios clientes hacen peticiones al mismo tiempo.
  */
 @Service
 public class ServicioLibro {
 
     private final RepositorioLibros repositorio = RepositorioLibros.getInstancia();
+    private final RepositorioEjemplares repositorioEjemplares = RepositorioEjemplares.getInstancia();
     private final ListadoObservable<Libro> observable = new ListadoObservable<>();
+    private final RevisionListado<Libro> revision = new RevisionListado<>();
+
+    public ServicioLibro() {
+        observable.suscribir(revision);
+    }
 
     public void suscribir(ObservadorListado<Libro> observador) {
         observable.suscribir(observador);
@@ -34,6 +46,11 @@ public class ServicioLibro {
 
     public void desuscribir(ObservadorListado<Libro> observador) {
         observable.desuscribir(observador);
+    }
+
+    /** Número que aumenta con cada cambio de la colección (lo usa el Observer de los clientes). */
+    public int revision() {
+        return revision.getRevision();
     }
 
     public List<Libro> listar() {
@@ -60,7 +77,18 @@ public class ServicioLibro {
                 .findFirst();
     }
 
-    public Libro crear(LibroInput in) {
+    /** Consulta de UN SOLO objeto por título exacto (sin distinguir tildes ni mayúsculas). */
+    public Optional<Libro> buscarPorTitulo(String titulo) {
+        String buscado = normalizar(titulo);
+        if (buscado.isEmpty()) {
+            return Optional.empty();
+        }
+        return repositorio.listar().stream()
+                .filter(l -> normalizar(l.getTitulo()).equals(buscado))
+                .findFirst();
+    }
+
+    public synchronized Libro crear(LibroInput in) {
         if (in.isbn() == null || in.isbn().isBlank()) {
             throw new LibreriaException("El ISBN es obligatorio.");
         }
@@ -84,7 +112,7 @@ public class ServicioLibro {
         return libro;
     }
 
-    public Libro actualizar(String isbn, LibroUpdateInput in) {
+    public synchronized Libro actualizar(String isbn, LibroUpdateInput in) {
         Libro libro = buscarPorIsbn(isbn)
                 .orElseThrow(() -> new LibreriaException("No existe un libro con el ISBN " + isbn + "."));
         validar(in.titulo(), in.autor(), in.precio(), in.numeroPaginas(), in.fechaPublicacion(), in.genero());
@@ -100,10 +128,23 @@ public class ServicioLibro {
         return libro;
     }
 
-    /** Elimina el libro (previamente buscado) y lo devuelve para que el cliente confirme qué se borró. */
-    public Libro eliminar(String isbn) {
+    /**
+     * Elimina el libro (previamente buscado) y lo devuelve para que el cliente confirme qué se borró.
+     * Un Ejemplar siempre pertenece a un Libro (1..1), así que no se permite eliminar un libro
+     * que todavía tiene ejemplares: quedarían "huérfanos".
+     */
+    public synchronized Libro eliminar(String isbn) {
         Libro libro = buscarPorIsbn(isbn)
                 .orElseThrow(() -> new LibreriaException("No existe un libro con el ISBN " + isbn + "."));
+
+        long ejemplares = repositorioEjemplares.listar().stream()
+                .filter(e -> e.getIsbnLibro().equalsIgnoreCase(libro.getIsbn()))
+                .count();
+        if (ejemplares > 0) {
+            throw new LibreriaException("No se puede eliminar el libro " + libro.getIsbn() + " porque tiene "
+                    + ejemplares + " ejemplar(es) registrado(s). Elimine primero sus ejemplares.");
+        }
+
         repositorio.eliminar(libro);
         notificarListado();
         return libro;

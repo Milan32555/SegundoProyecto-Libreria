@@ -1,20 +1,23 @@
 package com.libreria.servidor.observer;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
 /**
  * Patrón Observer: "sujeto" observable genérico. Mantiene una lista de observadores
  * y los notifica (push del listado completo) cada vez que se llama a notificarCambio().
  *
- * Los servicios (ServicioLibro, ServicioEjemplar) heredan/usan esta clase para avisar
+ * Los servicios (ServicioLibro, ServicioEjemplar) usan esta clase para avisar
  * tras cada inserción, actualización o eliminación, cumpliendo el requisito de aplicar
  * Observer en el caso de uso Listar.
+ *
+ * Se usa CopyOnWriteArrayList porque el servidor atiende peticiones de varios clientes
+ * en paralelo: se puede suscribir/notificar desde distintos hilos sin errores de concurrencia.
  */
 public class ListadoObservable<T> {
 
-    private final List<ObservadorListado<T>> observadores = new ArrayList<>();
+    private final List<ObservadorListado<T>> observadores = new CopyOnWriteArrayList<>();
 
     public void suscribir(ObservadorListado<T> observador) {
         observadores.add(observador);

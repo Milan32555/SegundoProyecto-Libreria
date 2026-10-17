@@ -118,6 +118,12 @@ los filtros que tenga escritos el usuario.
 Requisitos: **JDK 17+**, **Node.js 22.12+** y **Flutter 3.41+** (Dart 3.8+). Maven no hace
 falta: el servidor incluye el Maven Wrapper (`mvnw`).
 
+**Atajo en Windows para la demostración:** doble clic en [`iniciar-demo.cmd`](iniciar-demo.cmd).
+Levanta el servidor y el cliente web, abre el navegador y, si hay un celular Android conectado por
+USB (con depuración USB activada), conecta el puerto con `adb reverse`, instala la app y la abre.
+La app que instala es `build/app/outputs/flutter-apk/app-release.apk`; se compila una vez con
+`flutter build apk --release --dart-define=URL_GRAPHQL=http://localhost:8081/graphql`.
+
 ### 1. Servidor
 ```bash
 cd servidor/ServidorLibreria

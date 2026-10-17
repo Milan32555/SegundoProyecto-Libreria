@@ -52,10 +52,16 @@ Cada pantalla implementa un solo caso de uso y se abre desde el menú superior
 ## Diseño
 
 Misma identidad "papel y tinta" que el cliente móvil: fondo crema, texto color tinta, verde
-biblioteca como color principal, dorado para precios y títulos con la tipografía serif **Lora**
-(incluida en el proyecto, no depende de internet). Las fichas tienen un lomo de color como un libro,
-el inicio muestra el inventario en una "portada" que se actualiza sola y el diseño se adapta a
-pantallas de celular. Los colores están definidos como variables en `src/estilos.css`.
+biblioteca como color principal y dorado para precios. Títulos con la serif **Playfair Display** y
+el resto con **Plus Jakarta Sans** (incluidas en `src/assets/fuentes`, no dependen de internet).
+
+- Inicio con el mismo encabezado verde de la app: saludo y fecha, cifras que cuentan hasta su
+  valor, una estantería cuyos libros "crecen" al cargar y la barra de ejemplares por estado.
+- *Acerca de...* profesional: tarjeta del producto, equipo, diagrama animado de la arquitectura
+  que mide la respuesta real del servidor (clic para medir de nuevo), patrones y tecnologías.
+- Las animaciones se desactivan si el sistema pide reducir el movimiento
+  (`prefers-reduced-motion`), y el diseño se adapta a pantallas de celular. Los colores están
+  definidos como variables en `src/estilos.css`.
 
 ## Observer
 

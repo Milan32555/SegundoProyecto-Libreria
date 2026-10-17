@@ -4,7 +4,7 @@ import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { ejemplarObservable } from "../../observer/Observable";
 import { useListadoObservado } from "../../observer/useListadoObservado";
 import { formatearFechaCorta, formatearPrecio } from "../../formato";
-import { Aviso, Encabezado, EnVivo, Pastilla, SelectorChips, colorEstado } from "../../componentes/Basicos";
+import { Aviso, Encabezado, Pastilla, SelectorChips, colorEstado } from "../../componentes/Basicos";
 import Icono from "../../componentes/Icono";
 import { ESTADOS_EJEMPLAR, EstadoEjemplar, Ejemplar, etiquetaEstado } from "../../types";
 
@@ -64,7 +64,6 @@ export default function ListarEjemplares() {
 
       <div className="resumen-lista">
         <span className="conteo">{ejemplares.length === 1 ? "1 ejemplar" : `${ejemplares.length} ejemplares`}</span>
-        <EnVivo />
       </div>
       <div className="tabla-contenedor">
         <table>

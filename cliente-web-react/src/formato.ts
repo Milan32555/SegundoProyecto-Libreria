@@ -29,3 +29,22 @@ export function formatearFechaCorta(iso: string): string {
 export function aValorDeInputFecha(iso: string): string {
   return iso.slice(0, 16);
 }
+
+const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+const MESES = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+];
+
+/** Fecha larga en español para encabezados: "Sábado, 17 de octubre". */
+export function formatearFechaLarga(fecha: Date): string {
+  return `${DIAS[fecha.getDay()]}, ${fecha.getDate()} de ${MESES[fecha.getMonth()]}`;
+}
+
+/** Saludo según la hora del día. */
+export function saludo(fecha: Date): string {
+  const hora = fecha.getHours();
+  if (hora >= 5 && hora < 12) return "Buenos días";
+  if (hora >= 12 && hora < 19) return "Buenas tardes";
+  return "Buenas noches";
+}

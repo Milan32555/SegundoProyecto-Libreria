@@ -1,4 +1,3 @@
-import { CSSProperties } from "react";
 import { formatearFecha, formatearPrecio } from "../formato";
 import { Ejemplar, etiquetaEstado } from "../types";
 import { Pastilla, colorEstado } from "./Basicos";
@@ -7,7 +6,7 @@ import { Pastilla, colorEstado } from "./Basicos";
 export default function FichaEjemplar({ ejemplar }: { ejemplar: Ejemplar }) {
   const color = colorEstado(ejemplar.estado);
   return (
-    <article className="ficha" style={{ "--lomo": color } as CSSProperties} aria-label={`Ejemplar ${ejemplar.codigo}`}>
+    <article className="ficha" aria-label={`Ejemplar ${ejemplar.codigo}`}>
       <div className="ficha-cabecera">
         <span className="etiqueta etiqueta-acento">Ejemplar</span>
         <Pastilla color={color}>{etiquetaEstado(ejemplar.estado)}</Pastilla>

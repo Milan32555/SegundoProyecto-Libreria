@@ -49,10 +49,15 @@ describe("Ventana principal", () => {
     renderizarEn("/");
     const inventario = screen.getByRole("region", { name: "Inventario" });
 
-    expect(await within(inventario).findByText("2")).toBeInTheDocument();
-    expect(within(inventario).getByText("3")).toBeInTheDocument();
-    expect(within(inventario).getByText("2 disponibles")).toBeInTheDocument();
-    expect(within(inventario).getByText("1 prestado")).toBeInTheDocument();
+    expect(await within(inventario).findByText("2")).toBeInTheDocument(); // títulos
+    expect(within(inventario).getByText("3")).toBeInTheDocument(); // ejemplares
+
+    const estados = screen.getByRole("region", { name: "Estado de los ejemplares" });
+    const cantidad = (estado: string) => within(estados).getByText(estado).closest("li");
+    expect(cantidad("Disponibles")).toHaveTextContent("Disponibles2");
+    expect(cantidad("Prestados")).toHaveTextContent("Prestados1");
+    expect(cantidad("Dañados")).toHaveTextContent("Dañados0");
+    expect(cantidad("Dados de baja")).toHaveTextContent("Dados de baja0");
   });
 
   it("avisa si no hay conexión con el servidor", async () => {

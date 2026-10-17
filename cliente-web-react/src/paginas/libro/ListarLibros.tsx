@@ -4,7 +4,7 @@ import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { libroObservable } from "../../observer/Observable";
 import { useListadoObservado } from "../../observer/useListadoObservado";
 import { formatearFechaCorta, formatearPrecio } from "../../formato";
-import { Aviso, Encabezado, EnVivo, Pastilla, SelectorChips } from "../../componentes/Basicos";
+import { Aviso, Encabezado, Pastilla, SelectorChips } from "../../componentes/Basicos";
 import Icono from "../../componentes/Icono";
 import { GENEROS, Genero, Libro, etiquetaGenero } from "../../types";
 
@@ -67,7 +67,6 @@ export default function ListarLibros() {
 
       <div className="resumen-lista">
         <span className="conteo">{libros.length === 1 ? "1 libro" : `${libros.length} libros`}</span>
-        <EnVivo />
       </div>
       <div className="tabla-contenedor">
         <table>

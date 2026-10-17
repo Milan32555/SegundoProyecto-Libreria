@@ -1,5 +1,5 @@
 import { CSSProperties, ReactNode } from "react";
-import Icono from "./Icono";
+import Icono, { NombreIcono } from "./Icono";
 import { EstadoEjemplar } from "../types";
 
 /** Encabezado de cada pantalla: etiqueta, título en serif y una línea de ayuda. */
@@ -45,9 +45,15 @@ export function Pastilla({ children, color }: { children: ReactNode; color?: str
   );
 }
 
-/** Indica que la lista se actualiza sola (patrón Observer). */
-export function EnVivo() {
-  return <span className="en-vivo">En vivo</span>;
+/** Título de una sección (serif) con un ícono y, opcionalmente, un detalle a la derecha. */
+export function TituloSeccion({ icono, titulo, detalle }: { icono: NombreIcono; titulo: string; detalle?: string }) {
+  return (
+    <div className="titulo-seccion">
+      <Icono nombre={icono} tamano={22} />
+      <h2>{titulo}</h2>
+      {detalle && <span className="titulo-seccion-detalle">{detalle}</span>}
+    </div>
+  );
 }
 
 /** Ícono dentro de un cuadro redondeado con color tenue. */

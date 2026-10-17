@@ -98,15 +98,9 @@ class _ListarEjemplaresState extends State<ListarEjemplares> {
                   },
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Text(
-                      _ejemplares.length == 1 ? '1 ejemplar' : '${_ejemplares.length} ejemplares',
-                      style: const TextStyle(color: kTinta, fontWeight: FontWeight.w800, fontSize: 15),
-                    ),
-                    const Spacer(),
-                    const IndicadorEnVivo(),
-                  ],
+                Text(
+                  _ejemplares.length == 1 ? '1 ejemplar' : '${_ejemplares.length} ejemplares',
+                  style: const TextStyle(color: kTinta, fontWeight: FontWeight.w800, fontSize: 15),
                 ),
               ],
             ),

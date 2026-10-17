@@ -24,7 +24,6 @@ class FichaLibro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _MarcoFicha(
-      lomo: kPrimario,
       etiqueta: 'Libro',
       pastilla: Pastilla(etiquetaGenero(libro.genero)),
       titulo: libro.titulo,
@@ -50,7 +49,6 @@ class FichaEjemplar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _MarcoFicha(
-      lomo: colorEstado(ejemplar.estado),
       etiqueta: 'Ejemplar',
       pastilla: Pastilla(etiquetaEstado(ejemplar.estado), color: colorEstado(ejemplar.estado)),
       titulo: ejemplar.codigo,
@@ -68,7 +66,6 @@ class FichaEjemplar extends StatelessWidget {
 
 class _MarcoFicha extends StatelessWidget {
   const _MarcoFicha({
-    required this.lomo,
     required this.etiqueta,
     required this.pastilla,
     required this.titulo,
@@ -78,7 +75,6 @@ class _MarcoFicha extends StatelessWidget {
     required this.datos,
   });
 
-  final Color lomo;
   final String etiqueta;
   final Widget pastilla;
   final String titulo;
@@ -92,7 +88,6 @@ class _MarcoFicha extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: Espacio.lg),
       child: TarjetaHero(
-        lomo: lomo,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

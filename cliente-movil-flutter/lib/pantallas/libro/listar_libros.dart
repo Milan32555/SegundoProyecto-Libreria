@@ -101,15 +101,9 @@ class _ListarLibrosState extends State<ListarLibros> {
                   },
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Text(
-                      _libros.length == 1 ? '1 libro' : '${_libros.length} libros',
-                      style: const TextStyle(color: kTinta, fontWeight: FontWeight.w800, fontSize: 15),
-                    ),
-                    const Spacer(),
-                    const IndicadorEnVivo(),
-                  ],
+                Text(
+                  _libros.length == 1 ? '1 libro' : '${_libros.length} libros',
+                  style: const TextStyle(color: kTinta, fontWeight: FontWeight.w800, fontSize: 15),
                 ),
               ],
             ),

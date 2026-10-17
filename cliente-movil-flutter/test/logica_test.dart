@@ -156,5 +156,14 @@ void main() {
       expect(formatearFechaIso('no es fecha'), 'no es fecha');
       expect(formatearPrecio(65000), '\$ 65.000');
     });
+
+    test('fecha larga y saludo del inicio', () {
+      expect(formatearFechaLarga(DateTime(2026, 10, 17)), 'Sábado, 17 de octubre');
+      expect(formatearFechaLarga(DateTime(2026, 3, 2)), 'Lunes, 2 de marzo');
+      expect(saludo(DateTime(2026, 1, 1, 8)), 'Buenos días');
+      expect(saludo(DateTime(2026, 1, 1, 15)), 'Buenas tardes');
+      expect(saludo(DateTime(2026, 1, 1, 22)), 'Buenas noches');
+      expect(saludo(DateTime(2026, 1, 1, 2)), 'Buenas noches');
+    });
   });
 }

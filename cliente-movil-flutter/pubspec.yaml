@@ -20,11 +20,26 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # Lora (serif) para los títulos — SIL Open Font License, ver assets/fuentes/OFL-Lora.txt
+  # Fuentes incluidas en la app (no dependen de internet) — SIL Open Font License,
+  # ver assets/fuentes/OFL-*.txt. Playfair Display para títulos, Plus Jakarta Sans para el resto.
   fonts:
-    - family: Lora
+    - family: PlayfairDisplay
       fonts:
-        - asset: assets/fuentes/Lora-600.ttf
+        - asset: assets/fuentes/PlayfairDisplay-600.ttf
           weight: 600
-        - asset: assets/fuentes/Lora-700.ttf
+        - asset: assets/fuentes/PlayfairDisplay-700.ttf
           weight: 700
+        - asset: assets/fuentes/PlayfairDisplay-800.ttf
+          weight: 800
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fuentes/PlusJakartaSans-400.ttf
+          weight: 400
+        - asset: assets/fuentes/PlusJakartaSans-500.ttf
+          weight: 500
+        - asset: assets/fuentes/PlusJakartaSans-600.ttf
+          weight: 600
+        - asset: assets/fuentes/PlusJakartaSans-700.ttf
+          weight: 700
+        - asset: assets/fuentes/PlusJakartaSans-800.ttf
+          weight: 800

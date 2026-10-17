@@ -26,8 +26,10 @@ const kAzul = Color(0xFF2F5DA8);
 const kNaranja = Color(0xFFB45F12);
 const kRojo = Color(0xFFB3261E);
 
-/// Tipografía serif para títulos (incluida en assets/fuentes, licencia OFL).
-const fuenteTitulos = 'Lora';
+// Tipografías incluidas en assets/fuentes (licencia OFL): serif editorial para
+// títulos y una sans moderna para el resto de la interfaz.
+const fuenteTitulos = 'PlayfairDisplay';
+const fuenteTexto = 'PlusJakartaSans';
 
 // ── Medidas ──────────────────────────────────────────────────────────────────
 class Espacio {
@@ -58,9 +60,11 @@ ThemeData construirTema() {
     borderSide: BorderSide(color: color, width: ancho),
   );
 
-  return ThemeData(
+  final tema = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
+    // Fuente de todo el texto; los títulos (display/headline) se cambian a la serif al final.
+    fontFamily: fuenteTexto,
     scaffoldBackgroundColor: kPapel,
     colorScheme: const ColorScheme.light(
       primary: kPrimario,
@@ -95,14 +99,13 @@ ThemeData construirTema() {
     ),
     textTheme: const TextTheme(
       displaySmall: TextStyle(
-        fontFamily: fuenteTitulos,
         color: kTinta,
         fontSize: 34,
         fontWeight: FontWeight.w700,
         height: 1.1,
         letterSpacing: -0.5,
       ),
-      headlineSmall: TextStyle(fontFamily: fuenteTitulos, color: kTinta, fontSize: 25, fontWeight: FontWeight.w700),
+      headlineSmall: TextStyle(color: kTinta, fontSize: 26, fontWeight: FontWeight.w700, height: 1.15),
       titleLarge: TextStyle(color: kTinta, fontSize: 17, fontWeight: FontWeight.w700),
       titleMedium: TextStyle(color: kTinta, fontSize: 15, fontWeight: FontWeight.w600),
       bodyLarge: TextStyle(color: kTinta, fontSize: 15, height: 1.4),
@@ -204,6 +207,15 @@ ThemeData construirTema() {
     dialogTheme: const DialogThemeData(
       backgroundColor: kHoja,
       shape: RoundedRectangleBorder(borderRadius: Redondeo.hero),
+    ),
+  );
+
+  // ThemeData.fontFamily se aplica a todo el textTheme; los títulos vuelven a la serif aquí.
+  final textos = tema.textTheme;
+  return tema.copyWith(
+    textTheme: textos.copyWith(
+      displaySmall: textos.displaySmall!.copyWith(fontFamily: fuenteTitulos),
+      headlineSmall: textos.headlineSmall!.copyWith(fontFamily: fuenteTitulos),
     ),
   );
 }

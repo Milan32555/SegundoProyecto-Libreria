@@ -58,12 +58,20 @@ lib/
 Identidad propia de librería, "papel y tinta" (`lib/tema/tema.dart`):
 
 - Fondo crema como las páginas de un libro, texto color tinta y **verde biblioteca** como color
-  principal; **dorado** para precios. Títulos con la tipografía serif **Lora** (incluida en
-  `assets/fuentes`, licencia SIL OFL), por lo que no depende de internet.
-- Las fichas tienen un **lomo** de color a la izquierda, como un libro en la estantería (verde para
-  libros, el color del estado para ejemplares); el resumen de inicio es una "portada" verde.
-- Estados con color (Disponible, Prestado, Dañado, Dado de baja), chips para elegir género/estado e
-  indicador **En vivo** en las pantallas que se actualizan solas (Observer).
+  principal; **dorado** para precios. Títulos con la serif **Playfair Display** y el resto del texto
+  con **Plus Jakarta Sans** (incluidas en `assets/fuentes`, licencia SIL OFL), por lo que no
+  depende de internet.
+- Inicio con un encabezado verde que se contrae al desplazar: saludo y fecha, cifras del
+  inventario que cuentan hasta su valor y una estantería dibujada cuyos libros "crecen" al abrir
+  la app; debajo, la distribución de los ejemplares por estado en una barra proporcional.
+- Las fichas (consultar y antes de eliminar) son tarjetas limpias con borde fino y sombra suave.
+- *Acerca de...* con estilo de app profesional: tarjeta del producto con su versión, el equipo,
+  un **diagrama animado de la arquitectura** (los clientes envían peticiones GraphQL al servidor)
+  que mide en el momento si el servidor responde y en cuántos milisegundos, los patrones de diseño
+  aplicados y las tecnologías.
+- Estados con color (Disponible, Prestado, Dañado, Dado de baja) y chips para elegir
+  género/estado. Las pantallas de inicio y Listar se actualizan solas (Observer) sin necesidad de
+  recargar.
 - Ícono propio (Android adaptativo, web y Windows) y barra de navegación del sistema transparente.
 
 ## Problemas comunes

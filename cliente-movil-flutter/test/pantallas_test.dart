@@ -28,10 +28,12 @@ void main() {
       }).instalar();
       await abrir(tester, '/');
 
-      expect(find.text('2'), findsNWidgets(2)); // 2 libros y 2 ejemplares
-      expect(find.text('1 disponible'), findsOneWidget);
-      expect(find.text('1 prestado'), findsOneWidget);
-      expect(find.text('En vivo'), findsOneWidget);
+      expect(find.text('2'), findsNWidgets(2)); // 2 títulos y 2 ejemplares
+      for (final estado in ['Disponibles', 'Prestados', 'Dañados', 'Dados de baja']) {
+        expect(find.text(estado), findsOneWidget);
+      }
+      expect(find.text('1'), findsNWidgets(2)); // 1 disponible y 1 prestado
+      expect(find.text('0'), findsNWidgets(2)); // ningún dañado ni dado de baja
     });
 
     testWidgets('avisa si no hay conexión con el servidor', (tester) async {
@@ -58,7 +60,9 @@ void main() {
       }
 
       await tester.tap(find.descendant(of: menu, matching: find.text('Acerca de...')));
-      await tester.pumpAndSettle();
+      // El diagrama de arquitectura se anima sin fin: se avanza el tiempo en lugar de esperar a que pare.
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
 
       expect(find.text('Versión 1.0.0'), findsOneWidget);
       for (final integrante in ['Misael Gallo Tangarife', 'Sara Zambrano', 'Santiago Guimel', 'Alejandra González']) {

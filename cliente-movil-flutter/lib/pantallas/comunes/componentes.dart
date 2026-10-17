@@ -22,6 +22,36 @@ class EtiquetaSeccion extends StatelessWidget {
   Widget build(BuildContext context) => Text(texto.toUpperCase(), style: estiloEtiqueta.copyWith(color: color));
 }
 
+/// Título de una sección (serif) con un ícono a la izquierda y, opcionalmente, un detalle a la derecha.
+class TituloSeccion extends StatelessWidget {
+  const TituloSeccion({super.key, required this.icono, required this.titulo, this.detalle});
+
+  final IconData icono;
+  final String titulo;
+  final String? detalle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icono, size: 20, color: kPrimario),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            titulo,
+            style: const TextStyle(fontFamily: fuenteTitulos, color: kTinta, fontSize: 22, fontWeight: FontWeight.w700),
+          ),
+        ),
+        if (detalle != null)
+          Text(
+            detalle!,
+            style: const TextStyle(color: kTinta3, fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+      ],
+    );
+  }
+}
+
 /// Encabezado de cada pantalla: etiqueta, título grande y una línea de ayuda.
 class EncabezadoPantalla extends StatelessWidget {
   const EncabezadoPantalla({super.key, required this.etiqueta, required this.titulo, this.descripcion});
@@ -48,65 +78,48 @@ class EncabezadoPantalla extends StatelessWidget {
   }
 }
 
-/// Tarjeta principal de una pantalla, con un "lomo" de color a la izquierda
-/// como un libro en la estantería.
+/// Tarjeta principal de una pantalla (fichas, avisos destacados): hoja con borde fino y sombra suave.
 class TarjetaHero extends StatelessWidget {
-  const TarjetaHero({super.key, required this.child, this.lomo = kPrimario});
+  const TarjetaHero({super.key, required this.child});
 
   final Widget child;
-  final Color lomo;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(borderRadius: Redondeo.hero, boxShadow: sombraSuave),
-      child: ClipRRect(
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: kHoja,
         borderRadius: Redondeo.hero,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(22, 20, 20, 20),
-          decoration: BoxDecoration(
-            color: kHoja,
-            border: Border(left: BorderSide(color: lomo, width: 6)),
-          ),
-          child: child,
-        ),
+        border: Border.all(color: kBorde),
+        boxShadow: sombraSuave,
       ),
+      child: child,
     );
   }
 }
 
-/// Tarjeta "portada": verde biblioteca con un libro de marca de agua.
-/// El contenido debe usar colores claros (kCrema / blanco).
-class TarjetaPortada extends StatelessWidget {
-  const TarjetaPortada({super.key, required this.child});
+/// Entrada escalonada: el contenido aparece y sube un poco cuando [animacion]
+/// pasa por [inicio] (0..1). Varias piezas con distinto [inicio] entran una tras otra.
+class Aparecer extends StatelessWidget {
+  const Aparecer({super.key, required this.animacion, required this.inicio, required this.child});
 
+  final Animation<double> animacion;
+  final double inicio;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        borderRadius: Redondeo.hero,
-        boxShadow: sombraSuave,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [kPrimario, kPrimarioOscuro],
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: Redondeo.hero,
-        child: Stack(
-          children: [
-            Positioned(
-              right: -24,
-              bottom: -30,
-              child: Icon(Icons.auto_stories_rounded, size: 170, color: Colors.white.withValues(alpha: 0.07)),
-            ),
-            Padding(padding: const EdgeInsets.all(20), child: child),
-          ],
-        ),
+    final curva = CurvedAnimation(
+      parent: animacion,
+      curve: Interval(inicio, (inicio + 0.5).clamp(0.0, 1.0), curve: Curves.easeOutCubic),
+    );
+    return FadeTransition(
+      opacity: curva,
+      child: SlideTransition(
+        position: Tween(begin: const Offset(0, 0.12), end: Offset.zero).animate(curva),
+        child: child,
       ),
     );
   }
@@ -318,36 +331,6 @@ class SelectorChips extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-}
-
-/// Muestra que la lista se actualiza sola (patrón Observer).
-class IndicadorEnVivo extends StatelessWidget {
-  const IndicadorEnVivo({super.key, this.color = kVerde});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 6)],
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          'En vivo',
-          style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w700),
-        ),
-      ],
     );
   }
 }

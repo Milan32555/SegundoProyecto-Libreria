@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../modelos/ejemplar.dart';
 import '../modelos/libro.dart';
@@ -7,11 +8,14 @@ import '../servicios/cliente_graphql.dart';
 import '../servicios/servicio_ejemplar.dart';
 import '../servicios/servicio_libro.dart';
 import '../tema/tema.dart';
+import '../utilidades/formato.dart';
 import 'comunes/componentes.dart';
+import 'comunes/estanteria.dart';
 import 'menu_lateral.dart';
 
-/// Ventana principal: resumen del inventario (se actualiza solo, patrón Observer)
-/// y accesos a cada caso de uso. El menú lateral tiene las mismas opciones y "Ayuda".
+/// Ventana principal: encabezado con el resumen del inventario (se actualiza solo,
+/// patrón Observer), estado de los ejemplares y accesos a cada caso de uso.
+/// El menú lateral tiene las mismas opciones y "Ayuda".
 class MenuPrincipal extends StatefulWidget {
   const MenuPrincipal({super.key});
 
@@ -19,16 +23,21 @@ class MenuPrincipal extends StatefulWidget {
   State<MenuPrincipal> createState() => _MenuPrincipalState();
 }
 
-class _MenuPrincipalState extends State<MenuPrincipal> {
+class _MenuPrincipalState extends State<MenuPrincipal> with SingleTickerProviderStateMixin {
+  /// Animación de entrada: la estantería crece y el contenido aparece escalonado.
+  late final AnimationController _entrada = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  );
+
   int? _libros;
-  int? _ejemplares;
-  int _disponibles = 0;
-  int _prestados = 0;
+  Map<String, int>? _porEstado;
   String? _error;
 
   @override
   void initState() {
     super.initState();
+    _entrada.forward();
     _cargar();
     libroObservable.suscribir(_cargar);
     ejemplarObservable.suscribir(_cargar);
@@ -38,6 +47,7 @@ class _MenuPrincipalState extends State<MenuPrincipal> {
   void dispose() {
     libroObservable.desuscribir(_cargar);
     ejemplarObservable.desuscribir(_cargar);
+    _entrada.dispose();
     super.dispose();
   }
 
@@ -50,9 +60,10 @@ class _MenuPrincipalState extends State<MenuPrincipal> {
       setState(() {
         _error = null;
         _libros = libros.length;
-        _ejemplares = ejemplares.length;
-        _disponibles = ejemplares.where((e) => e.estado == 'DISPONIBLE').length;
-        _prestados = ejemplares.where((e) => e.estado == 'PRESTADO').length;
+        _porEstado = {
+          for (final estado in _estados.map((e) => e.estado))
+            estado: ejemplares.where((e) => e.estado == estado).length,
+        };
       });
     } on ErrorGraphQL catch (e) {
       if (mounted) setState(() => _error = e.mensaje);
@@ -61,49 +72,58 @@ class _MenuPrincipalState extends State<MenuPrincipal> {
 
   @override
   Widget build(BuildContext context) {
+    final arriba = MediaQuery.paddingOf(context).top;
+    final ejemplares = _porEstado?.values.fold<int>(0, (a, b) => a + b);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Librería'),
-        actions: [
-          IconButton(
-            tooltip: 'Acerca de...',
-            icon: const Icon(Icons.info_outline_rounded),
-            onPressed: () => Navigator.pushNamed(context, '/acerca-de'),
-          ),
-        ],
-      ),
       drawer: const MenuLateral(),
       body: RefreshIndicator(
         color: kPrimario,
+        edgeOffset: arriba + kToolbarHeight,
         onRefresh: _cargar,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(Espacio.md, Espacio.sm, Espacio.md, Espacio.xl),
-          children: [
-            const EtiquetaSeccion('Segundo proyecto · 2026B', color: kPrimario),
-            const SizedBox(height: Espacio.xs),
-            Text('Tu librería,\nen orden.', style: Theme.of(context).textTheme.displaySmall),
-            const SizedBox(height: Espacio.sm),
-            Text(
-              'Libros y ejemplares sincronizados con el servidor GraphQL.',
-              style: Theme.of(context).textTheme.bodyMedium,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            _EncabezadoInicio(entrada: _entrada, libros: _libros, ejemplares: ejemplares),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(Espacio.md, Espacio.lg, Espacio.md, Espacio.xl),
+              sliver: SliverList.list(
+                children: [
+                  Aparecer(
+                    animacion: _entrada,
+                    inicio: 0.35,
+                    child: _error != null
+                        ? _TarjetaError(mensaje: _error!, alReintentar: _cargar)
+                        : _TarjetaEstados(porEstado: _porEstado),
+                  ),
+                  const SizedBox(height: Espacio.lg),
+                  Aparecer(
+                    animacion: _entrada,
+                    inicio: 0.45,
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TituloSeccion(icono: Icons.menu_book_rounded, titulo: 'Libros'),
+                        SizedBox(height: 12),
+                        _GrupoAcciones(rutaBase: '/libros', objeto: 'libros'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: Espacio.lg),
+                  Aparecer(
+                    animacion: _entrada,
+                    inicio: 0.55,
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TituloSeccion(icono: Icons.inventory_2_rounded, titulo: 'Ejemplares'),
+                        SizedBox(height: 12),
+                        _GrupoAcciones(rutaBase: '/ejemplares', objeto: 'ejemplares'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: Espacio.lg),
-            _TarjetaResumen(
-              libros: _libros,
-              ejemplares: _ejemplares,
-              disponibles: _disponibles,
-              prestados: _prestados,
-              error: _error,
-              alReintentar: _cargar,
-            ),
-            const SizedBox(height: Espacio.lg),
-            const EtiquetaSeccion('Libros'),
-            const SizedBox(height: Espacio.sm),
-            const _GrupoAcciones(rutaBase: '/libros', objeto: 'libros'),
-            const SizedBox(height: Espacio.lg),
-            const EtiquetaSeccion('Ejemplares'),
-            const SizedBox(height: Espacio.sm),
-            const _GrupoAcciones(rutaBase: '/ejemplares', objeto: 'ejemplares'),
           ],
         ),
       ),
@@ -111,83 +131,169 @@ class _MenuPrincipalState extends State<MenuPrincipal> {
   }
 }
 
-class _TarjetaResumen extends StatelessWidget {
-  const _TarjetaResumen({
-    required this.libros,
-    required this.ejemplares,
-    required this.disponibles,
-    required this.prestados,
-    required this.error,
-    required this.alReintentar,
-  });
+// ── Encabezado ────────────────────────────────────────────────────────────────
 
+const _altoEstante = 70.0;
+
+/// Encabezado verde de borde a borde: saludo, fecha, cifras del inventario y una
+/// estantería dibujada. Al desplazar se contrae y deja solo la barra con "Librería".
+class _EncabezadoInicio extends StatelessWidget {
+  const _EncabezadoInicio({required this.entrada, required this.libros, required this.ejemplares});
+
+  final Animation<double> entrada;
   final int? libros;
   final int? ejemplares;
-  final int disponibles;
-  final int prestados;
-  final String? error;
-  final VoidCallback alReintentar;
 
   @override
   Widget build(BuildContext context) {
-    if (error != null) {
-      return TarjetaHero(
-        lomo: kRojo,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const EtiquetaSeccion('Inventario'),
-            const SizedBox(height: Espacio.sm),
-            Text(error!, style: const TextStyle(color: kRojo, fontSize: 14, height: 1.35)),
-            const SizedBox(height: Espacio.md),
-            OutlinedButton.icon(
-              onPressed: alReintentar,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Reintentar'),
-            ),
-          ],
+    final ahora = DateTime.now();
+    // Barra + espacio para el texto (crece con el tamaño de letra del sistema) + estantería.
+    final altoAbierto = kToolbarHeight + 52 + MediaQuery.textScalerOf(context).scale(186) + _altoEstante;
+    return SliverAppBar(
+      pinned: true,
+      expandedHeight: altoAbierto,
+      backgroundColor: kPrimarioOscuro,
+      foregroundColor: kCrema,
+      surfaceTintColor: Colors.transparent,
+      systemOverlayStyle: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarDividerColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.dark,
+        systemNavigationBarContrastEnforced: false,
+      ),
+      title: const Text(
+        'Librería',
+        style: TextStyle(fontFamily: fuenteTitulos, color: kCrema, fontSize: 22, fontWeight: FontWeight.w700),
+      ),
+      actions: [
+        IconButton(
+          tooltip: 'Acerca de...',
+          icon: const Icon(Icons.info_outline_rounded),
+          onPressed: () => Navigator.pushNamed(context, '/acerca-de'),
         ),
-      );
-    }
-    return TarjetaPortada(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              EtiquetaSeccion('Inventario', color: kCrema),
-              Spacer(),
-              IndicadorEnVivo(color: Color(0xFF9FE6BE)),
-            ],
-          ),
-          const SizedBox(height: Espacio.md),
-          Row(
-            children: [
-              Expanded(
-                child: _Cifra(valor: libros, leyenda: 'libros'),
+      ],
+      flexibleSpace: LayoutBuilder(
+        builder: (context, limites) {
+          final arriba = MediaQuery.paddingOf(context).top;
+          // 1 = completamente abierto, 0 = contraído a la barra.
+          final abierto = ((limites.maxHeight - arriba - kToolbarHeight) / (altoAbierto - kToolbarHeight)).clamp(
+            0.0,
+            1.0,
+          );
+          return DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF24684F), kPrimarioOscuro],
               ),
-              Container(width: 1, height: 52, color: kCrema.withValues(alpha: 0.25)),
-              const SizedBox(width: Espacio.lg),
-              Expanded(
-                child: _Cifra(valor: ejemplares, leyenda: 'ejemplares'),
+            ),
+            child: ClipRect(
+              child: Opacity(
+                opacity: Curves.easeIn.transform(abierto),
+                child: Stack(
+                  children: [
+                    // Halo de luz cálida, como una lámpara de biblioteca.
+                    Positioned(
+                      right: -80,
+                      top: -60,
+                      child: Container(
+                        width: 260,
+                        height: 260,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [const Color(0xFFE9C46A).withValues(alpha: 0.22), Colors.transparent],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      height: _altoEstante,
+                      child: Estanteria(progreso: entrada),
+                    ),
+                    Positioned(
+                      left: 20,
+                      right: 20,
+                      bottom: _altoEstante + 22,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Aparecer(
+                            animacion: entrada,
+                            inicio: 0,
+                            child: Text(
+                              formatearFechaLarga(ahora).toUpperCase(),
+                              style: TextStyle(
+                                color: kCrema.withValues(alpha: 0.7),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.4,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Aparecer(
+                            animacion: entrada,
+                            inicio: 0.05,
+                            child: Text(
+                              '${saludo(ahora)}.',
+                              style: const TextStyle(
+                                fontFamily: fuenteTitulos,
+                                color: Colors.white,
+                                fontSize: 36,
+                                fontWeight: FontWeight.w800,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Aparecer(
+                            animacion: entrada,
+                            inicio: 0.1,
+                            child: Text(
+                              'Así está tu inventario hoy.',
+                              style: TextStyle(color: kCrema.withValues(alpha: 0.85), fontSize: 14, height: 1.4),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Aparecer(
+                            animacion: entrada,
+                            inicio: 0.18,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: _Cifra(valor: libros, leyenda: 'Títulos'),
+                                ),
+                                Container(width: 1, height: 48, color: kCrema.withValues(alpha: 0.22)),
+                                const SizedBox(width: 20),
+                                Expanded(
+                                  child: _Cifra(valor: ejemplares, leyenda: 'Ejemplares'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-          const SizedBox(height: Espacio.md),
-          Wrap(
-            spacing: Espacio.sm,
-            runSpacing: Espacio.sm,
-            children: [
-              Pastilla(disponibles == 1 ? '1 disponible' : '$disponibles disponibles', color: const Color(0xFF9FE6BE)),
-              Pastilla(prestados == 1 ? '1 prestado' : '$prestados prestados', color: const Color(0xFFBCD4FF)),
-            ],
-          ),
-        ],
+            ),
+          );
+        },
       ),
     );
   }
 }
 
+/// Cifra grande que cuenta desde su valor anterior hasta el nuevo.
 class _Cifra extends StatelessWidget {
   const _Cifra({required this.valor, required this.leyenda});
 
@@ -196,22 +302,157 @@ class _Cifra extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const estilo = TextStyle(
+      color: Colors.white,
+      fontSize: 46,
+      fontWeight: FontWeight.w800,
+      height: 1,
+      letterSpacing: -1.5,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          valor?.toString() ?? '—',
-          style: const TextStyle(
-            fontFamily: fuenteTitulos,
-            color: kCrema,
-            fontSize: 44,
-            fontWeight: FontWeight.w700,
-            height: 1,
+        if (valor == null)
+          const Text('—', style: estilo)
+        else
+          TweenAnimationBuilder<double>(
+            tween: Tween(end: valor!.toDouble()),
+            duration: const Duration(milliseconds: 1100),
+            curve: Curves.easeOutCubic,
+            builder: (context, v, _) => Text(v.round().toString(), style: estilo),
           ),
+        const SizedBox(height: 6),
+        Text(
+          leyenda,
+          style: TextStyle(color: kCrema.withValues(alpha: 0.75), fontSize: 13, fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: 4),
-        Text(leyenda, style: TextStyle(color: kCrema.withValues(alpha: 0.8), fontSize: 14)),
       ],
+    );
+  }
+}
+
+// ── Cuerpo ────────────────────────────────────────────────────────────────────
+
+/// Estados de un ejemplar con su nombre en la leyenda.
+const _estados = [
+  (estado: 'DISPONIBLE', nombre: 'Disponibles'),
+  (estado: 'PRESTADO', nombre: 'Prestados'),
+  (estado: 'DANIADO', nombre: 'Dañados'),
+  (estado: 'DADO_DE_BAJA', nombre: 'Dados de baja'),
+];
+
+/// Distribución de los ejemplares por estado: barra proporcional + leyenda.
+class _TarjetaEstados extends StatelessWidget {
+  const _TarjetaEstados({required this.porEstado});
+
+  final Map<String, int>? porEstado;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = porEstado?.values.fold<int>(0, (a, b) => a + b) ?? 0;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: kHoja,
+        borderRadius: Redondeo.hero,
+        border: Border.all(color: kBorde),
+        boxShadow: sombraSuave,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Estado de los ejemplares', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 2),
+          Text(
+            porEstado == null ? 'Cargando…' : 'Copias físicas registradas en el inventario',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: Espacio.md),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: SizedBox(
+              height: 12,
+              child: LayoutBuilder(
+                builder: (context, limites) => Container(
+                  color: kPergamino,
+                  child: Row(
+                    children: [
+                      for (final e in _estados)
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 700),
+                          curve: Curves.easeOutCubic,
+                          width: total == 0 ? 0 : limites.maxWidth * (porEstado![e.estado] ?? 0) / total,
+                          color: colorEstado(e.estado),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: Espacio.md),
+          LayoutBuilder(
+            builder: (context, limites) => Wrap(
+              runSpacing: 10,
+              children: [
+                for (final e in _estados)
+                  SizedBox(
+                    width: limites.maxWidth / 2,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(color: colorEstado(e.estado), shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            e.nombre,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: kTinta2, fontSize: 13, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          porEstado == null ? '—' : '${porEstado![e.estado] ?? 0}',
+                          style: const TextStyle(color: kTinta, fontSize: 14, fontWeight: FontWeight.w800),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TarjetaError extends StatelessWidget {
+  const _TarjetaError({required this.mensaje, required this.alReintentar});
+
+  final String mensaje;
+  final VoidCallback alReintentar;
+
+  @override
+  Widget build(BuildContext context) {
+    return TarjetaHero(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const EtiquetaSeccion('Sin conexión', color: kRojo),
+          const SizedBox(height: Espacio.sm),
+          Text(mensaje, style: const TextStyle(color: kRojo, fontSize: 14, height: 1.35)),
+          const SizedBox(height: Espacio.md),
+          OutlinedButton.icon(
+            onPressed: alReintentar,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Reintentar'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -306,15 +547,23 @@ class _TarjetaAccion extends StatelessWidget {
     final textos = [
       Text(
         titulo,
-        style: const TextStyle(color: kTinta, fontSize: 16, fontWeight: FontWeight.w800),
+        style: TextStyle(color: destacada ? Colors.white : kTinta, fontSize: 16, fontWeight: FontWeight.w800),
       ),
       const SizedBox(height: 2),
-      Text(descripcion, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
+      Text(
+        descripcion,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: destacada
+            ? TextStyle(color: kCrema.withValues(alpha: 0.8), fontSize: 12)
+            : Theme.of(context).textTheme.bodySmall,
+      ),
     ];
     return Card(
+      color: destacada ? kPrimario : null,
       shape: RoundedRectangleBorder(
         borderRadius: Redondeo.tarjeta,
-        side: BorderSide(color: destacada ? kPrimario.withValues(alpha: 0.45) : kBorde),
+        side: BorderSide(color: destacada ? kPrimario : kBorde),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -324,12 +573,12 @@ class _TarjetaAccion extends StatelessWidget {
           child: destacada
               ? Row(
                   children: [
-                    IconoAcento(icono, color: color),
+                    IconoAcento(icono, color: kCrema),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: textos),
                     ),
-                    const Icon(Icons.chevron_right_rounded, color: kTinta3),
+                    Icon(Icons.arrow_forward_rounded, color: kCrema.withValues(alpha: 0.9)),
                   ],
                 )
               : Column(

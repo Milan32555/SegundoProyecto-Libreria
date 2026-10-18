@@ -337,6 +337,30 @@ input::placeholder {
   color: var(--tinta-3);
 }
 
+/* Dato que se muestra en un formulario pero no se edita (lo calcula el servidor). */
+input[readonly] {
+  background: var(--pergamino);
+  color: var(--tinta-2);
+  cursor: default;
+}
+
+input[readonly]:focus {
+  border-color: var(--borde-2);
+  box-shadow: none;
+}
+
+.campo-solo-lectura {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.ayuda-campo {
+  color: var(--tinta-3);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
 input:focus,
 select:focus {
   outline: none;

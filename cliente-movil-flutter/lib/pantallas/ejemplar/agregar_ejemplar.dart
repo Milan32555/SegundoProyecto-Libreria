@@ -114,17 +114,16 @@ class _AgregarEjemplarState extends State<AgregarEjemplar> {
               validator: validarObligatorio,
             ),
             const SizedBox(height: 12),
+            // La fecha con hora va sola en su fila para que se lea completa en el celular.
+            CampoFecha(
+              etiqueta: 'Fecha de ingreso',
+              valor: _fechaIngreso,
+              alCambiar: (fecha) => setState(() => _fechaIngreso = fecha),
+            ),
+            const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: CampoFecha(
-                    etiqueta: 'Fecha de ingreso',
-                    valor: _fechaIngreso,
-                    alCambiar: (fecha) => setState(() => _fechaIngreso = fecha),
-                  ),
-                ),
-                const SizedBox(width: 12),
                 Expanded(
                   child: TextFormField(
                     controller: _precioReposicion,
@@ -137,17 +136,19 @@ class _AgregarEjemplarState extends State<AgregarEjemplar> {
                     validator: validarDecimalPositivo,
                   ),
                 ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _numeroPrestamos,
+                    decoration: const InputDecoration(
+                      labelText: 'Número de préstamos',
+                      prefixIcon: Icon(Icons.repeat_rounded),
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: validarEnteroNoNegativo,
+                  ),
+                ),
               ],
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _numeroPrestamos,
-              decoration: const InputDecoration(
-                labelText: 'Número de préstamos',
-                prefixIcon: Icon(Icons.repeat_rounded),
-              ),
-              keyboardType: TextInputType.number,
-              validator: validarEnteroNoNegativo,
             ),
             const SizedBox(height: Espacio.lg),
             const EtiquetaSeccion('Estado'),

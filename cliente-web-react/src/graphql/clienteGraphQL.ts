@@ -2,6 +2,9 @@
 // VITE_URL_GRAPHQL=http://<ip-del-servidor>:8081/graphql (no hace falta tocar el código).
 export const URL_GRAPHQL = import.meta.env.VITE_URL_GRAPHQL ?? "http://localhost:8081/graphql";
 
+/** Con este encabezado el servidor sabe qué cliente hizo cada operación (lo muestra en consola). */
+export const ENCABEZADO_CLIENTE = { "X-Cliente": "web" } as const;
+
 /** Error con un mensaje listo para mostrarle al usuario (del servidor o de conexión). */
 export class ErrorGraphQL extends Error {
   constructor(mensaje: string) {
@@ -38,7 +41,7 @@ export class ClienteGraphQL {
     try {
       respuesta = await fetch(this.url, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers: { "Content-Type": "application/json", Accept: "application/json", ...ENCABEZADO_CLIENTE },
         body: JSON.stringify({ query, variables })
       });
     } catch {

@@ -37,7 +37,7 @@ type Ejemplar {
     ubicacion: String!
     fechaIngreso: LocalDateTime!
     precioReposicion: Float!
-    "Veces que se ha prestado este ejemplar (no negativo)"
+    "Veces que se ha prestado este ejemplar (no negativo). Al actualizar, el servidor le suma 1 cuando el ejemplar pasa a PRESTADO."
     numeroPrestamos: Int!
     isbnLibro: String!
     "Libro al que pertenece este ejemplar"
@@ -88,12 +88,12 @@ input EjemplarInput {
     isbnLibro: String!
 }
 
+"Datos editables de un ejemplar. numeroPrestamos no se envía: lo lleva el servidor."
 input EjemplarUpdateInput {
     estado: EstadoEjemplar!
     ubicacion: String!
     fechaIngreso: LocalDateTime!
     precioReposicion: Float!
-    numeroPrestamos: Int!
 }
 
 type Query {

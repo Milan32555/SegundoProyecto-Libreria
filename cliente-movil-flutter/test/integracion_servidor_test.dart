@@ -51,19 +51,28 @@ void main() {
         throwsA(isA<ErrorGraphQL>().having((e) => e.mensaje, 'mensaje', contains('ejemplar(es)'))),
       );
 
-      final actualizado = await actualizarEjemplar(
+      final devuelto = await actualizarEjemplar(
         codigo: codigo,
         estado: 'DISPONIBLE',
         ubicacion: 'Mostrador',
-        fechaIngreso: aFechaServidor(DateTime(2024, 6, 1)),
+        fechaIngreso: aFechaServidor(DateTime(2024, 6, 1, 8, 15)),
         precioReposicion: 5500,
-        numeroPrestamos: 3,
       );
-      expect(actualizado.estado, 'DISPONIBLE');
-      expect(actualizado.numeroPrestamos, 3);
+      expect(devuelto.estado, 'DISPONIBLE');
+      expect(devuelto.fechaIngreso, '2024-06-01T08:15:00');
+      expect(devuelto.numeroPrestamos, 2); // devolverlo no es un préstamo
       final disponibles = await listarEjemplaresFiltrados(estado: 'DISPONIBLE', isbnLibro: isbn);
       expect(disponibles.ejemplares.single.codigo, codigo);
       expect(disponibles.total, 1);
+
+      final prestado = await actualizarEjemplar(
+        codigo: codigo,
+        estado: 'PRESTADO',
+        ubicacion: 'Mostrador',
+        fechaIngreso: aFechaServidor(DateTime(2024, 6, 1, 8, 15)),
+        precioReposicion: 5500,
+      );
+      expect(prestado.numeroPrestamos, 3); // el servidor sumó el nuevo préstamo
 
       await eliminarEjemplar(codigo);
       expect(await buscarEjemplarPorCodigo(codigo), isNull);

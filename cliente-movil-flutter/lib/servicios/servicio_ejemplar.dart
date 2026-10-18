@@ -63,13 +63,13 @@ Future<Ejemplar> crearEjemplar({
   return Ejemplar.desdeJson(data['crearEjemplar'] as Map<String, dynamic>);
 }
 
+/// numeroPrestamos no se envía: al actualizar lo calcula el servidor.
 Future<Ejemplar> actualizarEjemplar({
   required String codigo,
   required String estado,
   required String ubicacion,
   required String fechaIngreso,
   required double precioReposicion,
-  required int numeroPrestamos,
 }) async {
   final data = await ClienteGraphQL().ejecutar(
     '''mutation (\$codigo: ID!, \$input: EjemplarUpdateInput!) {
@@ -82,7 +82,6 @@ Future<Ejemplar> actualizarEjemplar({
         'ubicacion': ubicacion,
         'fechaIngreso': fechaIngreso,
         'precioReposicion': precioReposicion,
-        'numeroPrestamos': numeroPrestamos,
       },
     },
   );

@@ -33,20 +33,19 @@ describe("ActualizarEjemplar", () => {
     expect(screen.getByLabelText("Ubicación")).toHaveValue("Estante A1");
     expect(screen.getByLabelText("Fecha de ingreso")).toHaveValue("2024-02-10T09:00");
     expect(screen.getByLabelText("Precio de reposición")).toHaveValue(65000);
-    expect(screen.getByLabelText("Número de préstamos")).toHaveValue(4);
+    // El número de préstamos se ve, pero no se edita (lo lleva el servidor).
+    expect(screen.getByLabelText("Número de préstamos")).toHaveValue("4");
+    expect(screen.getByLabelText("Número de préstamos")).toHaveAttribute("readonly");
     expect(screen.getByText("978-0307474728")).toBeInTheDocument();
 
     await user.click(screen.getByRole("radio", { name: "Prestado" }));
     await user.clear(screen.getByLabelText("Ubicación"));
     await user.type(screen.getByLabelText("Ubicación"), "Mostrador");
-    await user.clear(screen.getByLabelText("Número de préstamos"));
-    await user.type(screen.getByLabelText("Número de préstamos"), "5");
     await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
 
     expect(await screen.findByText('Ejemplar "EJ-001" actualizado correctamente.')).toBeInTheDocument();
     expect(actualizarEjemplar).toHaveBeenCalledWith("EJ-001", {
-      estado: "PRESTADO", ubicacion: "Mostrador", fechaIngreso: "2024-02-10T09:00", precioReposicion: 65000,
-      numeroPrestamos: 5
+      estado: "PRESTADO", ubicacion: "Mostrador", fechaIngreso: "2024-02-10T09:00", precioReposicion: 65000
     });
     expect(notificar).toHaveBeenCalledTimes(1);
   });

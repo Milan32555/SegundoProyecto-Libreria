@@ -95,15 +95,46 @@ class ServicioEjemplarTest {
     }
 
     @Test
-    void elNumeroDePrestamosNoPuedeQuedarNegativoAlActualizar() {
+    void pasarAPrestadoSumaUnPrestamo() {
+        String codigo = codigoUnico();
+        servicio.crear(new EjemplarInput(codigo, EstadoEjemplar.DISPONIBLE, "Estante A1", FECHA, 30000, 4, isbn));
+
+        Ejemplar prestado = servicio.actualizar(codigo,
+                new EjemplarUpdateInput(EstadoEjemplar.PRESTADO, "Mostrador", FECHA, 30000));
+
+        assertThat(prestado.getNumeroPrestamos()).isEqualTo(5);
+    }
+
+    @Test
+    void seguirPrestadoOCambiarAOtroEstadoNoSumaPrestamos() {
+        String codigo = codigoUnico();
+        servicio.crear(new EjemplarInput(codigo, EstadoEjemplar.PRESTADO, "Mostrador", FECHA, 30000, 2, isbn));
+
+        // Ya estaba prestado: solo se corrige la ubicación.
+        servicio.actualizar(codigo, new EjemplarUpdateInput(EstadoEjemplar.PRESTADO, "Caja", FECHA, 30000));
+        assertThat(servicio.buscarPorCodigo(codigo)).map(Ejemplar::getNumeroPrestamos).contains(2);
+
+        // Se devuelve (DISPONIBLE) y luego se daña: ninguno de los dos cambios es un préstamo.
+        servicio.actualizar(codigo, new EjemplarUpdateInput(EstadoEjemplar.DISPONIBLE, "Estante", FECHA, 30000));
+        servicio.actualizar(codigo, new EjemplarUpdateInput(EstadoEjemplar.DANIADO, "Bodega", FECHA, 30000));
+        assertThat(servicio.buscarPorCodigo(codigo)).map(Ejemplar::getNumeroPrestamos).contains(2);
+
+        // Cada vez que vuelve a prestarse, suma uno.
+        servicio.actualizar(codigo, new EjemplarUpdateInput(EstadoEjemplar.PRESTADO, "Mostrador", FECHA, 30000));
+        assertThat(servicio.buscarPorCodigo(codigo)).map(Ejemplar::getNumeroPrestamos).contains(3);
+    }
+
+    @Test
+    void unaActualizacionRechazadaNoSumaPrestamos() {
         String codigo = codigoUnico();
         servicio.crear(ejemplar(codigo, EstadoEjemplar.DISPONIBLE));
 
         assertThatThrownBy(() -> servicio.actualizar(codigo,
-                new EjemplarUpdateInput(EstadoEjemplar.PRESTADO, "X", FECHA, 1, -3)))
+                new EjemplarUpdateInput(EstadoEjemplar.PRESTADO, " ", FECHA, 30000)))
                 .isInstanceOf(LibreriaException.class)
-                .hasMessageContaining("número de préstamos no puede ser negativo");
+                .hasMessageContaining("ubicación es obligatoria");
         assertThat(servicio.buscarPorCodigo(codigo)).map(Ejemplar::getNumeroPrestamos).contains(0);
+        assertThat(servicio.buscarPorCodigo(codigo)).map(Ejemplar::getEstado).contains(EstadoEjemplar.DISPONIBLE);
     }
 
     @Test
@@ -134,13 +165,13 @@ class ServicioEjemplarTest {
         LocalDateTime nuevaFecha = LocalDateTime.of(2023, 1, 1, 8, 0);
 
         Ejemplar actualizado = servicio.actualizar(codigo,
-                new EjemplarUpdateInput(EstadoEjemplar.DANIADO, " Bodega ", nuevaFecha, 12345.5, 7));
+                new EjemplarUpdateInput(EstadoEjemplar.DANIADO, " Bodega ", nuevaFecha, 12345.5));
 
         assertThat(actualizado.getEstado()).isEqualTo(EstadoEjemplar.DANIADO);
         assertThat(actualizado.getUbicacion()).isEqualTo("Bodega");
         assertThat(actualizado.getFechaIngreso()).isEqualTo(nuevaFecha);
         assertThat(actualizado.getPrecioReposicion()).isEqualTo(12345.5);
-        assertThat(actualizado.getNumeroPrestamos()).isEqualTo(7);
+        assertThat(actualizado.getNumeroPrestamos()).isEqualTo(0); // no pasó a PRESTADO
         assertThat(actualizado.getIsbnLibro()).isEqualTo(isbn);
 
         assertThat(servicio.eliminar(codigo).getCodigo()).isEqualTo(codigo);

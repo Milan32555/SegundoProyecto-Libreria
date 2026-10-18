@@ -106,6 +106,18 @@ void main() {
       expect(resumen.totalEjemplares, 2);
     });
 
+    test('se identifica ante el servidor con el encabezado X-Cliente', () async {
+      String? cliente;
+      ClienteGraphQL().clienteHttp = MockClient((request) async {
+        cliente = request.headers['X-Cliente'];
+        return http.Response('{"data":{"revisionLibros":1}}', 200);
+      });
+
+      await consultarRevisionLibros();
+
+      expect(cliente, 'movil');
+    });
+
     test('informa el código HTTP cuando la respuesta no es GraphQL', () async {
       ClienteGraphQL().clienteHttp = MockClient((_) async => http.Response('Error interno', 500));
 
@@ -196,6 +208,7 @@ void main() {
     test('formatos de fecha y precio', () {
       expect(aFechaServidor(DateTime(1967, 5, 30)), '1967-05-30T00:00:00');
       expect(formatearFecha(DateTime(2024, 2, 10)), '10/02/2024');
+      expect(formatearFechaHora(DateTime(2024, 2, 10, 9, 5)), '10/02/2024 09:05');
       expect(formatearFechaIso('2024-02-10T09:05:00'), '10/02/2024 09:05');
       expect(formatearFechaIso('no es fecha'), 'no es fecha');
       expect(formatearPrecio(65000), '\$ 65.000');

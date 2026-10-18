@@ -18,6 +18,23 @@ Future<void> abrir(WidgetTester tester, String ruta) async {
 Future<void> escribir(WidgetTester tester, String etiqueta, String texto) =>
     tester.enterText(find.widgetWithText(TextField, etiqueta), texto);
 
+/// Abre el campo de fecha, acepta el día de hoy y luego la hora (opcionalmente escribiéndola).
+Future<void> elegirFechaYHora(WidgetTester tester, {String? hora, String? minuto}) async {
+  await tester.tap(find.byType(CampoFecha));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('OK')); // calendario
+  await tester.pumpAndSettle();
+  if (hora != null && minuto != null) {
+    await tester.tap(find.byIcon(Icons.keyboard_outlined)); // escribir la hora en vez de usar el reloj
+    await tester.pumpAndSettle();
+    final campos = find.descendant(of: find.byType(Dialog), matching: find.byType(TextField));
+    await tester.enterText(campos.at(0), hora);
+    await tester.enterText(campos.at(1), minuto);
+  }
+  await tester.tap(find.text('OK')); // hora
+  await tester.pumpAndSettle();
+}
+
 void main() {
   group('Menú principal', () {
     testWidgets('muestra el resumen del inventario que calcula el servidor', (tester) async {
@@ -195,10 +212,8 @@ void main() {
       await escribir(tester, 'Precio', '39000.5');
       await escribir(tester, 'Páginas', '124');
       await tester.tap(find.widgetWithText(ChoiceChip, 'No ficción'));
-      await tester.tap(find.byType(CampoFecha));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('OK'));
-      await tester.pumpAndSettle();
+      await elegirFechaYHora(tester, hora: '14', minuto: '30');
+      expect(find.textContaining(' 14:30'), findsOneWidget); // el campo muestra fecha y hora
       await tester.tap(find.text('Adicionar'));
       await tester.pumpAndSettle();
 
@@ -210,7 +225,7 @@ void main() {
       expect(input['genero'], 'NO_FICCION');
       expect(
         input['fechaPublicacion'],
-        '${hoy.year}-${'${hoy.month}'.padLeft(2, '0')}-${'${hoy.day}'.padLeft(2, '0')}T00:00:00',
+        '${hoy.year}-${'${hoy.month}'.padLeft(2, '0')}-${'${hoy.day}'.padLeft(2, '0')}T14:30:00',
       );
       expect(find.text('Libro "Pedro Páramo" creado correctamente.'), findsOneWidget);
     });
@@ -260,11 +275,16 @@ void main() {
       expect(find.text('Pertenece al libro 978-0307474728. El código no se puede modificar.'), findsOneWidget);
       expect(tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'Disponible')).selected, isTrue);
       expect(find.widgetWithText(TextFormField, 'Estante A1'), findsOneWidget);
-      expect(find.text('10/02/2024'), findsOneWidget);
-      expect(find.widgetWithText(TextFormField, '4'), findsOneWidget); // número de préstamos actual
+      expect(find.text('10/02/2024 09:00'), findsOneWidget); // fecha Y hora de ingreso
+      // Número de préstamos actual: se ve, pero no se edita (lo lleva el servidor).
+      final prestamos = find.widgetWithText(TextFormField, '4');
+      expect(prestamos, findsOneWidget);
+      expect(
+        tester.widget<TextField>(find.descendant(of: prestamos, matching: find.byType(TextField))).readOnly,
+        isTrue,
+      );
 
       await escribir(tester, 'Ubicación', 'Mostrador');
-      await escribir(tester, 'Número de préstamos', '5');
       await tester.tap(find.widgetWithText(ChoiceChip, 'Prestado'));
       await tester.tap(find.text('Guardar cambios'));
       await tester.pumpAndSettle();
@@ -276,7 +296,6 @@ void main() {
           'ubicacion': 'Mostrador',
           'fechaIngreso': '2024-02-10T09:00:00',
           'precioReposicion': 65000.0,
-          'numeroPrestamos': 5,
         },
       });
     });
@@ -292,10 +311,7 @@ void main() {
       await escribir(tester, 'Ubicación', 'Estante C3');
       await escribir(tester, 'Precio de reposición', '45000');
       await escribir(tester, 'Número de préstamos', '-2');
-      await tester.tap(find.byType(CampoFecha));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('OK'));
-      await tester.pumpAndSettle();
+      await elegirFechaYHora(tester);
       await tester.tap(find.text('Adicionar'));
       await tester.pumpAndSettle();
 

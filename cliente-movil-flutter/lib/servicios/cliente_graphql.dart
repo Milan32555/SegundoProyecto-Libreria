@@ -42,6 +42,9 @@ class ClienteGraphQL {
 
   static const _tiempoMaximo = Duration(seconds: 10);
 
+  /// Con este encabezado el servidor sabe qué cliente hizo cada operación (lo muestra en consola).
+  static const encabezadoCliente = {'X-Cliente': 'movil'};
+
   http.Client _http = http.Client();
 
   /// Permite que las pruebas reemplacen la conexión real por una simulada.
@@ -55,7 +58,7 @@ class ClienteGraphQL {
       respuesta = await _http
           .post(
             Uri.parse(url),
-            headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+            headers: {'Content-Type': 'application/json', 'Accept': 'application/json', ...encabezadoCliente},
             body: jsonEncode({'query': query, 'variables': variables ?? {}}),
           )
           .timeout(_tiempoMaximo);

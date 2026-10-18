@@ -37,7 +37,7 @@ lib/
 ├── main.dart                    Rutas: una pantalla por caso de uso
 ├── modelos/                     Modelo: Libro, Ejemplar, ResumenInventario (desde JSON)
 ├── servicios/                   Acceso a datos
-│   ├── cliente_graphql.dart     Singleton que envía las peticiones y traduce los errores
+│   ├── cliente_graphql.dart     Singleton que envía las peticiones (con X-Cliente: movil) y traduce los errores
 │   ├── servicio_libro.dart
 │   ├── servicio_ejemplar.dart
 │   └── servicio_resumen.dart    Resumen del inventario (lo calcula el servidor)
@@ -49,7 +49,7 @@ lib/
 │   ├── acerca_de.dart           Integrantes y versión
 │   ├── libro/                   agregar, eliminar, actualizar, listar, consultar
 │   ├── ejemplar/                agregar, eliminar, actualizar, listar, consultar
-│   └── comunes/                 Fichas, campo de fecha y componentes visuales reutilizables
+│   └── comunes/                 Fichas, campo de fecha y hora, y componentes visuales reutilizables
 ├── tema/tema.dart               Sistema de diseño: paleta, medidas y ThemeData
 └── utilidades/                  Formatos de fecha/precio y validaciones de formularios
 ```
@@ -65,7 +65,11 @@ Identidad propia de librería, "papel y tinta" (`lib/tema/tema.dart`):
 - Inicio con un encabezado verde que se contrae al desplazar: saludo y fecha, cifras del
   inventario que cuentan hasta su valor y una estantería dibujada cuyos libros "crecen" al abrir
   la app; debajo, la distribución de los ejemplares por estado en una barra proporcional.
-- Las fichas (consultar y antes de eliminar) son tarjetas limpias con borde fino y sombra suave.
+- Las fichas (consultar y antes de eliminar) son tarjetas limpias con borde fino y sombra suave,
+  y muestran las fechas con su hora.
+- El campo de fecha de Adicionar y Actualizar elige el día y luego la hora (24 h), igual que la
+  web. En *Actualizar Ejemplar* el número de préstamos se ve pero no se edita (lo lleva el
+  servidor).
 - *Acerca de...* con estilo de app profesional: tarjeta del producto con su versión, el equipo,
   un **diagrama animado de la arquitectura** (los clientes envían peticiones GraphQL al servidor)
   que mide en el momento si el servidor responde y en cuántos milisegundos, los patrones de diseño

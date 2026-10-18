@@ -52,9 +52,10 @@ export async function crearEjemplar(input: Ejemplar): Promise<Ejemplar> {
   return data.crearEjemplar;
 }
 
+/** numeroPrestamos no se envía: al actualizar lo calcula el servidor. */
 export async function actualizarEjemplar(
   codigo: string,
-  input: Omit<Ejemplar, "codigo" | "isbnLibro">
+  input: Omit<Ejemplar, "codigo" | "isbnLibro" | "numeroPrestamos">
 ): Promise<Ejemplar> {
   const data = await graphql().ejecutar<{ actualizarEjemplar: Ejemplar }>(
     `mutation ($codigo: ID!, $input: EjemplarUpdateInput!) {

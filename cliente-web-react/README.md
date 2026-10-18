@@ -30,7 +30,7 @@ VITE_URL_GRAPHQL=http://<ip-del-servidor>:8081/graphql
 src/
 ├── types.ts                 Modelo: interfaces Libro / Ejemplar y enums
 ├── graphql/                 Acceso a datos
-│   ├── clienteGraphQL.ts    Singleton que envía las peticiones y traduce los errores
+│   ├── clienteGraphQL.ts    Singleton que envía las peticiones (con X-Cliente: web) y traduce los errores
 │   ├── servicioLibro.ts     Consultas/mutaciones de Libro
 │   ├── servicioEjemplar.ts  Consultas/mutaciones de Ejemplar
 │   └── servicioResumen.ts   Resumen del inventario (lo calcula el servidor)

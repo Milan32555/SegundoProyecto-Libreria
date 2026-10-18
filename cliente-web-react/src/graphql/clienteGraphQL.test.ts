@@ -23,6 +23,7 @@ describe("ClienteGraphQL", () => {
     const [url, opciones] = fetchFalso.mock.calls[0];
     expect(url).toBe(URL_GRAPHQL);
     expect(opciones.method).toBe("POST");
+    expect(opciones.headers["X-Cliente"]).toBe("web"); // el servidor registra qué cliente hizo la operación
     expect(JSON.parse(opciones.body)).toEqual({ query: "query { libros { isbn } }", variables: { a: 1 } });
   });
 

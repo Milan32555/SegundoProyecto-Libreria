@@ -76,9 +76,11 @@ ejemplares. **Cada clase, por sí sola**, tiene los tipos exigidos:
 
 Reglas de negocio que valida el servidor: ISBN y código únicos (sin distinguir mayúsculas),
 campos obligatorios, precio y páginas mayores que cero, número de préstamos no negativo,
-fechas no futuras, un ejemplar solo puede crearse para un libro existente, y **no se puede
+fechas no futuras, un ejemplar solo puede crearse para un libro existente, **no se puede
 eliminar un libro que todavía tiene ejemplares** (quedarían huérfanos y se rompería la
-relación 1..1).
+relación 1..1) y **cada vez que un ejemplar pasa de otro estado a `PRESTADO`, el servidor
+suma 1 a su `numeroPrestamos`**. Por eso, en *Actualizar Ejemplar* el número de préstamos se
+muestra pero no se edita; en *Adicionar* se registra el valor inicial.
 
 **Toda la lógica de negocio está en el servidor.** Los clientes solo capturan datos y muestran
 lo que responde el servidor: los filtros de Listar, las búsquedas, el total de cada Listar
@@ -154,6 +156,18 @@ GraphQL en `http://localhost:8081/graphql` · consola GraphiQL en `http://localh
 Arranca con datos de prueba: 3 libros (ISBN `978-0307474728`, `978-8420471839`,
 `978-9584276193`) y 3 ejemplares (`EJ-001`, `EJ-002`, `EJ-003`).
 
+La ventana del servidor muestra una línea por cada operación, con la hora y el cliente que la
+hizo (cada cliente envía el encabezado `X-Cliente: web` o `X-Cliente: movil`):
+
+```
+13:00:56  Cliente web  | consulta librosFiltrados + totalLibrosFiltrados (autor=garcia)
+13:01:01  App móvil    | mutación crearLibro (isbn=978-1, titulo=Pedro Páramo)
+13:01:04  Cliente web  | mutación eliminarLibro (isbn=978-0307474728)  -> RECHAZADA: No se puede eliminar…
+```
+
+Las consultas de revisión del Observer (cada 15 s) no se muestran para no llenar la consola;
+se activan con `libreria.registro.incluir-revisiones=true` en `application.properties`.
+
 ### 2. Cliente web (React)
 ```bash
 cd cliente-web-react
@@ -180,9 +194,9 @@ flutter run --dart-define=URL_GRAPHQL=http://<IP-del-computador>:8081/graphql
 
 | Proyecto | Comando | Qué cubre |
 |---|---|---|
-| Servidor | `./mvnw verify` | 44 pruebas: servicios (CRUD, validaciones, filtros, totales, resumen del inventario, integridad, Observer), patrones, API GraphQL completa y servidor HTTP real con CORS |
+| Servidor | `./mvnw verify` | 50 pruebas: servicios (CRUD, validaciones, filtros, totales, resumen del inventario, regla de préstamos, integridad, Observer), patrones, API GraphQL completa, registro de operaciones y servidor HTTP real con CORS |
 | Cliente web | `npm test` · `npm run lint` | 41 pruebas: cliente GraphQL, Observer (incluida la detección de cambios de otro cliente cada 15 s), formatos y flujos de las pantallas |
-| Cliente móvil | `flutter test` · `flutter analyze` | 32 pruebas: modelos, cliente GraphQL, Observer, validaciones y flujos de las pantallas con un servidor simulado |
+| Cliente móvil | `flutter test` · `flutter analyze` | 33 pruebas: modelos, cliente GraphQL, Observer, validaciones y flujos de las pantallas con un servidor simulado |
 | Cliente móvil ↔ servidor real | `flutter test test/integracion_servidor_test.dart --dart-define=URL_GRAPHQL=http://localhost:8081/graphql` | CRUD completo de Libro y Ejemplar contra el servidor en ejecución |
 
 GitHub Actions ejecuta las pruebas, el lint y el build de los tres proyectos en cada push
@@ -217,7 +231,8 @@ query {
 
 ## Guía rápida para la sustentación
 
-1. Levantar el servidor y los dos clientes.
+1. Levantar el servidor y los dos clientes. Dejar visible la ventana del servidor: ahí aparece
+   cada operación con la hora y el cliente que la hizo.
 2. En el navegador abrir **Libro → Listar**. En la app Flutter, **Adicionar** un libro.
    En máximo 15 s aparece en la grilla del navegador sin recargar (Observer entre clientes,
    opcional). Dentro de un mismo cliente el refresco es inmediato.
@@ -225,4 +240,6 @@ query {
    servidor rechaza la operación porque tiene ejemplares. Eliminar `978-9584276193` (sin
    ejemplares) sí funciona.
 4. **Buscar por criterios**: consultar un libro por ISBN o por título (`la voragine`).
+   **Actualizar** el ejemplar `EJ-001` a *Prestado*: su número de préstamos pasa de 4 a 5
+   (lo calcula el servidor).
 5. **Ayuda → Acerca de...** muestra integrantes y versión.

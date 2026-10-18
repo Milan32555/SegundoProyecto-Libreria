@@ -11,7 +11,8 @@ import '../comunes/campo_fecha.dart';
 import '../comunes/componentes.dart';
 
 /// Caso de uso: Actualizar Ejemplar. Primero se busca y se muestra TODA la
-/// información actual; luego el usuario la modifica y confirma.
+/// información actual; luego el usuario la modifica y confirma. El número de préstamos
+/// se muestra pero no se edita: lo lleva el servidor (suma 1 al pasar a Prestado).
 class ActualizarEjemplar extends StatefulWidget {
   const ActualizarEjemplar({super.key});
 
@@ -24,7 +25,6 @@ class _ActualizarEjemplarState extends State<ActualizarEjemplar> {
   final _codigoBusqueda = TextEditingController();
   final _ubicacion = TextEditingController();
   final _precioReposicion = TextEditingController();
-  final _numeroPrestamos = TextEditingController();
   DateTime? _fechaIngreso;
   String _estado = estadosEjemplar.first;
 
@@ -37,7 +37,6 @@ class _ActualizarEjemplarState extends State<ActualizarEjemplar> {
     _codigoBusqueda.dispose();
     _ubicacion.dispose();
     _precioReposicion.dispose();
-    _numeroPrestamos.dispose();
     super.dispose();
   }
 
@@ -60,7 +59,6 @@ class _ActualizarEjemplarState extends State<ActualizarEjemplar> {
         _estado = resultado.estado;
         _ubicacion.text = resultado.ubicacion;
         _precioReposicion.text = resultado.precioReposicion.toString();
-        _numeroPrestamos.text = resultado.numeroPrestamos.toString();
         _fechaIngreso = DateTime.parse(resultado.fechaIngreso);
       });
     } on ErrorGraphQL catch (e) {
@@ -84,7 +82,6 @@ class _ActualizarEjemplarState extends State<ActualizarEjemplar> {
         ubicacion: _ubicacion.text.trim(),
         fechaIngreso: aFechaServidor(_fechaIngreso!),
         precioReposicion: double.parse(_precioReposicion.text.trim()),
-        numeroPrestamos: int.parse(_numeroPrestamos.text.trim()),
       );
       ejemplarObservable.notificar();
       if (!mounted) return;
@@ -168,10 +165,19 @@ class _ActualizarEjemplarState extends State<ActualizarEjemplar> {
           ),
           const SizedBox(height: 12),
           TextFormField(
-            controller: _numeroPrestamos,
-            decoration: const InputDecoration(labelText: 'Número de préstamos', prefixIcon: Icon(Icons.repeat_rounded)),
-            keyboardType: TextInputType.number,
-            validator: validarEnteroNoNegativo,
+            key: ValueKey('prestamos-${_ejemplar!.codigo}'),
+            initialValue: '${_ejemplar!.numeroPrestamos}',
+            readOnly: true,
+            enableInteractiveSelection: false,
+            style: const TextStyle(color: kTinta2),
+            decoration: const InputDecoration(
+              labelText: 'Número de préstamos',
+              prefixIcon: Icon(Icons.repeat_rounded),
+              suffixIcon: Icon(Icons.lock_outline_rounded),
+              fillColor: kPergamino,
+              helperText: 'Lo lleva el servidor: suma 1 cada vez que el ejemplar pasa a Prestado.',
+              helperMaxLines: 2,
+            ),
           ),
           if (_error != null) Aviso(_error!),
           const SizedBox(height: Espacio.lg),

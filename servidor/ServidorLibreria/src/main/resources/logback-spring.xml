@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Log de consola de Spring Boot sin cambios, más una salida corta para el registro de
+  operaciones GraphQL (logger "operaciones", ver RegistroOperaciones):
+      12:41:05  App móvil    | mutación crearLibro (isbn=978-1, titulo=Pedro Páramo)
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <appender name="OPERACIONES" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss}  %msg%n</pattern>
+            <charset>${CONSOLE_LOG_CHARSET}</charset>
+        </encoder>
+    </appender>
+
+    <logger name="operaciones" level="INFO" additivity="false">
+        <appender-ref ref="OPERACIONES"/>
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

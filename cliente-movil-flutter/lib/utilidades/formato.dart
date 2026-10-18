@@ -8,6 +8,9 @@ final NumberFormat _formatoPrecio = NumberFormat('#,##0.##', 'es');
 /// Fecha elegida en la app, en formato legible (dd/MM/yyyy).
 String formatearFecha(DateTime fecha) => _formatoFecha.format(fecha);
 
+/// Fecha y hora elegidas en la app, en formato legible (dd/MM/yyyy HH:mm).
+String formatearFechaHora(DateTime fecha) => _formatoFechaHora.format(fecha);
+
 /// Fecha ISO que envía el servidor (1967-05-30T00:00:00) en formato legible.
 String formatearFechaIso(String iso) {
   final fecha = DateTime.tryParse(iso);

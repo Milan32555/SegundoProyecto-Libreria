@@ -192,9 +192,10 @@ class GraphQlApiTest {
                         }""")
                 .variable("codigo", codigo)
                 .variable("input", Map.of("estado", "PRESTADO", "ubicacion", "Mostrador",
-                        "fechaIngreso", "2024-06-01T10:00:00", "precioReposicion", 21000, "numeroPrestamos", 6))
+                        "fechaIngreso", "2024-06-01T10:00:00", "precioReposicion", 21000))
                 .execute()
                 .path("actualizarEjemplar.estado").entity(String.class).isEqualTo("PRESTADO")
+                // Pasó de DISPONIBLE a PRESTADO: el servidor suma un préstamo (5 -> 6).
                 .path("actualizarEjemplar.numeroPrestamos").entity(Integer.class).isEqualTo(6)
                 .path("actualizarEjemplar.ubicacion").entity(String.class).isEqualTo("Mostrador");
 

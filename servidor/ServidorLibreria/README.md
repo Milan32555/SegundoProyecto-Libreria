@@ -29,6 +29,7 @@ src/main/java/com/libreria/servidor/
 ├── observer/      ListadoObservable, ObservadorListado, RevisionListado → patrón Observer
 ├── enums/         Genero, EstadoEjemplar
 ├── excepciones/   LibreriaException + ManejadorErrores (errores legibles para los clientes)
+├── registro/      RegistroOperaciones → una línea en consola por operación y cliente (X-Cliente)
 └── config/        LocalDateTimeScalarConfig (escalar GraphQL LocalDateTime, ISO-8601)
 src/main/resources/graphql/schema.graphqls              → contrato GraphQL
 ```
@@ -51,6 +52,14 @@ src/main/resources/graphql/schema.graphqls              → contrato GraphQL
   refrescar su pantalla de Listar cuando otro cliente modifica los datos.
 - **Integridad maestro–detalle:** un ejemplar solo se crea para un libro existente (se guarda
   el ISBN tal como está registrado) y un libro con ejemplares no se puede eliminar.
+- **Préstamos:** `numeroPrestamos` se fija al crear el ejemplar (no negativo). Al actualizar
+  no se recibe del cliente (`EjemplarUpdateInput` no lo tiene): `ServicioEjemplar` le suma 1
+  cada vez que el estado cambia de otro a `PRESTADO`.
+- **Registro de operaciones:** `RegistroOperaciones` (un `WebGraphQlInterceptor`) lee el
+  encabezado `X-Cliente` (`web` / `movil`) y escribe en consola la hora, el cliente, el tipo de
+  operación, los campos pedidos, los datos clave y si el servidor la rechazó. El formato corto
+  está en `logback-spring.xml`. Las consultas de revisión del Observer se omiten salvo que se
+  active `libreria.registro.incluir-revisiones=true`.
 - **Errores:** las reglas de negocio lanzan `LibreriaException`; `ManejadorErrores` la
   convierte en un error GraphQL `BAD_REQUEST` con un mensaje en español para el usuario.
 - **Fechas:** el escalar `LocalDateTime` acepta `yyyy-MM-ddTHH:mm[:ss]` (formato de
@@ -64,8 +73,9 @@ src/main/resources/graphql/schema.graphqls              → contrato GraphQL
 
 | Clase | Qué prueba |
 |---|---|
-| `ServicioLibroTest`, `ServicioEjemplarTest` | CRUD, validaciones (incluido número de préstamos no negativo), filtros sin tildes y sus totales, búsqueda por ISBN/título, integridad, notificaciones |
+| `ServicioLibroTest`, `ServicioEjemplarTest` | CRUD, validaciones (incluido número de préstamos no negativo), regla de préstamos al pasar a PRESTADO, filtros sin tildes y sus totales, búsqueda por ISBN/título, integridad, notificaciones |
 | `ServicioResumenTest` | Resumen del inventario: totales, ejemplares por estado y porcentajes |
 | `PatronesDisenoTest` | Singleton, Builder, Observer y protección de la colección |
 | `GraphQlApiTest` | La API GraphQL completa: consultas anidadas, filtros y totales, resumen del inventario, mutaciones, fechas y mensajes de error |
-| `ServidorHttpTest` | El servidor en un puerto real: `POST /graphql` y preflight CORS del cliente web |
+| `RegistroOperacionesTest` | El texto de cada línea del registro (cliente, operación, datos clave, rechazos) |
+| `ServidorHttpTest` | El servidor en un puerto real: `POST /graphql`, preflight CORS (con `X-Cliente`) y el registro en consola |

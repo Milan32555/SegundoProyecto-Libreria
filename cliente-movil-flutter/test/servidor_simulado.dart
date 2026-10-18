@@ -12,15 +12,45 @@ class ErrorSimulado implements Exception {
 
 typedef Resolver = Object? Function(Map<String, dynamic> variables);
 
-/// Servidor GraphQL falso para las pruebas: responde según el campo raíz de cada
-/// consulta/mutación y guarda las peticiones recibidas para poder verificarlas.
+/// Servidor GraphQL falso para las pruebas: responde según los campos raíz de cada
+/// consulta/mutación (puede haber varios en una petición, p. ej. la lista y su total)
+/// y guarda las peticiones recibidas para poder verificarlas.
 class ServidorSimulado {
   ServidorSimulado(this.resolvers);
 
   final Map<String, Resolver> resolvers;
   final List<({String campo, Map<String, dynamic> variables})> peticiones = [];
 
-  static final _campoRaiz = RegExp(r'\{\s*(\w+)');
+  static final _identificador = RegExp(r'[A-Za-z_]\w*');
+
+  /// Campos del primer nivel de la operación: `query (...) { a(...) { x } b }` → [a, b].
+  static List<String> camposRaiz(String query) {
+    final campos = <String>[];
+    var llaves = 0;
+    var parentesis = 0;
+    var i = 0;
+    while (i < query.length) {
+      final c = query[i];
+      if (c == '(') {
+        parentesis++;
+      } else if (c == ')') {
+        parentesis--;
+      } else if (parentesis == 0 && c == '{') {
+        llaves++;
+      } else if (parentesis == 0 && c == '}') {
+        llaves--;
+      } else if (llaves == 1 && parentesis == 0) {
+        final nombre = _identificador.matchAsPrefix(query, i);
+        if (nombre != null) {
+          campos.add(nombre.group(0)!);
+          i = nombre.end;
+          continue;
+        }
+      }
+      i++;
+    }
+    return campos;
+  }
 
   /// Conecta el Singleton ClienteGraphQL a este servidor simulado.
   void instalar() => ClienteGraphQL().clienteHttp = MockClient(_responder);
@@ -32,28 +62,30 @@ class ServidorSimulado {
 
   Future<http.Response> _responder(http.Request request) async {
     final cuerpo = jsonDecode(request.body) as Map<String, dynamic>;
-    final campo = _campoRaiz.firstMatch(cuerpo['query'] as String)!.group(1)!;
+    final campos = camposRaiz(cuerpo['query'] as String);
     final variables = (cuerpo['variables'] as Map<String, dynamic>?) ?? {};
-    peticiones.add((campo: campo, variables: variables));
+    for (final campo in campos) {
+      peticiones.add((campo: campo, variables: variables));
+    }
 
-    final resolver = resolvers[campo];
-    if (resolver == null) {
+    final sinSimular = campos.where((campo) => !resolvers.containsKey(campo)).toList();
+    if (sinSimular.isNotEmpty) {
       return _json({
         'errors': [
-          {'message': 'Campo no simulado: $campo'},
+          {'message': 'Campo no simulado: ${sinSimular.join(', ')}'},
         ],
       }, 400);
     }
     try {
       return _json({
-        'data': {campo: resolver(variables)},
+        'data': {for (final campo in campos) campo: resolvers[campo]!(variables)},
       });
     } on ErrorSimulado catch (e) {
       return _json({
         'errors': [
           {'message': e.mensaje},
         ],
-        'data': {campo: null},
+        'data': {for (final campo in campos) campo: null},
       });
     }
   }
@@ -86,6 +118,7 @@ Map<String, dynamic> ejemplarJson({
   String ubicacion = 'Estante A1',
   String fechaIngreso = '2024-02-10T09:00:00',
   num precioReposicion = 65000,
+  int numeroPrestamos = 4,
   String isbnLibro = '978-0307474728',
 }) => {
   'codigo': codigo,
@@ -93,5 +126,22 @@ Map<String, dynamic> ejemplarJson({
   'ubicacion': ubicacion,
   'fechaIngreso': fechaIngreso,
   'precioReposicion': precioReposicion,
+  'numeroPrestamos': numeroPrestamos,
   'isbnLibro': isbnLibro,
 };
+
+/// Resumen del inventario tal como lo calcula el servidor (query resumenInventario).
+Map<String, dynamic> resumenJson({
+  int totalLibros = 2,
+  Map<String, int> porEstado = const {'DISPONIBLE': 1, 'PRESTADO': 1, 'DANIADO': 0, 'DADO_DE_BAJA': 0},
+}) {
+  final total = porEstado.values.fold<int>(0, (a, b) => a + b);
+  return {
+    'totalLibros': totalLibros,
+    'totalEjemplares': total,
+    'ejemplaresPorEstado': [
+      for (final MapEntry(key: estado, value: cantidad) in porEstado.entries)
+        {'estado': estado, 'cantidad': cantidad, 'porcentaje': total == 0 ? 0 : cantidad * 100 / total},
+    ],
+  };
+}

@@ -58,6 +58,7 @@ class FichaEjemplar extends StatelessWidget {
       datos: {
         'Estado': etiquetaEstado(ejemplar.estado),
         'Ingreso': formatearFechaIso(ejemplar.fechaIngreso),
+        'Préstamos': '${ejemplar.numeroPrestamos}',
         'Libro (ISBN)': ejemplar.isbnLibro,
       },
     );

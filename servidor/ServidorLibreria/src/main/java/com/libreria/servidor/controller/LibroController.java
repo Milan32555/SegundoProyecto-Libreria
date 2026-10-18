@@ -45,6 +45,11 @@ public class LibroController {
     }
 
     @QueryMapping
+    public int totalLibrosFiltrados(@Argument String autor, @Argument Genero genero) {
+        return servicioLibro.contarFiltrados(autor, genero);
+    }
+
+    @QueryMapping
     public Optional<Libro> libroPorIsbn(@Argument String isbn) {
         return servicioLibro.buscarPorIsbn(isbn);
     }

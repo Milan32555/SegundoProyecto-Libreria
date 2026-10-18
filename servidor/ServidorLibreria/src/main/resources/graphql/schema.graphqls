@@ -37,9 +37,26 @@ type Ejemplar {
     ubicacion: String!
     fechaIngreso: LocalDateTime!
     precioReposicion: Float!
+    "Veces que se ha prestado este ejemplar (no negativo)"
+    numeroPrestamos: Int!
     isbnLibro: String!
     "Libro al que pertenece este ejemplar"
     libro: Libro!
+}
+
+"Cuántos ejemplares hay en un estado y qué porcentaje (0 a 100) del inventario representan."
+type ConteoEstado {
+    estado: EstadoEjemplar!
+    cantidad: Int!
+    porcentaje: Float!
+}
+
+"Resumen del inventario para la ventana principal (lo calcula el servidor)."
+type ResumenInventario {
+    totalLibros: Int!
+    totalEjemplares: Int!
+    "Un elemento por cada estado, en el orden del enum (incluye los que tienen 0)"
+    ejemplaresPorEstado: [ConteoEstado!]!
 }
 
 input LibroInput {
@@ -67,6 +84,7 @@ input EjemplarInput {
     ubicacion: String!
     fechaIngreso: LocalDateTime!
     precioReposicion: Float!
+    numeroPrestamos: Int!
     isbnLibro: String!
 }
 
@@ -75,6 +93,7 @@ input EjemplarUpdateInput {
     ubicacion: String!
     fechaIngreso: LocalDateTime!
     precioReposicion: Float!
+    numeroPrestamos: Int!
 }
 
 type Query {
@@ -82,6 +101,8 @@ type Query {
     libros: [Libro!]!
     "Listar libros filtrando por autor (contiene, sin tildes) y/o género"
     librosFiltrados(autor: String, genero: Genero): [Libro!]!
+    "Cuántos libros cumplen el mismo filtro de librosFiltrados"
+    totalLibrosFiltrados(autor: String, genero: Genero): Int!
     "Consultar UN SOLO libro por su ISBN"
     libroPorIsbn(isbn: ID!): Libro
     "Consultar UN SOLO libro por su título exacto (sin distinguir tildes ni mayúsculas)"
@@ -93,10 +114,15 @@ type Query {
     ejemplares: [Ejemplar!]!
     "Listar ejemplares filtrando por estado y/o isbn del libro"
     ejemplaresFiltrados(estado: EstadoEjemplar, isbnLibro: String): [Ejemplar!]!
+    "Cuántos ejemplares cumplen el mismo filtro de ejemplaresFiltrados"
+    totalEjemplaresFiltrados(estado: EstadoEjemplar, isbnLibro: String): Int!
     "Consultar UN SOLO ejemplar por su código"
     ejemplarPorCodigo(codigo: ID!): Ejemplar
     "Aumenta cada vez que la colección de ejemplares cambia (Observer de los clientes)"
     revisionEjemplares: Int!
+
+    "Resumen del inventario (totales y ejemplares por estado) para la ventana principal"
+    resumenInventario: ResumenInventario!
 }
 
 type Mutation {

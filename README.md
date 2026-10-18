@@ -56,6 +56,7 @@ classDiagram
         String ubicacion
         LocalDateTime fechaIngreso
         double precioReposicion
+        int numeroPrestamos
         String isbnLibro
     }
     Libro "1..1" --> "0..*" Ejemplar : tiene
@@ -63,13 +64,28 @@ classDiagram
 
 Un `Libro` es un título editorial; un `Ejemplar` es una copia física de ese libro en el
 inventario. Cada ejemplar pertenece a **un único** libro y un libro puede tener **0..\***
-ejemplares. Ambos objetos manejan los tipos exigidos: `int`, `double`, `String`,
-`LocalDateTime` y uno de elección (los enums `Genero` y `EstadoEjemplar`).
+ejemplares. **Cada clase, por sí sola**, tiene los tipos exigidos:
+
+| Tipo | Libro | Ejemplar |
+|---|---|---|
+| `int` | `numeroPaginas` | `numeroPrestamos` |
+| `double` | `precio` | `precioReposicion` |
+| `String` | `isbn`, `titulo`, `autor` | `codigo`, `ubicacion`, `isbnLibro` |
+| `LocalDateTime` | `fechaPublicacion` | `fechaIngreso` |
+| De elección (enum) | `genero` (`Genero`) | `estado` (`EstadoEjemplar`) |
 
 Reglas de negocio que valida el servidor: ISBN y código únicos (sin distinguir mayúsculas),
-campos obligatorios, precio y páginas mayores que cero, fechas no futuras, un ejemplar solo
-puede crearse para un libro existente, y **no se puede eliminar un libro que todavía tiene
-ejemplares** (quedarían huérfanos y se rompería la relación 1..1).
+campos obligatorios, precio y páginas mayores que cero, número de préstamos no negativo,
+fechas no futuras, un ejemplar solo puede crearse para un libro existente, y **no se puede
+eliminar un libro que todavía tiene ejemplares** (quedarían huérfanos y se rompería la
+relación 1..1).
+
+**Toda la lógica de negocio está en el servidor.** Los clientes solo capturan datos y muestran
+lo que responde el servidor: los filtros de Listar, las búsquedas, el total de cada Listar
+(`totalLibrosFiltrados`, `totalEjemplaresFiltrados`) y el resumen de la ventana principal
+(`resumenInventario`: total de libros, total de ejemplares y ejemplares por estado con su
+porcentaje) se calculan en el servidor. Las validaciones de los formularios en los clientes son
+solo un aviso rápido; el servidor vuelve a validar todo.
 
 ## Cumplimiento del enunciado y la rúbrica
 
@@ -82,7 +98,7 @@ ejemplares** (quedarían huérfanos y se rompería la relación 1..1).
 | **Insertar** | Pantallas *Adicionar Libro / Ejemplar* |
 | **Eliminar** con búsqueda previa y mostrando TODA la información | Pantallas *Eliminar*: buscar → ficha completa → *Confirmar eliminación* |
 | **Actualizar** con búsqueda previa y mostrando TODA la información | Pantallas *Actualizar*: buscar → formulario con todos los datos actuales → guardar |
-| **Listar** en grilla con filtro (del lado del servidor) | Tabla/`DataTable`; Libros por autor y/o género, Ejemplares por estado y/o ISBN (`librosFiltrados`, `ejemplaresFiltrados`) |
+| **Listar** en grilla con filtro (del lado del servidor) | Tabla/`DataTable`; Libros por autor y/o género, Ejemplares por estado y/o ISBN (`librosFiltrados`, `ejemplaresFiltrados`); el total encontrado también lo calcula el servidor |
 | **Consultar UN objeto** por parámetros | Libro por ISBN **o** por título; Ejemplar por código |
 | Una ventana por caso de uso | Cada opción del menú abre una pantalla/ruta dedicada a un solo caso de uso |
 | Menú principal + **Ayuda → Acerca de...** con integrantes y versión | `BarraMenu` (React) y `MenuLateral` (Flutter) |
@@ -101,16 +117,21 @@ ejemplares** (quedarían huérfanos y se rompería la relación 1..1).
 
 ### Cómo funciona el Observer en el caso de uso Listar
 
+**Dentro de cada cliente (obligatorio):**
+
 1. La pantalla *Listar* se **suscribe** al sujeto (`libroObservable` / `ejemplarObservable`)
    al abrirse y se **desuscribe** al cerrarse.
 2. Las pantallas *Adicionar / Actualizar / Eliminar* llaman a `notificar()` tras una
-   operación exitosa.
-3. Mientras haya observadores, el sujeto consulta cada 3 s `revisionLibros` /
+   operación exitosa, y la grilla se vuelve a pedir al servidor de inmediato.
+
+**Entre clientes (opcional):**
+
+3. Mientras haya observadores, el sujeto consulta cada **15 s** `revisionLibros` /
    `revisionEjemplares` (un número que el servidor incrementa con cada cambio gracias a su
    propio Observer). Si cambió, notifica a sus observadores.
 
 Así, si la pantalla *Listar* está abierta en el navegador y alguien agrega un libro **desde
-la app Flutter** (u otra pestaña), la grilla se actualiza sola en unos segundos, respetando
+la app Flutter** (u otra pestaña), la grilla se actualiza sola en máximo 15 s, respetando
 los filtros que tenga escritos el usuario.
 
 ## Ejecución
@@ -159,9 +180,9 @@ flutter run --dart-define=URL_GRAPHQL=http://<IP-del-computador>:8081/graphql
 
 | Proyecto | Comando | Qué cubre |
 |---|---|---|
-| Servidor | `./mvnw test` | 37 pruebas: servicios (CRUD, validaciones, filtros, integridad, Observer), patrones, API GraphQL completa y servidor HTTP real con CORS |
-| Cliente web | `npm test` · `npm run lint` | 32 pruebas: cliente GraphQL, Observer (incluida la detección de cambios de otro cliente), formatos y flujos de las pantallas |
-| Cliente móvil | `flutter test` · `flutter analyze` | 20 pruebas: modelos, cliente GraphQL, Observer, validaciones y flujos de las pantallas con un servidor simulado |
+| Servidor | `./mvnw verify` | 44 pruebas: servicios (CRUD, validaciones, filtros, totales, resumen del inventario, integridad, Observer), patrones, API GraphQL completa y servidor HTTP real con CORS |
+| Cliente web | `npm test` · `npm run lint` | 41 pruebas: cliente GraphQL, Observer (incluida la detección de cambios de otro cliente cada 15 s), formatos y flujos de las pantallas |
+| Cliente móvil | `flutter test` · `flutter analyze` | 32 pruebas: modelos, cliente GraphQL, Observer, validaciones y flujos de las pantallas con un servidor simulado |
 | Cliente móvil ↔ servidor real | `flutter test test/integracion_servidor_test.dart --dart-define=URL_GRAPHQL=http://localhost:8081/graphql` | CRUD completo de Libro y Ejemplar contra el servidor en ejecución |
 
 GitHub Actions ejecuta las pruebas, el lint y el build de los tres proyectos en cada push
@@ -173,7 +194,10 @@ GitHub Actions ejecuta las pruebas, el lint y el build de los tres proyectos en 
 |---|---|
 | `libros` · `ejemplares` | Listar todos |
 | `librosFiltrados(autor, genero)` | Listar libros filtrando por autor (contiene, sin tildes) y/o género |
+| `totalLibrosFiltrados(autor, genero)` | Cuántos libros cumplen ese mismo filtro |
 | `ejemplaresFiltrados(estado, isbnLibro)` | Listar ejemplares filtrando por estado y/o libro |
+| `totalEjemplaresFiltrados(estado, isbnLibro)` | Cuántos ejemplares cumplen ese mismo filtro |
+| `resumenInventario` | Total de libros, total de ejemplares y ejemplares por estado (cantidad y porcentaje) para la ventana principal |
 | `libroPorIsbn(isbn)` · `libroPorTitulo(titulo)` · `ejemplarPorCodigo(codigo)` | Consultar UN solo objeto |
 | `revisionLibros` · `revisionEjemplares` | Número de revisión de cada colección (Observer de los clientes) |
 | `crearLibro` · `actualizarLibro` · `eliminarLibro` | CRUD de Libro |
@@ -195,7 +219,8 @@ query {
 
 1. Levantar el servidor y los dos clientes.
 2. En el navegador abrir **Libro → Listar**. En la app Flutter, **Adicionar** un libro.
-   En unos segundos aparece en la grilla del navegador sin recargar (Observer + interoperabilidad).
+   En máximo 15 s aparece en la grilla del navegador sin recargar (Observer entre clientes,
+   opcional). Dentro de un mismo cliente el refresco es inmediato.
 3. **Eliminar** el libro `978-0307474728`: se muestra la ficha completa y, al confirmar, el
    servidor rechaza la operación porque tiene ejemplares. Eliminar `978-9584276193` (sin
    ejemplares) sí funciona.

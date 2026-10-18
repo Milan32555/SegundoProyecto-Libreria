@@ -6,15 +6,18 @@ import { consultarRevisionLibros } from "../graphql/servicioLibro";
  * pantallas de Listar para enterarse de que la colección cambió.
  *
  * El sujeto avisa a sus observadores en dos casos:
- *  1. Una pantalla de este cliente (Adicionar/Actualizar/Eliminar) llama a `notificar()`
- *     después de una mutación exitosa.
- *  2. Mientras haya al menos un observador, el sujeto consulta cada pocos segundos el
- *     número de revisión de la colección en el servidor; si cambió (por ejemplo, otro
- *     cliente como la app Flutter agregó un libro), notifica a sus observadores.
+ *  1. (Obligatorio, dentro de este cliente) Una pantalla de este cliente
+ *     (Adicionar/Actualizar/Eliminar) llama a `notificar()` después de una mutación exitosa.
+ *  2. (Opcional, entre clientes) Mientras haya al menos un observador, el sujeto consulta
+ *     cada 15 s el número de revisión de la colección en el servidor; si cambió (por
+ *     ejemplo, la app Flutter agregó un libro), notifica a sus observadores.
  *
  * Así la pantalla de Listar se refresca sola, sin que el usuario pulse "refrescar".
  */
 export type Observador = () => void;
+
+/** Cada cuánto se revisa si otro cliente cambió los datos (Observer entre clientes). */
+export const INTERVALO_REVISION_MS = 15_000;
 
 export class ListadoObservable {
   private observadores: Observador[] = [];
@@ -23,7 +26,7 @@ export class ListadoObservable {
 
   constructor(
     private readonly consultarRevision?: () => Promise<number>,
-    private readonly intervaloMs = 3000
+    private readonly intervaloMs = INTERVALO_REVISION_MS
   ) {}
 
   /** Agrega un observador y devuelve la función para desuscribirlo (cleanup de useEffect). */

@@ -7,8 +7,11 @@ import java.time.LocalDateTime;
 /**
  * Clase_B (detalle) del diagrama: cada Ejemplar pertenece a exactamente un Libro (1..1),
  * y un Libro puede tener 0..* Ejemplares.
- * Atributos: codigo (String/ID), estado (EstadoEjemplar), ubicacion (String),
- * fechaIngreso (LocalDateTime), precioReposicion (double), isbnLibro (String - llave foránea lógica).
+ * Atributos: codigo (String/ID), estado (EstadoEjemplar - "otro de elección"), ubicacion (String),
+ * fechaIngreso (LocalDateTime), precioReposicion (double), numeroPrestamos (int) e
+ * isbnLibro (String - llave foránea lógica hacia su Libro).
+ *
+ * En la aplicación los Ejemplares se construyen con {@link com.libreria.servidor.builder.EjemplarBuilder}.
  */
 public class Ejemplar {
 
@@ -17,18 +20,21 @@ public class Ejemplar {
     private String ubicacion;
     private LocalDateTime fechaIngreso;
     private double precioReposicion;
+    private int numeroPrestamos;
     private String isbnLibro;
 
     public Ejemplar() {
     }
 
     public Ejemplar(String codigo, EstadoEjemplar estado, String ubicacion,
-                     LocalDateTime fechaIngreso, double precioReposicion, String isbnLibro) {
+                     LocalDateTime fechaIngreso, double precioReposicion, int numeroPrestamos,
+                     String isbnLibro) {
         this.codigo = codigo;
         this.estado = estado;
         this.ubicacion = ubicacion;
         this.fechaIngreso = fechaIngreso;
         this.precioReposicion = precioReposicion;
+        this.numeroPrestamos = numeroPrestamos;
         this.isbnLibro = isbnLibro;
     }
 
@@ -72,6 +78,14 @@ public class Ejemplar {
         this.precioReposicion = precioReposicion;
     }
 
+    public int getNumeroPrestamos() {
+        return numeroPrestamos;
+    }
+
+    public void setNumeroPrestamos(int numeroPrestamos) {
+        this.numeroPrestamos = numeroPrestamos;
+    }
+
     public String getIsbnLibro() {
         return isbnLibro;
     }
@@ -84,6 +98,6 @@ public class Ejemplar {
     public String toString() {
         return "Ejemplar{codigo='" + codigo + "', estado=" + estado + ", ubicacion='" + ubicacion
                 + "', fechaIngreso=" + fechaIngreso + ", precioReposicion=" + precioReposicion
-                + ", isbnLibro='" + isbnLibro + "'}";
+                + ", numeroPrestamos=" + numeroPrestamos + ", isbnLibro='" + isbnLibro + "'}";
     }
 }

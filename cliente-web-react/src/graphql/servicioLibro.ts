@@ -5,22 +5,24 @@ const CAMPOS_LIBRO = `isbn titulo autor precio numeroPaginas fechaPublicacion ge
 
 const graphql = () => ClienteGraphQL.getInstancia();
 
-export async function listarLibros(): Promise<Libro[]> {
-  const data = await graphql().ejecutar<{ libros: Libro[] }>(
-    `query { libros { ${CAMPOS_LIBRO} } }`
-  );
-  return data.libros;
+export interface ListadoLibros {
+  libros: Libro[];
+  total: number;
 }
 
-/** Listar con filtro: el filtrado se hace del lado del servidor. */
-export async function listarLibrosFiltrados(autor: string, genero: Genero | ""): Promise<Libro[]> {
-  const data = await graphql().ejecutar<{ librosFiltrados: Libro[] }>(
+/**
+ * Listar con filtro: el servidor filtra y también cuenta cuántos libros cumplen el filtro
+ * (las dos cosas en una sola petición GraphQL).
+ */
+export async function listarLibrosFiltrados(autor: string, genero: Genero | ""): Promise<ListadoLibros> {
+  const data = await graphql().ejecutar<{ librosFiltrados: Libro[]; totalLibrosFiltrados: number }>(
     `query ($autor: String, $genero: Genero) {
        librosFiltrados(autor: $autor, genero: $genero) { ${CAMPOS_LIBRO} }
+       totalLibrosFiltrados(autor: $autor, genero: $genero)
      }`,
     { autor: autor.trim() || null, genero: genero || null }
   );
-  return data.librosFiltrados;
+  return { libros: data.librosFiltrados, total: data.totalLibrosFiltrados };
 }
 
 export async function buscarLibroPorIsbn(isbn: string): Promise<Libro | null> {

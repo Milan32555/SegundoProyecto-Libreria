@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 /**
  * Pruebas de la API GraphQL completa (schema + controllers + servicios + escalar
@@ -28,7 +29,7 @@ class GraphQlApiTest {
 
     private static final String CREAR_EJEMPLAR = """
             mutation ($input: EjemplarInput!) {
-              crearEjemplar(input: $input) { codigo estado isbnLibro libro { titulo } }
+              crearEjemplar(input: $input) { codigo estado numeroPrestamos isbnLibro libro { titulo } }
             }""";
 
     @Autowired
@@ -77,9 +78,10 @@ class GraphQlApiTest {
 
     @Test
     void consultaUnEjemplarConSuLibro() {
-        graphQlTester.document("{ ejemplarPorCodigo(codigo: \"ej-003\") { codigo estado fechaIngreso libro { titulo } } }")
+        graphQlTester.document("{ ejemplarPorCodigo(codigo: \"ej-003\") { codigo estado fechaIngreso numeroPrestamos libro { titulo } } }")
                 .execute()
                 .path("ejemplarPorCodigo.codigo").entity(String.class).isEqualTo("EJ-003")
+                .path("ejemplarPorCodigo.numeroPrestamos").entity(Integer.class).isEqualTo(2)
                 .path("ejemplarPorCodigo.fechaIngreso").entity(String.class).isEqualTo("2024-03-02T11:30:00")
                 .path("ejemplarPorCodigo.libro.titulo").entity(String.class).isEqualTo("La vorágine");
     }
@@ -93,6 +95,50 @@ class GraphQlApiTest {
         graphQlTester.document("{ ejemplaresFiltrados(estado: PRESTADO, isbnLibro: \"978-0307474728\") { codigo } }")
                 .execute()
                 .path("ejemplaresFiltrados[*].codigo").entityList(String.class).contains("EJ-002");
+    }
+
+    @Test
+    void elTotalDeListarLoCalculaElServidorConElMismoFiltro() {
+        graphQlTester.document("""
+                        { librosFiltrados(autor: "garcia marquez") { isbn }
+                          totalLibrosFiltrados(autor: "garcia marquez") }""")
+                .execute()
+                .path("librosFiltrados[*].isbn").entityList(String.class).hasSize(1)
+                .path("totalLibrosFiltrados").entity(Integer.class).isEqualTo(1);
+
+        String isbn = crearLibro();
+        crearEjemplar(isbn, "PRESTADO");
+        crearEjemplar(isbn, "PRESTADO");
+        crearEjemplar(isbn, "DISPONIBLE");
+        graphQlTester.document("query ($isbn: String) { totalEjemplaresFiltrados(estado: PRESTADO, isbnLibro: $isbn) }")
+                .variable("isbn", isbn)
+                .execute()
+                .path("totalEjemplaresFiltrados").entity(Integer.class).isEqualTo(2);
+    }
+
+    @Test
+    void resumenDelInventarioCalculadoEnElServidor() {
+        String consulta = "{ resumenInventario { totalLibros totalEjemplares ejemplaresPorEstado { estado cantidad porcentaje } } }";
+        GraphQlTester.Response antes = graphQlTester.document(consulta).execute();
+        int librosAntes = antes.path("resumenInventario.totalLibros").entity(Integer.class).get();
+        int daniadosAntes = antes.path("resumenInventario.ejemplaresPorEstado[2].cantidad").entity(Integer.class).get();
+
+        String isbn = crearLibro();
+        crearEjemplar(isbn, "DANIADO");
+
+        GraphQlTester.Response despues = graphQlTester.document(consulta).execute();
+        int totalEjemplares = despues.path("resumenInventario.totalEjemplares").entity(Integer.class).get();
+        despues.path("resumenInventario.totalLibros").entity(Integer.class).isEqualTo(librosAntes + 1)
+                .path("resumenInventario.ejemplaresPorEstado[*].estado").entityList(String.class)
+                .containsExactly("DISPONIBLE", "PRESTADO", "DANIADO", "DADO_DE_BAJA")
+                .path("resumenInventario.ejemplaresPorEstado[2].cantidad").entity(Integer.class)
+                .isEqualTo(daniadosAntes + 1)
+                .path("resumenInventario.ejemplaresPorEstado[*].cantidad").entityList(Integer.class)
+                .satisfies(cantidades -> assertThat(cantidades.stream().mapToInt(Integer::intValue).sum())
+                        .isEqualTo(totalEjemplares))
+                .path("resumenInventario.ejemplaresPorEstado[*].porcentaje").entityList(Double.class)
+                .satisfies(porcentajes -> assertThat(porcentajes.stream().mapToDouble(Double::doubleValue).sum())
+                        .isCloseTo(100.0, within(0.001)));
     }
 
     @Test
@@ -133,20 +179,23 @@ class GraphQlApiTest {
 
         graphQlTester.document(CREAR_EJEMPLAR)
                 .variable("input", Map.of("codigo", codigo, "estado", "DISPONIBLE", "ubicacion", "Estante Q",
-                        "fechaIngreso", "2024-06-01T10:00:00", "precioReposicion", 20000, "isbnLibro", isbn))
+                        "fechaIngreso", "2024-06-01T10:00:00", "precioReposicion", 20000, "numeroPrestamos", 5,
+                        "isbnLibro", isbn))
                 .execute()
                 .path("crearEjemplar.codigo").entity(String.class).isEqualTo(codigo)
+                .path("crearEjemplar.numeroPrestamos").entity(Integer.class).isEqualTo(5)
                 .path("crearEjemplar.libro.titulo").entity(String.class).isEqualTo("Libro GraphQL");
 
         graphQlTester.document("""
                         mutation ($codigo: ID!, $input: EjemplarUpdateInput!) {
-                          actualizarEjemplar(codigo: $codigo, input: $input) { estado ubicacion }
+                          actualizarEjemplar(codigo: $codigo, input: $input) { estado ubicacion numeroPrestamos }
                         }""")
                 .variable("codigo", codigo)
                 .variable("input", Map.of("estado", "PRESTADO", "ubicacion", "Mostrador",
-                        "fechaIngreso", "2024-06-01T10:00:00", "precioReposicion", 21000))
+                        "fechaIngreso", "2024-06-01T10:00:00", "precioReposicion", 21000, "numeroPrestamos", 6))
                 .execute()
                 .path("actualizarEjemplar.estado").entity(String.class).isEqualTo("PRESTADO")
+                .path("actualizarEjemplar.numeroPrestamos").entity(Integer.class).isEqualTo(6)
                 .path("actualizarEjemplar.ubicacion").entity(String.class).isEqualTo("Mostrador");
 
         graphQlTester.document("mutation ($codigo: ID!) { eliminarEjemplar(codigo: $codigo) { codigo } }")
@@ -167,6 +216,20 @@ class GraphQlApiTest {
     }
 
     @Test
+    void elServidorRechazaUnNumeroDePrestamosNegativo() {
+        String isbn = crearLibro();
+
+        graphQlTester.document(CREAR_EJEMPLAR)
+                .variable("input", ejemplarInput("API-EJ-" + UUID.randomUUID(), "DISPONIBLE", -1, isbn))
+                .execute()
+                .errors()
+                .satisfy(errores -> assertThat(errores).singleElement().satisfies(error -> {
+                    assertThat(error.getMessage()).isEqualTo("El número de préstamos no puede ser negativo.");
+                    assertThat(error.getErrorType()).isEqualTo(ErrorType.BAD_REQUEST);
+                }));
+    }
+
+    @Test
     void noSePuedeEliminarUnLibroConEjemplares() {
         graphQlTester.document("mutation { eliminarLibro(isbn: \"978-0307474728\") { isbn } }")
                 .execute()
@@ -181,6 +244,18 @@ class GraphQlApiTest {
                 .execute()
                 .errors()
                 .satisfy(errores -> assertThat(errores).isNotEmpty());
+    }
+
+    private static Map<String, Object> ejemplarInput(String codigo, String estado, int prestamos, String isbn) {
+        return Map.of("codigo", codigo, "estado", estado, "ubicacion", "Estante API",
+                "fechaIngreso", "2024-06-01T10:00:00", "precioReposicion", 15000, "numeroPrestamos", prestamos,
+                "isbnLibro", isbn);
+    }
+
+    private void crearEjemplar(String isbn, String estado) {
+        String codigo = "API-EJ-" + UUID.randomUUID();
+        graphQlTester.document(CREAR_EJEMPLAR).variable("input", ejemplarInput(codigo, estado, 0, isbn))
+                .execute().path("crearEjemplar.codigo").entity(String.class).isEqualTo(codigo);
     }
 
     private int revisionLibros() {

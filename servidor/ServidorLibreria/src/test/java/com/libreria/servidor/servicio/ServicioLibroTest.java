@@ -94,6 +94,11 @@ class ServicioLibroTest {
         assertThat(servicio.filtrar(autorSinTildes, Genero.POESIA))
                 .extracting(Libro::getIsbn).containsExactly(isbnPoesia);
         assertThat(servicio.filtrar(null, null)).hasSameSizeAs(servicio.listar());
+
+        // El total que muestra la pantalla Listar lo calcula el servidor con el mismo filtro.
+        assertThat(servicio.contarFiltrados(autorSinTildes, null)).isEqualTo(2);
+        assertThat(servicio.contarFiltrados(autorSinTildes, Genero.POESIA)).isEqualTo(1);
+        assertThat(servicio.contarFiltrados(null, null)).isEqualTo(servicio.listar().size());
     }
 
     @Test
@@ -153,7 +158,7 @@ class ServicioLibroTest {
         ServicioEjemplar servicioEjemplar = new ServicioEjemplar(servicio);
         String codigo = "EJ-" + UUID.randomUUID();
         servicioEjemplar.crear(new EjemplarInput(codigo, EstadoEjemplar.DISPONIBLE, "Estante Z",
-                FECHA, 1000, isbn));
+                FECHA, 1000, 0, isbn));
 
         assertThatThrownBy(() -> servicio.eliminar(isbn))
                 .isInstanceOf(LibreriaException.class)

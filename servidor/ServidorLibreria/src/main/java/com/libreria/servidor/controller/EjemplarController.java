@@ -41,6 +41,11 @@ public class EjemplarController {
     }
 
     @QueryMapping
+    public int totalEjemplaresFiltrados(@Argument EstadoEjemplar estado, @Argument String isbnLibro) {
+        return servicioEjemplar.contarFiltrados(estado, isbnLibro);
+    }
+
+    @QueryMapping
     public Optional<Ejemplar> ejemplarPorCodigo(@Argument String codigo) {
         return servicioEjemplar.buscarPorCodigo(codigo);
     }

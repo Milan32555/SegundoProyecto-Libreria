@@ -18,6 +18,7 @@ export default function FichaEjemplar({ ejemplar }: { ejemplar: Ejemplar }) {
       <dl className="ficha-datos">
         <div><dt className="etiqueta">Estado</dt><dd>{etiquetaEstado(ejemplar.estado)}</dd></div>
         <div><dt className="etiqueta">Ingreso</dt><dd>{formatearFecha(ejemplar.fechaIngreso)}</dd></div>
+        <div><dt className="etiqueta">Préstamos</dt><dd>{ejemplar.numeroPrestamos}</dd></div>
         <div><dt className="etiqueta">Libro (ISBN)</dt><dd>{ejemplar.isbnLibro}</dd></div>
       </dl>
     </article>

@@ -35,11 +35,12 @@ porque el servidor del proyecto usa `http://` (Android 9+ bloquea HTTP sin TLS p
 ```
 lib/
 ├── main.dart                    Rutas: una pantalla por caso de uso
-├── modelos/                     Modelo: Libro, Ejemplar (desde JSON)
+├── modelos/                     Modelo: Libro, Ejemplar, ResumenInventario (desde JSON)
 ├── servicios/                   Acceso a datos
 │   ├── cliente_graphql.dart     Singleton que envía las peticiones y traduce los errores
 │   ├── servicio_libro.dart
-│   └── servicio_ejemplar.dart
+│   ├── servicio_ejemplar.dart
+│   └── servicio_resumen.dart    Resumen del inventario (lo calcula el servidor)
 ├── observador/
 │   └── listado_observable.dart  Sujeto del patrón Observer (uno por colección)
 ├── pantallas/                   Vistas
@@ -71,7 +72,10 @@ Identidad propia de librería, "papel y tinta" (`lib/tema/tema.dart`):
   aplicados y las tecnologías.
 - Estados con color (Disponible, Prestado, Dañado, Dado de baja) y chips para elegir
   género/estado. Las pantallas de inicio y Listar se actualizan solas (Observer) sin necesidad de
-  recargar.
+  recargar: de inmediato tras un cambio en esta app y, de forma opcional, cada 15 s si el cambio
+  lo hizo otro cliente.
+- Las cifras del inicio y el total de cada Listar vienen calculados del servidor; la app no
+  cuenta nada.
 - Ícono propio (Android adaptativo, web y Windows) y barra de navegación del sistema transparente.
 
 ## Problemas comunes

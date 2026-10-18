@@ -1,28 +1,25 @@
 import '../modelos/ejemplar.dart';
 import 'cliente_graphql.dart';
 
-const String _camposEjemplar = 'codigo estado ubicacion fechaIngreso precioReposicion isbnLibro';
+const String _camposEjemplar = 'codigo estado ubicacion fechaIngreso precioReposicion numeroPrestamos isbnLibro';
 
 List<Ejemplar> _aEjemplares(Object? lista) =>
     (lista as List).map((e) => Ejemplar.desdeJson(e as Map<String, dynamic>)).toList();
 
-Future<List<Ejemplar>> listarEjemplares() async {
-  final data = await ClienteGraphQL().ejecutar('query { ejemplares { $_camposEjemplar } }');
-  return _aEjemplares(data['ejemplares']);
-}
-
-/// Listar con filtro: el filtrado se hace del lado del servidor.
-Future<List<Ejemplar>> listarEjemplaresFiltrados({String? estado, String? isbnLibro}) async {
+/// Listar con filtro: el servidor filtra y también cuenta cuántos ejemplares cumplen
+/// el filtro (las dos cosas en una sola petición GraphQL).
+Future<({List<Ejemplar> ejemplares, int total})> listarEjemplaresFiltrados({String? estado, String? isbnLibro}) async {
   final data = await ClienteGraphQL().ejecutar(
     '''query (\$estado: EstadoEjemplar, \$isbnLibro: String) {
          ejemplaresFiltrados(estado: \$estado, isbnLibro: \$isbnLibro) { $_camposEjemplar }
+         totalEjemplaresFiltrados(estado: \$estado, isbnLibro: \$isbnLibro)
        }''',
     variables: {
       'estado': (estado == null || estado.isEmpty) ? null : estado,
       'isbnLibro': (isbnLibro == null || isbnLibro.trim().isEmpty) ? null : isbnLibro.trim(),
     },
   );
-  return _aEjemplares(data['ejemplaresFiltrados']);
+  return (ejemplares: _aEjemplares(data['ejemplaresFiltrados']), total: data['totalEjemplaresFiltrados'] as int);
 }
 
 Future<Ejemplar?> buscarEjemplarPorCodigo(String codigo) async {
@@ -46,6 +43,7 @@ Future<Ejemplar> crearEjemplar({
   required String ubicacion,
   required String fechaIngreso,
   required double precioReposicion,
+  required int numeroPrestamos,
   required String isbnLibro,
 }) async {
   final data = await ClienteGraphQL().ejecutar(
@@ -57,6 +55,7 @@ Future<Ejemplar> crearEjemplar({
         'ubicacion': ubicacion,
         'fechaIngreso': fechaIngreso,
         'precioReposicion': precioReposicion,
+        'numeroPrestamos': numeroPrestamos,
         'isbnLibro': isbnLibro,
       },
     },
@@ -70,6 +69,7 @@ Future<Ejemplar> actualizarEjemplar({
   required String ubicacion,
   required String fechaIngreso,
   required double precioReposicion,
+  required int numeroPrestamos,
 }) async {
   final data = await ClienteGraphQL().ejecutar(
     '''mutation (\$codigo: ID!, \$input: EjemplarUpdateInput!) {
@@ -82,6 +82,7 @@ Future<Ejemplar> actualizarEjemplar({
         'ubicacion': ubicacion,
         'fechaIngreso': fechaIngreso,
         'precioReposicion': precioReposicion,
+        'numeroPrestamos': numeroPrestamos,
       },
     },
   );

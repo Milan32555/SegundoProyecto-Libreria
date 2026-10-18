@@ -18,6 +18,7 @@ class Ejemplar {
   final String ubicacion;
   final String fechaIngreso;
   final double precioReposicion;
+  final int numeroPrestamos;
   final String isbnLibro;
 
   Ejemplar({
@@ -26,6 +27,7 @@ class Ejemplar {
     required this.ubicacion,
     required this.fechaIngreso,
     required this.precioReposicion,
+    required this.numeroPrestamos,
     required this.isbnLibro,
   });
 
@@ -35,6 +37,7 @@ class Ejemplar {
     ubicacion: json['ubicacion'] as String,
     fechaIngreso: json['fechaIngreso'] as String,
     precioReposicion: (json['precioReposicion'] as num).toDouble(),
+    numeroPrestamos: json['numeroPrestamos'] as int,
     isbnLibro: json['isbnLibro'] as String,
   );
 }

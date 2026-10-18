@@ -66,6 +66,11 @@ public class ServicioLibro {
                 .toList();
     }
 
+    /** Cuántos libros cumplen el filtro (la pantalla Listar muestra este total, no lo cuenta). */
+    public int contarFiltrados(String autor, Genero genero) {
+        return filtrar(autor, genero).size();
+    }
+
     /** Consulta de UN SOLO objeto por isbn. */
     public Optional<Libro> buscarPorIsbn(String isbn) {
         if (isbn == null) {

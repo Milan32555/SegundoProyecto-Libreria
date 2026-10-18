@@ -69,13 +69,14 @@ class PatronesDisenoTest {
 
         Ejemplar ejemplar = new EjemplarBuilder().conCodigo("EJ-X").conEstado(EstadoEjemplar.PRESTADO)
                 .conUbicacion("Estante C3").conFechaIngreso(fecha).conPrecioReposicion(15000)
-                .conIsbnLibro("123").construir();
+                .conNumeroPrestamos(12).conIsbnLibro("123").construir();
 
         assertThat(ejemplar.getCodigo()).isEqualTo("EJ-X");
         assertThat(ejemplar.getEstado()).isEqualTo(EstadoEjemplar.PRESTADO);
         assertThat(ejemplar.getUbicacion()).isEqualTo("Estante C3");
         assertThat(ejemplar.getFechaIngreso()).isEqualTo(fecha);
         assertThat(ejemplar.getPrecioReposicion()).isEqualTo(15000);
+        assertThat(ejemplar.getNumeroPrestamos()).isEqualTo(12);
         assertThat(ejemplar.getIsbnLibro()).isEqualTo("123");
     }
 

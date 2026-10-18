@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../modelos/ejemplar.dart';
-import '../modelos/libro.dart';
+import '../modelos/resumen_inventario.dart';
 import '../observador/listado_observable.dart';
 import '../servicios/cliente_graphql.dart';
-import '../servicios/servicio_ejemplar.dart';
-import '../servicios/servicio_libro.dart';
+import '../servicios/servicio_resumen.dart';
 import '../tema/tema.dart';
 import '../utilidades/formato.dart';
 import 'comunes/componentes.dart';
@@ -16,6 +14,9 @@ import 'menu_lateral.dart';
 /// Ventana principal: encabezado con el resumen del inventario (se actualiza solo,
 /// patrón Observer), estado de los ejemplares y accesos a cada caso de uso.
 /// El menú lateral tiene las mismas opciones y "Ayuda".
+///
+/// Los totales y la distribución por estado los calcula el servidor (query
+/// resumenInventario): esta pantalla no cuenta nada, solo muestra lo que recibe.
 class MenuPrincipal extends StatefulWidget {
   const MenuPrincipal({super.key});
 
@@ -30,8 +31,7 @@ class _MenuPrincipalState extends State<MenuPrincipal> with SingleTickerProvider
     duration: const Duration(milliseconds: 1400),
   );
 
-  int? _libros;
-  Map<String, int>? _porEstado;
+  ResumenInventario? _resumen;
   String? _error;
 
   @override
@@ -53,17 +53,11 @@ class _MenuPrincipalState extends State<MenuPrincipal> with SingleTickerProvider
 
   Future<void> _cargar() async {
     try {
-      final resultados = await Future.wait([listarLibros(), listarEjemplares()]);
-      final libros = resultados[0] as List<Libro>;
-      final ejemplares = resultados[1] as List<Ejemplar>;
+      final resumen = await consultarResumenInventario();
       if (!mounted) return;
       setState(() {
         _error = null;
-        _libros = libros.length;
-        _porEstado = {
-          for (final estado in _estados.map((e) => e.estado))
-            estado: ejemplares.where((e) => e.estado == estado).length,
-        };
+        _resumen = resumen;
       });
     } on ErrorGraphQL catch (e) {
       if (mounted) setState(() => _error = e.mensaje);
@@ -73,7 +67,6 @@ class _MenuPrincipalState extends State<MenuPrincipal> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     final arriba = MediaQuery.paddingOf(context).top;
-    final ejemplares = _porEstado?.values.fold<int>(0, (a, b) => a + b);
     return Scaffold(
       drawer: const MenuLateral(),
       body: RefreshIndicator(
@@ -83,7 +76,7 @@ class _MenuPrincipalState extends State<MenuPrincipal> with SingleTickerProvider
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            _EncabezadoInicio(entrada: _entrada, libros: _libros, ejemplares: ejemplares),
+            _EncabezadoInicio(entrada: _entrada, libros: _resumen?.totalLibros, ejemplares: _resumen?.totalEjemplares),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(Espacio.md, Espacio.lg, Espacio.md, Espacio.xl),
               sliver: SliverList.list(
@@ -93,7 +86,7 @@ class _MenuPrincipalState extends State<MenuPrincipal> with SingleTickerProvider
                     inicio: 0.35,
                     child: _error != null
                         ? _TarjetaError(mensaje: _error!, alReintentar: _cargar)
-                        : _TarjetaEstados(porEstado: _porEstado),
+                        : _TarjetaEstados(conteos: _resumen?.ejemplaresPorEstado),
                   ),
                   const SizedBox(height: Espacio.lg),
                   Aparecer(
@@ -333,23 +326,28 @@ class _Cifra extends StatelessWidget {
 
 // ── Cuerpo ────────────────────────────────────────────────────────────────────
 
-/// Estados de un ejemplar con su nombre en la leyenda.
-const _estados = [
-  (estado: 'DISPONIBLE', nombre: 'Disponibles'),
-  (estado: 'PRESTADO', nombre: 'Prestados'),
-  (estado: 'DANIADO', nombre: 'Dañados'),
-  (estado: 'DADO_DE_BAJA', nombre: 'Dados de baja'),
-];
+/// Nombre de cada estado en la leyenda (en plural).
+const _nombreEstado = {
+  'DISPONIBLE': 'Disponibles',
+  'PRESTADO': 'Prestados',
+  'DANIADO': 'Dañados',
+  'DADO_DE_BAJA': 'Dados de baja',
+};
 
 /// Distribución de los ejemplares por estado: barra proporcional + leyenda.
+/// Cantidad y porcentaje de cada estado vienen calculados del servidor.
 class _TarjetaEstados extends StatelessWidget {
-  const _TarjetaEstados({required this.porEstado});
+  const _TarjetaEstados({required this.conteos});
 
-  final Map<String, int>? porEstado;
+  final List<ConteoEstado>? conteos;
 
   @override
   Widget build(BuildContext context) {
-    final total = porEstado?.values.fold<int>(0, (a, b) => a + b) ?? 0;
+    // Mientras llega la respuesta del servidor: los cuatro estados, sin cifras.
+    final filas = [
+      for (final c in conteos ?? _nombreEstado.keys.map((e) => ConteoEstado(estado: e, cantidad: 0, porcentaje: 0)))
+        (estado: c.estado, cantidad: conteos == null ? null : c.cantidad, porcentaje: c.porcentaje),
+    ];
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -364,7 +362,7 @@ class _TarjetaEstados extends StatelessWidget {
           Text('Estado de los ejemplares', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 2),
           Text(
-            porEstado == null ? 'Cargando…' : 'Copias físicas registradas en el inventario',
+            conteos == null ? 'Cargando…' : 'Copias físicas registradas en el inventario',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: Espacio.md),
@@ -377,11 +375,11 @@ class _TarjetaEstados extends StatelessWidget {
                   color: kPergamino,
                   child: Row(
                     children: [
-                      for (final e in _estados)
+                      for (final e in filas)
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 700),
                           curve: Curves.easeOutCubic,
-                          width: total == 0 ? 0 : limites.maxWidth * (porEstado![e.estado] ?? 0) / total,
+                          width: limites.maxWidth * e.porcentaje / 100,
                           color: colorEstado(e.estado),
                         ),
                     ],
@@ -395,7 +393,7 @@ class _TarjetaEstados extends StatelessWidget {
             builder: (context, limites) => Wrap(
               runSpacing: 10,
               children: [
-                for (final e in _estados)
+                for (final e in filas)
                   SizedBox(
                     width: limites.maxWidth / 2,
                     child: Row(
@@ -408,14 +406,14 @@ class _TarjetaEstados extends StatelessWidget {
                         const SizedBox(width: 8),
                         Flexible(
                           child: Text(
-                            e.nombre,
+                            _nombreEstado[e.estado] ?? e.estado,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(color: kTinta2, fontSize: 13, fontWeight: FontWeight.w500),
                           ),
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          porEstado == null ? '—' : '${porEstado![e.estado] ?? 0}',
+                          e.cantidad == null ? '—' : '${e.cantidad}',
                           style: const TextStyle(color: kTinta, fontSize: 14, fontWeight: FontWeight.w800),
                         ),
                       ],

@@ -19,6 +19,7 @@ export default function ActualizarEjemplar() {
   const [ubicacion, setUbicacion] = useState("");
   const [fechaIngreso, setFechaIngreso] = useState("");
   const [precioReposicion, setPrecioReposicion] = useState("");
+  const [numeroPrestamos, setNumeroPrestamos] = useState("");
 
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
@@ -38,6 +39,7 @@ export default function ActualizarEjemplar() {
         setUbicacion(resultado.ubicacion);
         setFechaIngreso(aValorDeInputFecha(resultado.fechaIngreso));
         setPrecioReposicion(String(resultado.precioReposicion));
+        setNumeroPrestamos(String(resultado.numeroPrestamos));
       }
     } catch (err) {
       setError(mensajeDeError(err));
@@ -53,7 +55,8 @@ export default function ActualizarEjemplar() {
     try {
       await actualizarEjemplar(ejemplar.codigo, {
         estado, ubicacion, fechaIngreso,
-        precioReposicion: Number(precioReposicion)
+        precioReposicion: Number(precioReposicion),
+        numeroPrestamos: Number(numeroPrestamos)
       });
       setExito(`Ejemplar "${ejemplar.codigo}" actualizado correctamente.`);
       ejemplarObservable.notificar();
@@ -102,6 +105,10 @@ export default function ActualizarEjemplar() {
             <label>Precio de reposición
               <input type="number" min="0.01" step="0.01" value={precioReposicion}
                      onChange={(e) => setPrecioReposicion(e.target.value)} required />
+            </label>
+            <label>Número de préstamos
+              <input type="number" min="0" step="1" value={numeroPrestamos}
+                     onChange={(e) => setNumeroPrestamos(e.target.value)} required />
             </label>
           </div>
           <div className="acciones">

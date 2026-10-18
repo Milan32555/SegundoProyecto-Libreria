@@ -1,8 +1,10 @@
 import 'package:cliente_movil_libreria/modelos/ejemplar.dart';
 import 'package:cliente_movil_libreria/modelos/libro.dart';
+import 'package:cliente_movil_libreria/modelos/resumen_inventario.dart';
 import 'package:cliente_movil_libreria/observador/listado_observable.dart';
 import 'package:cliente_movil_libreria/servicios/cliente_graphql.dart';
 import 'package:cliente_movil_libreria/servicios/servicio_libro.dart';
+import 'package:cliente_movil_libreria/servicios/servicio_resumen.dart';
 import 'package:cliente_movil_libreria/utilidades/formato.dart';
 import 'package:cliente_movil_libreria/utilidades/validaciones.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,11 +25,22 @@ void main() {
     });
 
     test('Ejemplar se construye desde el JSON del servidor', () {
-      final ejemplar = Ejemplar.desdeJson(ejemplarJson(precioReposicion: 65000.5));
+      final ejemplar = Ejemplar.desdeJson(ejemplarJson(precioReposicion: 65000.5, numeroPrestamos: 7));
 
       expect(ejemplar.codigo, 'EJ-001');
       expect(ejemplar.precioReposicion, 65000.5);
+      expect(ejemplar.numeroPrestamos, 7);
       expect(ejemplar.isbnLibro, '978-0307474728');
+    });
+
+    test('ResumenInventario se construye desde el JSON del servidor', () {
+      final resumen = ResumenInventario.desdeJson(resumenJson(totalLibros: 5));
+
+      expect(resumen.totalLibros, 5);
+      expect(resumen.totalEjemplares, 2);
+      expect(resumen.ejemplaresPorEstado.map((c) => c.estado), estadosEjemplar);
+      expect(resumen.ejemplaresPorEstado.first.cantidad, 1);
+      expect(resumen.ejemplaresPorEstado.first.porcentaje, 50.0);
     });
 
     test('los valores de los enums tienen una etiqueta legible', () {
@@ -71,11 +84,33 @@ void main() {
       );
     });
 
+    test('pide la lista y su total (calculado por el servidor) en una sola petición', () async {
+      final servidor = ServidorSimulado({
+        'librosFiltrados': (_) => [libroJson()],
+        'totalLibrosFiltrados': (_) => 1,
+      })..instalar();
+
+      final listado = await listarLibrosFiltrados(autor: ' restrepo ', genero: '');
+
+      expect(listado.libros.single.titulo, 'Delirio');
+      expect(listado.total, 1);
+      expect(servidor.variablesDe('totalLibrosFiltrados').single, {'autor': 'restrepo', 'genero': null});
+    });
+
+    test('consulta el resumen del inventario al servidor', () async {
+      ServidorSimulado({'resumenInventario': (_) => resumenJson(totalLibros: 3)}).instalar();
+
+      final resumen = await consultarResumenInventario();
+
+      expect(resumen.totalLibros, 3);
+      expect(resumen.totalEjemplares, 2);
+    });
+
     test('informa el código HTTP cuando la respuesta no es GraphQL', () async {
       ClienteGraphQL().clienteHttp = MockClient((_) async => http.Response('Error interno', 500));
 
       expect(
-        () => listarLibros(),
+        () => consultarRevisionLibros(),
         throwsA(isA<ErrorGraphQL>().having((e) => e.mensaje, 'mensaje', contains('HTTP 500'))),
       );
     });
@@ -84,7 +119,7 @@ void main() {
       ClienteGraphQL().clienteHttp = MockClient((_) async => throw http.ClientException('Connection refused'));
 
       expect(
-        () => listarLibros(),
+        () => consultarRevisionLibros(),
         throwsA(isA<ErrorGraphQL>().having((e) => e.mensaje, 'mensaje', contains('No se pudo conectar'))),
       );
     });
@@ -135,6 +170,12 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 70));
       expect(consultas, consultasAlSalir);
     });
+
+    test('por defecto revisa los cambios de otros clientes cada 15 s', () {
+      expect(intervaloRevision, const Duration(seconds: 15));
+      expect(libroObservable.intervalo, intervaloRevision);
+      expect(ejemplarObservable.intervalo, intervaloRevision);
+    });
   });
 
   group('Utilidades', () {
@@ -147,6 +188,9 @@ void main() {
       expect(validarEnteroPositivo('1.5'), 'Número entero inválido');
       expect(validarEnteroPositivo('-3'), 'Debe ser mayor que cero');
       expect(validarEnteroPositivo('120'), isNull);
+      expect(validarEnteroNoNegativo('0'), isNull);
+      expect(validarEnteroNoNegativo('-1'), 'No puede ser negativo');
+      expect(validarEnteroNoNegativo('2.5'), 'Número entero inválido');
     });
 
     test('formatos de fecha y precio', () {

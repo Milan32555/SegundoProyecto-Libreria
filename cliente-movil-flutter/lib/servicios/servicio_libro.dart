@@ -7,23 +7,20 @@ List<Libro> _aLibros(Object? lista) => (lista as List).map((e) => Libro.desdeJso
 
 Libro? _aLibroOpcional(Object? json) => json == null ? null : Libro.desdeJson(json as Map<String, dynamic>);
 
-Future<List<Libro>> listarLibros() async {
-  final data = await ClienteGraphQL().ejecutar('query { libros { $_camposLibro } }');
-  return _aLibros(data['libros']);
-}
-
-/// Listar con filtro: el filtrado se hace del lado del servidor.
-Future<List<Libro>> listarLibrosFiltrados({String? autor, String? genero}) async {
+/// Listar con filtro: el servidor filtra y también cuenta cuántos libros cumplen
+/// el filtro (las dos cosas en una sola petición GraphQL).
+Future<({List<Libro> libros, int total})> listarLibrosFiltrados({String? autor, String? genero}) async {
   final data = await ClienteGraphQL().ejecutar(
     '''query (\$autor: String, \$genero: Genero) {
          librosFiltrados(autor: \$autor, genero: \$genero) { $_camposLibro }
+         totalLibrosFiltrados(autor: \$autor, genero: \$genero)
        }''',
     variables: {
       'autor': (autor == null || autor.trim().isEmpty) ? null : autor.trim(),
       'genero': (genero == null || genero.isEmpty) ? null : genero,
     },
   );
-  return _aLibros(data['librosFiltrados']);
+  return (libros: _aLibros(data['librosFiltrados']), total: data['totalLibrosFiltrados'] as int);
 }
 
 Future<Libro?> buscarLibroPorIsbn(String isbn) async {

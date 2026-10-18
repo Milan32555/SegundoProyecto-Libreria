@@ -9,7 +9,8 @@ import '../../utilidades/formato.dart';
 import '../comunes/componentes.dart';
 
 /// Caso de uso: Listar Ejemplares en una grilla, con filtro (del lado del servidor)
-/// por estado y/o ISBN del libro. Observer: igual patrón que ListarLibros.
+/// por estado y/o ISBN del libro. El total encontrado también lo calcula el servidor.
+/// Observer: igual patrón que ListarLibros.
 class ListarEjemplares extends StatefulWidget {
   const ListarEjemplares({super.key});
 
@@ -21,6 +22,7 @@ class _ListarEjemplaresState extends State<ListarEjemplares> {
   final _isbnLibro = TextEditingController();
   String? _estado;
   List<Ejemplar> _ejemplares = [];
+  int _total = 0;
   bool _cargando = false;
   String? _error;
 
@@ -45,7 +47,12 @@ class _ListarEjemplaresState extends State<ListarEjemplares> {
     });
     try {
       final resultado = await listarEjemplaresFiltrados(estado: _estado, isbnLibro: _isbnLibro.text);
-      if (mounted) setState(() => _ejemplares = resultado);
+      if (mounted) {
+        setState(() {
+          _ejemplares = resultado.ejemplares;
+          _total = resultado.total;
+        });
+      }
     } on ErrorGraphQL catch (e) {
       if (mounted) setState(() => _error = e.mensaje);
     } finally {
@@ -99,7 +106,7 @@ class _ListarEjemplaresState extends State<ListarEjemplares> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _ejemplares.length == 1 ? '1 ejemplar' : '${_ejemplares.length} ejemplares',
+                  _total == 1 ? '1 ejemplar' : '$_total ejemplares',
                   style: const TextStyle(color: kTinta, fontWeight: FontWeight.w800, fontSize: 15),
                 ),
               ],
@@ -128,6 +135,7 @@ class _ListarEjemplaresState extends State<ListarEjemplares> {
                               DataColumn(label: Text('EJEMPLAR')),
                               DataColumn(label: Text('ESTADO')),
                               DataColumn(label: Text('REPOSICIÓN'), numeric: true),
+                              DataColumn(label: Text('PRÉSTAMOS'), numeric: true),
                               DataColumn(label: Text('INGRESO')),
                               DataColumn(label: Text('LIBRO (ISBN)')),
                             ],
@@ -143,6 +151,7 @@ class _ListarEjemplaresState extends State<ListarEjemplares> {
                                         style: const TextStyle(color: kDorado, fontWeight: FontWeight.w700),
                                       ),
                                     ),
+                                    DataCell(Text('${e.numeroPrestamos}')),
                                     DataCell(Text(formatearFechaCortaIso(e.fechaIngreso))),
                                     DataCell(Text(e.isbnLibro, style: const TextStyle(color: kTinta3))),
                                   ],

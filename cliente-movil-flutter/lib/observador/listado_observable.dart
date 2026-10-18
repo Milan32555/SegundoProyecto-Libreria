@@ -7,17 +7,20 @@ import '../servicios/servicio_libro.dart';
 /// de Listar para enterarse de que la colección cambió.
 ///
 /// El sujeto avisa a sus observadores en dos casos:
-///  1. Una pantalla de esta app (Adicionar/Actualizar/Eliminar) llama a [notificar]
-///     después de una operación exitosa.
-///  2. Mientras haya al menos un observador, consulta cada pocos segundos el número
-///     de revisión de la colección en el servidor; si cambió (por ejemplo, el cliente
-///     web agregó un libro), notifica a sus observadores.
+///  1. (Obligatorio, dentro de esta app) Una pantalla de esta app
+///     (Adicionar/Actualizar/Eliminar) llama a [notificar] después de una operación exitosa.
+///  2. (Opcional, entre clientes) Mientras haya al menos un observador, consulta cada 15 s
+///     el número de revisión de la colección en el servidor; si cambió (por ejemplo, el
+///     cliente web agregó un libro), notifica a sus observadores.
 ///
 /// La pantalla de Listar se suscribe en `initState` y se desuscribe en `dispose`.
 typedef Observador = void Function();
 
+/// Cada cuánto se revisa si otro cliente cambió los datos (Observer entre clientes).
+const Duration intervaloRevision = Duration(seconds: 15);
+
 class ListadoObservable {
-  ListadoObservable({this.consultarRevision, this.intervalo = const Duration(seconds: 3)});
+  ListadoObservable({this.consultarRevision, this.intervalo = intervaloRevision});
 
   final Future<int> Function()? consultarRevision;
   final Duration intervalo;

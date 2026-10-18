@@ -20,10 +20,11 @@ Requiere JDK 17 o superior. No hace falta instalar Maven (se usa el Maven Wrappe
 
 ```
 src/main/java/com/libreria/servidor/
-├── controller/    LibroController, EjemplarController  → capa Controller (GraphQL)
-├── servicio/      ServicioLibro, ServicioEjemplar      → lógica de negocio y validaciones
+├── controller/    LibroController, EjemplarController, ResumenController → capa Controller (GraphQL)
+├── servicio/      ServicioLibro, ServicioEjemplar, ServicioResumen → lógica de negocio y validaciones
 ├── repositorio/   RepositorioLibros, RepositorioEjemplares → Singleton, dueños de las List
 ├── model/         Libro, Ejemplar + DTOs de entrada (LibroInput, LibroUpdateInput, …)
+│                  + records de salida ResumenInventario y ConteoEstado
 ├── builder/       LibroBuilder, EjemplarBuilder        → patrón Builder
 ├── observer/      ListadoObservable, ObservadorListado, RevisionListado → patrón Observer
 ├── enums/         Genero, EstadoEjemplar
@@ -34,6 +35,10 @@ src/main/resources/graphql/schema.graphqls              → contrato GraphQL
 
 ## Decisiones de diseño
 
+- **Lógica de negocio solo aquí:** filtros, búsquedas, conteos y totales se calculan en el
+  servidor. `totalLibrosFiltrados` / `totalEjemplaresFiltrados` dan el total de cada Listar y
+  `resumenInventario` (`ServicioResumen`) da los totales y los ejemplares por estado de la
+  ventana principal, para que los clientes no cuenten nada.
 - **Singleton:** los repositorios tienen constructor privado y `getInstancia()`; son la única
   fuente de verdad de cada colección. `listar()` devuelve una copia para que nadie modifique
   la lista desde afuera.
@@ -54,12 +59,13 @@ src/main/resources/graphql/schema.graphqls              → contrato GraphQL
 ## Pruebas
 
 ```bash
-./mvnw test
+./mvnw verify
 ```
 
 | Clase | Qué prueba |
 |---|---|
-| `ServicioLibroTest`, `ServicioEjemplarTest` | CRUD, validaciones, filtros sin tildes, búsqueda por ISBN/título, integridad, notificaciones |
+| `ServicioLibroTest`, `ServicioEjemplarTest` | CRUD, validaciones (incluido número de préstamos no negativo), filtros sin tildes y sus totales, búsqueda por ISBN/título, integridad, notificaciones |
+| `ServicioResumenTest` | Resumen del inventario: totales, ejemplares por estado y porcentajes |
 | `PatronesDisenoTest` | Singleton, Builder, Observer y protección de la colección |
-| `GraphQlApiTest` | La API GraphQL completa: consultas anidadas, filtros, mutaciones, fechas y mensajes de error |
+| `GraphQlApiTest` | La API GraphQL completa: consultas anidadas, filtros y totales, resumen del inventario, mutaciones, fechas y mensajes de error |
 | `ServidorHttpTest` | El servidor en un puerto real: `POST /graphql` y preflight CORS del cliente web |

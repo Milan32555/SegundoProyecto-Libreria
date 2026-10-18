@@ -24,6 +24,7 @@ class _ActualizarEjemplarState extends State<ActualizarEjemplar> {
   final _codigoBusqueda = TextEditingController();
   final _ubicacion = TextEditingController();
   final _precioReposicion = TextEditingController();
+  final _numeroPrestamos = TextEditingController();
   DateTime? _fechaIngreso;
   String _estado = estadosEjemplar.first;
 
@@ -36,6 +37,7 @@ class _ActualizarEjemplarState extends State<ActualizarEjemplar> {
     _codigoBusqueda.dispose();
     _ubicacion.dispose();
     _precioReposicion.dispose();
+    _numeroPrestamos.dispose();
     super.dispose();
   }
 
@@ -58,6 +60,7 @@ class _ActualizarEjemplarState extends State<ActualizarEjemplar> {
         _estado = resultado.estado;
         _ubicacion.text = resultado.ubicacion;
         _precioReposicion.text = resultado.precioReposicion.toString();
+        _numeroPrestamos.text = resultado.numeroPrestamos.toString();
         _fechaIngreso = DateTime.parse(resultado.fechaIngreso);
       });
     } on ErrorGraphQL catch (e) {
@@ -81,6 +84,7 @@ class _ActualizarEjemplarState extends State<ActualizarEjemplar> {
         ubicacion: _ubicacion.text.trim(),
         fechaIngreso: aFechaServidor(_fechaIngreso!),
         precioReposicion: double.parse(_precioReposicion.text.trim()),
+        numeroPrestamos: int.parse(_numeroPrestamos.text.trim()),
       );
       ejemplarObservable.notificar();
       if (!mounted) return;
@@ -161,6 +165,13 @@ class _ActualizarEjemplarState extends State<ActualizarEjemplar> {
             ),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             validator: validarDecimalPositivo,
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _numeroPrestamos,
+            decoration: const InputDecoration(labelText: 'Número de préstamos', prefixIcon: Icon(Icons.repeat_rounded)),
+            keyboardType: TextInputType.number,
+            validator: validarEnteroNoNegativo,
           ),
           if (_error != null) Aviso(_error!),
           const SizedBox(height: Espacio.lg),

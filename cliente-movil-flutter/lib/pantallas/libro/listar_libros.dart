@@ -9,6 +9,7 @@ import '../../utilidades/formato.dart';
 import '../comunes/componentes.dart';
 
 /// Caso de uso: Listar Libros en una grilla, con filtro (del lado del servidor) por autor y/o género.
+/// El total de libros encontrados también lo calcula el servidor.
 ///
 /// Patrón Observer: esta pantalla se SUSCRIBE a `libroObservable` en initState.
 /// Cada vez que el sujeto notifica un cambio (una operación en esta app o un cambio
@@ -24,6 +25,7 @@ class _ListarLibrosState extends State<ListarLibros> {
   final _autor = TextEditingController();
   String? _genero;
   List<Libro> _libros = [];
+  int _total = 0;
   bool _cargando = false;
   String? _error;
 
@@ -48,7 +50,12 @@ class _ListarLibrosState extends State<ListarLibros> {
     });
     try {
       final resultado = await listarLibrosFiltrados(autor: _autor.text, genero: _genero);
-      if (mounted) setState(() => _libros = resultado);
+      if (mounted) {
+        setState(() {
+          _libros = resultado.libros;
+          _total = resultado.total;
+        });
+      }
     } on ErrorGraphQL catch (e) {
       if (mounted) setState(() => _error = e.mensaje);
     } finally {
@@ -102,7 +109,7 @@ class _ListarLibrosState extends State<ListarLibros> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _libros.length == 1 ? '1 libro' : '${_libros.length} libros',
+                  _total == 1 ? '1 libro' : '$_total libros',
                   style: const TextStyle(color: kTinta, fontWeight: FontWeight.w800, fontSize: 15),
                 ),
               ],

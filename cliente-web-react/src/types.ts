@@ -69,5 +69,20 @@ export interface Ejemplar {
   ubicacion: string;
   fechaIngreso: string;
   precioReposicion: number;
+  numeroPrestamos: number;
   isbnLibro: string;
+}
+
+/** Cuántos ejemplares hay en un estado y su porcentaje (0 a 100); lo calcula el servidor. */
+export interface ConteoEstado {
+  estado: EstadoEjemplar;
+  cantidad: number;
+  porcentaje: number;
+}
+
+/** Resumen del inventario para la ventana principal (query resumenInventario). */
+export interface ResumenInventario {
+  totalLibros: number;
+  totalEjemplares: number;
+  ejemplaresPorEstado: ConteoEstado[];
 }

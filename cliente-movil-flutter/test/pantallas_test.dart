@@ -1,5 +1,6 @@
 import 'package:cliente_movil_libreria/main.dart';
 import 'package:cliente_movil_libreria/observador/listado_observable.dart';
+import 'package:cliente_movil_libreria/pantallas/comunes/campo_fecha.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -19,15 +20,17 @@ Future<void> escribir(WidgetTester tester, String etiqueta, String texto) =>
 
 void main() {
   group('Menú principal', () {
-    testWidgets('muestra el resumen del inventario que trae del servidor', (tester) async {
-      ServidorSimulado({
-        'libros': (_) => [libroJson(), libroJson(isbn: '978-1', titulo: 'Pedro Páramo')],
-        'ejemplares': (_) => [ejemplarJson(), ejemplarJson(codigo: 'EJ-002', estado: 'PRESTADO')],
+    testWidgets('muestra el resumen del inventario que calcula el servidor', (tester) async {
+      final servidor = ServidorSimulado({
+        'resumenInventario': (_) => resumenJson(),
         'revisionLibros': (_) => 1,
         'revisionEjemplares': (_) => 1,
-      }).instalar();
+      })..instalar();
       await abrir(tester, '/');
 
+      // La pantalla no pide las listas para contarlas: usa los totales del servidor.
+      expect(servidor.peticiones.map((p) => p.campo), isNot(contains('libros')));
+      expect(servidor.peticiones.map((p) => p.campo), isNot(contains('ejemplares')));
       expect(find.text('2'), findsNWidgets(2)); // 2 títulos y 2 ejemplares
       for (final estado in ['Disponibles', 'Prestados', 'Dañados', 'Dados de baja']) {
         expect(find.text(estado), findsOneWidget);
@@ -37,7 +40,9 @@ void main() {
     });
 
     testWidgets('avisa si no hay conexión con el servidor', (tester) async {
-      ServidorSimulado({'libros': (_) => throw ErrorSimulado('No se pudo conectar con el servidor.')}).instalar();
+      ServidorSimulado({
+        'resumenInventario': (_) => throw ErrorSimulado('No se pudo conectar con el servidor.'),
+      }).instalar();
       await abrir(tester, '/');
 
       expect(find.text('No se pudo conectar con el servidor.'), findsOneWidget);
@@ -85,6 +90,7 @@ void main() {
     testWidgets('muestra los libros en una grilla y filtra en el servidor', (tester) async {
       final servidor = ServidorSimulado({
         'librosFiltrados': (_) => [libroJson()],
+        'totalLibrosFiltrados': (_) => 1,
         'revisionLibros': (_) => 1,
       })..instalar();
       await abrir(tester, '/libros/listar');
@@ -106,7 +112,11 @@ void main() {
 
     testWidgets('Observer: se refresca sola cuando el sujeto notifica un cambio', (tester) async {
       var libros = [libroJson()];
-      ServidorSimulado({'librosFiltrados': (_) => libros, 'revisionLibros': (_) => 1}).instalar();
+      ServidorSimulado({
+        'librosFiltrados': (_) => libros,
+        'totalLibrosFiltrados': (_) => libros.length, // en el servidor real lo cuenta el servidor
+        'revisionLibros': (_) => 1,
+      }).instalar();
       await abrir(tester, '/libros/listar');
       expect(find.text('Pedro Páramo'), findsNothing);
 
@@ -185,7 +195,7 @@ void main() {
       await escribir(tester, 'Precio', '39000.5');
       await escribir(tester, 'Páginas', '124');
       await tester.tap(find.widgetWithText(ChoiceChip, 'No ficción'));
-      await tester.tap(find.text('Fecha de publicación'));
+      await tester.tap(find.byType(CampoFecha));
       await tester.pumpAndSettle();
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
@@ -251,8 +261,10 @@ void main() {
       expect(tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'Disponible')).selected, isTrue);
       expect(find.widgetWithText(TextFormField, 'Estante A1'), findsOneWidget);
       expect(find.text('10/02/2024'), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, '4'), findsOneWidget); // número de préstamos actual
 
       await escribir(tester, 'Ubicación', 'Mostrador');
+      await escribir(tester, 'Número de préstamos', '5');
       await tester.tap(find.widgetWithText(ChoiceChip, 'Prestado'));
       await tester.tap(find.text('Guardar cambios'));
       await tester.pumpAndSettle();
@@ -264,20 +276,56 @@ void main() {
           'ubicacion': 'Mostrador',
           'fechaIngreso': '2024-02-10T09:00:00',
           'precioReposicion': 65000.0,
+          'numeroPrestamos': 5,
         },
       });
+    });
+  });
+
+  group('Adicionar Ejemplar', () {
+    testWidgets('envía el número de préstamos y valida que no sea negativo', (tester) async {
+      final servidor = ServidorSimulado({'crearEjemplar': (v) => v['input']})..instalar();
+      await abrir(tester, '/ejemplares/agregar');
+
+      await escribir(tester, 'Código del ejemplar', 'EJ-100');
+      await escribir(tester, 'ISBN del libro al que pertenece', '978-0307474728');
+      await escribir(tester, 'Ubicación', 'Estante C3');
+      await escribir(tester, 'Precio de reposición', '45000');
+      await escribir(tester, 'Número de préstamos', '-2');
+      await tester.tap(find.byType(CampoFecha));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Adicionar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No puede ser negativo'), findsOneWidget);
+      expect(servidor.variablesDe('crearEjemplar'), isEmpty);
+
+      await escribir(tester, 'Número de préstamos', '3');
+      await tester.tap(find.text('Adicionar'));
+      await tester.pumpAndSettle();
+
+      final input = servidor.variablesDe('crearEjemplar').single['input'] as Map<String, dynamic>;
+      expect(input['codigo'], 'EJ-100');
+      expect(input['precioReposicion'], 45000.0);
+      expect(input['numeroPrestamos'], 3);
+      expect(find.text('Ejemplar "EJ-100" creado correctamente.'), findsOneWidget);
     });
   });
 
   group('Listar Ejemplares', () {
     testWidgets('muestra el estado con su etiqueta y filtra por estado', (tester) async {
       final servidor = ServidorSimulado({
-        'ejemplaresFiltrados': (_) => [ejemplarJson(estado: 'DANIADO')],
+        'ejemplaresFiltrados': (_) => [ejemplarJson(estado: 'DANIADO', numeroPrestamos: 9)],
+        'totalEjemplaresFiltrados': (_) => 1,
         'revisionEjemplares': (_) => 1,
       })..instalar();
       await abrir(tester, '/ejemplares/listar');
 
       expect(find.text('EJ-001'), findsOneWidget);
+      expect(find.text('PRÉSTAMOS'), findsOneWidget);
+      expect(find.text('9'), findsOneWidget);
       expect(find.text('Dañado'), findsNWidgets(2)); // chip del filtro + pastilla de la fila
       expect(find.text('1 ejemplar'), findsOneWidget);
 

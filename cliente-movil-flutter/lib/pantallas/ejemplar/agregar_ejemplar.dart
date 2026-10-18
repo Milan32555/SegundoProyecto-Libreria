@@ -24,6 +24,7 @@ class _AgregarEjemplarState extends State<AgregarEjemplar> {
   final _isbnLibro = TextEditingController();
   final _ubicacion = TextEditingController();
   final _precioReposicion = TextEditingController();
+  final _numeroPrestamos = TextEditingController(text: '0');
   DateTime? _fechaIngreso;
   String _estado = estadosEjemplar.first;
 
@@ -36,6 +37,7 @@ class _AgregarEjemplarState extends State<AgregarEjemplar> {
     _isbnLibro.dispose();
     _ubicacion.dispose();
     _precioReposicion.dispose();
+    _numeroPrestamos.dispose();
     super.dispose();
   }
 
@@ -59,6 +61,7 @@ class _AgregarEjemplarState extends State<AgregarEjemplar> {
         ubicacion: _ubicacion.text.trim(),
         fechaIngreso: aFechaServidor(_fechaIngreso!),
         precioReposicion: double.parse(_precioReposicion.text.trim()),
+        numeroPrestamos: int.parse(_numeroPrestamos.text.trim()),
         isbnLibro: _isbnLibro.text.trim(),
       );
       ejemplarObservable.notificar();
@@ -135,6 +138,16 @@ class _AgregarEjemplarState extends State<AgregarEjemplar> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _numeroPrestamos,
+              decoration: const InputDecoration(
+                labelText: 'Número de préstamos',
+                prefixIcon: Icon(Icons.repeat_rounded),
+              ),
+              keyboardType: TextInputType.number,
+              validator: validarEnteroNoNegativo,
             ),
             const SizedBox(height: Espacio.lg),
             const EtiquetaSeccion('Estado'),

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ListadoObservable } from "./Observable";
+import { INTERVALO_REVISION_MS, ListadoObservable } from "./Observable";
 
 describe("ListadoObservable (patrón Observer)", () => {
   beforeEach(() => {
@@ -58,6 +58,21 @@ describe("ListadoObservable (patrón Observer)", () => {
 
     expect(llamadas).toBe(3);
     expect(consultarRevision).toHaveBeenCalledTimes(llamadas);
+  });
+
+  it("por defecto revisa los cambios de otros clientes cada 15 s", async () => {
+    const consultarRevision = vi.fn(async () => 1);
+    const sujeto = new ListadoObservable(consultarRevision);
+
+    const desuscribir = sujeto.suscribir(vi.fn());
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(14_999);
+    expect(consultarRevision).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(consultarRevision).toHaveBeenCalledTimes(2);
+    desuscribir();
+
+    expect(INTERVALO_REVISION_MS).toBe(15_000);
   });
 
   it("sigue vigilando aunque el servidor falle momentáneamente", async () => {

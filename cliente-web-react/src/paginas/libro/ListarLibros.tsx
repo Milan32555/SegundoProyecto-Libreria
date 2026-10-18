@@ -10,6 +10,7 @@ import { GENEROS, Genero, Libro, etiquetaGenero } from "../../types";
 
 /**
  * Caso de uso: Listar Libros en una grilla, con filtro (del lado del servidor) por autor y/o género.
+ * El total de libros encontrados también lo calcula el servidor.
  *
  * Patrón Observer: esta pantalla se SUSCRIBE a `libroObservable` mientras está abierta.
  * Cuando el sujeto notifica un cambio (una mutación en este cliente o un cambio hecho
@@ -17,6 +18,7 @@ import { GENEROS, Genero, Libro, etiquetaGenero } from "../../types";
  */
 export default function ListarLibros() {
   const [libros, setLibros] = useState<Libro[]>([]);
+  const [total, setTotal] = useState(0);
   const [autor, setAutor] = useState("");
   const [genero, setGenero] = useState<Genero | "">("");
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +28,9 @@ export default function ListarLibros() {
     setCargando(true);
     setError(null);
     try {
-      setLibros(await listarLibrosFiltrados(autor, filtroGenero));
+      const listado = await listarLibrosFiltrados(autor, filtroGenero);
+      setLibros(listado.libros);
+      setTotal(listado.total);
     } catch (err) {
       setError(mensajeDeError(err));
     } finally {
@@ -66,7 +70,7 @@ export default function ListarLibros() {
       {error && <Aviso>{error}</Aviso>}
 
       <div className="resumen-lista">
-        <span className="conteo">{libros.length === 1 ? "1 libro" : `${libros.length} libros`}</span>
+        <span className="conteo">{total === 1 ? "1 libro" : `${total} libros`}</span>
       </div>
       <div className="tabla-contenedor">
         <table>

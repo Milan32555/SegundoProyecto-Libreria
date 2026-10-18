@@ -42,14 +42,14 @@ public final class RepositorioEjemplares {
         ejemplares.add(new EjemplarBuilder()
                 .conCodigo("EJ-001").conEstado(EstadoEjemplar.DISPONIBLE).conUbicacion("Estante A1")
                 .conFechaIngreso(LocalDateTime.of(2024, 2, 10, 9, 0)).conPrecioReposicion(65000)
-                .conIsbnLibro("978-0307474728").construir());
+                .conNumeroPrestamos(4).conIsbnLibro("978-0307474728").construir());
         ejemplares.add(new EjemplarBuilder()
                 .conCodigo("EJ-002").conEstado(EstadoEjemplar.PRESTADO).conUbicacion("Estante A1")
                 .conFechaIngreso(LocalDateTime.of(2024, 2, 10, 9, 5)).conPrecioReposicion(65000)
-                .conIsbnLibro("978-0307474728").construir());
+                .conNumeroPrestamos(9).conIsbnLibro("978-0307474728").construir());
         ejemplares.add(new EjemplarBuilder()
                 .conCodigo("EJ-003").conEstado(EstadoEjemplar.DISPONIBLE).conUbicacion("Estante B2")
                 .conFechaIngreso(LocalDateTime.of(2024, 3, 2, 11, 30)).conPrecioReposicion(48000)
-                .conIsbnLibro("978-8420471839").construir());
+                .conNumeroPrestamos(2).conIsbnLibro("978-8420471839").construir());
     }
 }

@@ -25,7 +25,7 @@ describe("ListarLibros", () => {
   beforeEach(async () => {
     const { consultarRevisionLibros } = await import("../../graphql/servicioLibro");
     vi.mocked(consultarRevisionLibros).mockReturnValue(new Promise(() => {}));
-    vi.mocked(listarLibrosFiltrados).mockResolvedValue([CIEN_ANOS]);
+    vi.mocked(listarLibrosFiltrados).mockResolvedValue({ libros: [CIEN_ANOS], total: 1 });
   });
 
   it("muestra todos los libros en una grilla al abrir la pantalla", async () => {
@@ -59,13 +59,21 @@ describe("ListarLibros", () => {
     render(<ListarLibros />);
     await screen.findByText("Cien años de soledad");
     await user.type(screen.getByLabelText("Autor contiene"), "rulfo");
-    vi.mocked(listarLibrosFiltrados).mockResolvedValue([PEDRO_PARAMO]);
+    vi.mocked(listarLibrosFiltrados).mockResolvedValue({ libros: [PEDRO_PARAMO], total: 1 });
 
     act(() => libroObservable.notificar());
 
     expect(await screen.findByText("Pedro Páramo")).toBeInTheDocument();
     expect(listarLibrosFiltrados).toHaveBeenLastCalledWith("rulfo", "");
     expect(screen.queryByText("Cien años de soledad")).not.toBeInTheDocument();
+  });
+
+  it("muestra el total que calcula el servidor", async () => {
+    vi.mocked(listarLibrosFiltrados).mockResolvedValue({ libros: [CIEN_ANOS, PEDRO_PARAMO], total: 2 });
+
+    render(<ListarLibros />);
+
+    expect(await screen.findByText("2 libros")).toBeInTheDocument();
   });
 
   it("muestra un mensaje cuando no hay datos o hay un error", async () => {

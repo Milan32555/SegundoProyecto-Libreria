@@ -1,7 +1,6 @@
 import { CSSProperties, useState } from "react";
 import { Link } from "react-router-dom";
-import { listarLibros } from "../graphql/servicioLibro";
-import { listarEjemplares } from "../graphql/servicioEjemplar";
+import { consultarResumenInventario } from "../graphql/servicioResumen";
 import { mensajeDeError } from "../graphql/clienteGraphQL";
 import { ejemplarObservable, libroObservable } from "../observer/Observable";
 import { useListadoObservado } from "../observer/useListadoObservado";
@@ -10,20 +9,15 @@ import Estanteria from "../componentes/Estanteria";
 import Icono, { NombreIcono } from "../componentes/Icono";
 import { useContador } from "../componentes/useContador";
 import { formatearFechaLarga, saludo } from "../formato";
-import { EstadoEjemplar } from "../types";
+import { ConteoEstado, ESTADOS_EJEMPLAR, EstadoEjemplar, ResumenInventario } from "../types";
 
-/** Estados de un ejemplar con su nombre en la leyenda. */
-const ESTADOS: { estado: EstadoEjemplar; nombre: string }[] = [
-  { estado: "DISPONIBLE", nombre: "Disponibles" },
-  { estado: "PRESTADO", nombre: "Prestados" },
-  { estado: "DANIADO", nombre: "Dañados" },
-  { estado: "DADO_DE_BAJA", nombre: "Dados de baja" }
-];
-
-interface Resumen {
-  libros: number;
-  porEstado: Record<EstadoEjemplar, number>;
-}
+/** Nombre de cada estado en la leyenda (en plural). */
+const NOMBRE_ESTADO: Record<EstadoEjemplar, string> = {
+  DISPONIBLE: "Disponibles",
+  PRESTADO: "Prestados",
+  DANIADO: "Dañados",
+  DADO_DE_BAJA: "Dados de baja"
+};
 
 /** Retraso de la animación de entrada de cada bloque (aparecen uno tras otro). */
 const retraso = (ms: number) => ({ "--retraso": `${ms}ms` }) as CSSProperties;
@@ -32,18 +26,17 @@ const retraso = (ms: number) => ({ "--retraso": `${ms}ms` }) as CSSProperties;
  * Ventana principal: encabezado con el resumen del inventario (se actualiza solo, patrón
  * Observer), estado de los ejemplares y accesos a cada caso de uso. El menú superior tiene
  * las mismas opciones y "Ayuda".
+ *
+ * Los totales y la distribución por estado los calcula el servidor (query resumenInventario):
+ * esta pantalla no cuenta nada, solo muestra lo que recibe.
  */
 export default function MenuPrincipal() {
-  const [resumen, setResumen] = useState<Resumen | null>(null);
+  const [resumen, setResumen] = useState<ResumenInventario | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function cargar() {
     try {
-      const [libros, ejemplares] = await Promise.all([listarLibros(), listarEjemplares()]);
-      const porEstado = Object.fromEntries(
-        ESTADOS.map(({ estado }) => [estado, ejemplares.filter((e) => e.estado === estado).length])
-      ) as Record<EstadoEjemplar, number>;
-      setResumen({ libros: libros.length, porEstado });
+      setResumen(await consultarResumenInventario());
       setError(null);
     } catch (err) {
       setError(mensajeDeError(err));
@@ -54,7 +47,6 @@ export default function MenuPrincipal() {
   useListadoObservado(ejemplarObservable, cargar, { cargarAlInicio: false });
 
   const ahora = new Date();
-  const totalEjemplares = resumen ? Object.values(resumen.porEstado).reduce((a, b) => a + b, 0) : null;
 
   return (
     <>
@@ -66,15 +58,15 @@ export default function MenuPrincipal() {
             <p className="inicio-subtitulo aparecer" style={retraso(120)}>Así está tu inventario hoy.</p>
           </div>
           <div className="inicio-cifras aparecer" style={retraso(220)}>
-            <Cifra valor={resumen?.libros ?? null} leyenda="Títulos" />
-            <Cifra valor={totalEjemplares} leyenda="Ejemplares" />
+            <Cifra valor={resumen?.totalLibros ?? null} leyenda="Títulos" />
+            <Cifra valor={resumen?.totalEjemplares ?? null} leyenda="Ejemplares" />
           </div>
         </div>
         <Estanteria />
       </section>
 
       <div className="aparecer" style={retraso(420)}>
-        {error ? <Aviso>{error}</Aviso> : <TarjetaEstados resumen={resumen} total={totalEjemplares ?? 0} />}
+        {error ? <Aviso>{error}</Aviso> : <TarjetaEstados conteos={resumen?.ejemplaresPorEstado ?? null} />}
       </div>
 
       <div className="aparecer" style={retraso(560)}>
@@ -98,29 +90,32 @@ function Cifra({ valor, leyenda }: { valor: number | null; leyenda: string }) {
   );
 }
 
-/** Distribución de los ejemplares por estado: barra proporcional + leyenda. */
-function TarjetaEstados({ resumen, total }: { resumen: Resumen | null; total: number }) {
+type FilaEstado = Omit<ConteoEstado, "cantidad"> & { cantidad: number | null };
+
+/** Mientras llega la respuesta del servidor: los cuatro estados, sin cifras. */
+const ESTADOS_CARGANDO: FilaEstado[] = ESTADOS_EJEMPLAR.map((estado) => ({ estado, cantidad: null, porcentaje: 0 }));
+
+/**
+ * Distribución de los ejemplares por estado: barra proporcional + leyenda.
+ * Cantidad y porcentaje de cada estado vienen calculados del servidor.
+ */
+function TarjetaEstados({ conteos }: { conteos: ConteoEstado[] | null }) {
+  const filas: FilaEstado[] = conteos ?? ESTADOS_CARGANDO;
   return (
     <section className="tarjeta estados" aria-label="Estado de los ejemplares">
       <h2 className="estados-titulo">Estado de los ejemplares</h2>
-      <p className="leyenda">{resumen ? "Copias físicas registradas en el inventario" : "Cargando…"}</p>
+      <p className="leyenda">{conteos ? "Copias físicas registradas en el inventario" : "Cargando…"}</p>
       <div className="estados-barra">
-        {ESTADOS.map(({ estado }) => (
-          <span
-            key={estado}
-            style={{
-              width: total === 0 || !resumen ? 0 : `${(resumen.porEstado[estado] / total) * 100}%`,
-              background: colorEstado(estado)
-            }}
-          />
+        {filas.map(({ estado, porcentaje }) => (
+          <span key={estado} style={{ width: `${porcentaje}%`, background: colorEstado(estado) }} />
         ))}
       </div>
       <ul className="estados-leyenda">
-        {ESTADOS.map(({ estado, nombre }) => (
+        {filas.map(({ estado, cantidad }) => (
           <li key={estado}>
             <span className="punto" style={{ background: colorEstado(estado) }} />
-            <span>{nombre}</span>
-            <strong>{resumen ? resumen.porEstado[estado] : "—"}</strong>
+            <span>{NOMBRE_ESTADO[estado]}</span>
+            <strong>{cantidad ?? "—"}</strong>
           </li>
         ))}
       </ul>

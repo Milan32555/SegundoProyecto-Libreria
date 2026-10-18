@@ -13,6 +13,7 @@ public class EjemplarBuilder {
     private String ubicacion;
     private LocalDateTime fechaIngreso;
     private double precioReposicion;
+    private int numeroPrestamos;
     private String isbnLibro;
 
     public EjemplarBuilder conCodigo(String codigo) {
@@ -40,12 +41,17 @@ public class EjemplarBuilder {
         return this;
     }
 
+    public EjemplarBuilder conNumeroPrestamos(int numeroPrestamos) {
+        this.numeroPrestamos = numeroPrestamos;
+        return this;
+    }
+
     public EjemplarBuilder conIsbnLibro(String isbnLibro) {
         this.isbnLibro = isbnLibro;
         return this;
     }
 
     public Ejemplar construir() {
-        return new Ejemplar(codigo, estado, ubicacion, fechaIngreso, precioReposicion, isbnLibro);
+        return new Ejemplar(codigo, estado, ubicacion, fechaIngreso, precioReposicion, numeroPrestamos, isbnLibro);
     }
 }

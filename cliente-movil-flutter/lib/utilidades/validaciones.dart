@@ -10,6 +10,12 @@ String? validarDecimalPositivo(String? valor) {
   return numero > 0 ? null : 'Debe ser mayor que cero';
 }
 
+String? validarEnteroNoNegativo(String? valor) {
+  final numero = int.tryParse(valor?.trim() ?? '');
+  if (numero == null) return 'Número entero inválido';
+  return numero >= 0 ? null : 'No puede ser negativo';
+}
+
 String? validarEnteroPositivo(String? valor) {
   final numero = int.tryParse(valor?.trim() ?? '');
   if (numero == null) return 'Número entero inválido';

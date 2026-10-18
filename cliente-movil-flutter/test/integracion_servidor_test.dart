@@ -34,7 +34,8 @@ void main() {
 
       expect((await buscarLibroPorTitulo('libro desde flutter'))!.isbn, isbn);
       final filtrados = await listarLibrosFiltrados(autor: 'app movil', genero: 'CIENCIA');
-      expect(filtrados.map((l) => l.isbn), contains(isbn));
+      expect(filtrados.libros.map((l) => l.isbn), contains(isbn));
+      expect(filtrados.total, filtrados.libros.length);
 
       await crearEjemplar(
         codigo: codigo,
@@ -42,6 +43,7 @@ void main() {
         ubicacion: 'Estante F',
         fechaIngreso: aFechaServidor(DateTime(2024, 6, 1)),
         precioReposicion: 5000,
+        numeroPrestamos: 2,
         isbnLibro: isbn,
       );
       await expectLater(
@@ -55,9 +57,13 @@ void main() {
         ubicacion: 'Mostrador',
         fechaIngreso: aFechaServidor(DateTime(2024, 6, 1)),
         precioReposicion: 5500,
+        numeroPrestamos: 3,
       );
       expect(actualizado.estado, 'DISPONIBLE');
-      expect((await listarEjemplaresFiltrados(estado: 'DISPONIBLE', isbnLibro: isbn)).single.codigo, codigo);
+      expect(actualizado.numeroPrestamos, 3);
+      final disponibles = await listarEjemplaresFiltrados(estado: 'DISPONIBLE', isbnLibro: isbn);
+      expect(disponibles.ejemplares.single.codigo, codigo);
+      expect(disponibles.total, 1);
 
       await eliminarEjemplar(codigo);
       expect(await buscarEjemplarPorCodigo(codigo), isNull);

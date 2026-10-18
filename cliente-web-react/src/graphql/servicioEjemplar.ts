@@ -1,29 +1,31 @@
 import { ClienteGraphQL } from "./clienteGraphQL";
 import { EstadoEjemplar, Ejemplar } from "../types";
 
-const CAMPOS_EJEMPLAR = `codigo estado ubicacion fechaIngreso precioReposicion isbnLibro`;
+const CAMPOS_EJEMPLAR = `codigo estado ubicacion fechaIngreso precioReposicion numeroPrestamos isbnLibro`;
 
 const graphql = () => ClienteGraphQL.getInstancia();
 
-export async function listarEjemplares(): Promise<Ejemplar[]> {
-  const data = await graphql().ejecutar<{ ejemplares: Ejemplar[] }>(
-    `query { ejemplares { ${CAMPOS_EJEMPLAR} } }`
-  );
-  return data.ejemplares;
+export interface ListadoEjemplares {
+  ejemplares: Ejemplar[];
+  total: number;
 }
 
-/** Listar con filtro: el filtrado se hace del lado del servidor. */
+/**
+ * Listar con filtro: el servidor filtra y también cuenta cuántos ejemplares cumplen el filtro
+ * (las dos cosas en una sola petición GraphQL).
+ */
 export async function listarEjemplaresFiltrados(
   estado: EstadoEjemplar | "",
   isbnLibro: string
-): Promise<Ejemplar[]> {
-  const data = await graphql().ejecutar<{ ejemplaresFiltrados: Ejemplar[] }>(
+): Promise<ListadoEjemplares> {
+  const data = await graphql().ejecutar<{ ejemplaresFiltrados: Ejemplar[]; totalEjemplaresFiltrados: number }>(
     `query ($estado: EstadoEjemplar, $isbnLibro: String) {
        ejemplaresFiltrados(estado: $estado, isbnLibro: $isbnLibro) { ${CAMPOS_EJEMPLAR} }
+       totalEjemplaresFiltrados(estado: $estado, isbnLibro: $isbnLibro)
      }`,
     { estado: estado || null, isbnLibro: isbnLibro.trim() || null }
   );
-  return data.ejemplaresFiltrados;
+  return { ejemplares: data.ejemplaresFiltrados, total: data.totalEjemplaresFiltrados };
 }
 
 export async function buscarEjemplarPorCodigo(codigo: string): Promise<Ejemplar | null> {

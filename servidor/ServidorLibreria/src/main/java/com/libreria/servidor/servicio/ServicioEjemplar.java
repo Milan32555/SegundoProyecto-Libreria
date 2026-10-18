@@ -61,6 +61,11 @@ public class ServicioEjemplar {
                 .toList();
     }
 
+    /** Cuántos ejemplares cumplen el filtro (la pantalla Listar muestra este total, no lo cuenta). */
+    public int contarFiltrados(EstadoEjemplar estado, String isbnLibro) {
+        return filtrar(estado, isbnLibro).size();
+    }
+
     public List<Ejemplar> porLibro(String isbnLibro) {
         return filtrar(null, isbnLibro);
     }
@@ -84,7 +89,7 @@ public class ServicioEjemplar {
         }
         Libro libro = servicioLibro.buscarPorIsbn(in.isbnLibro())
                 .orElseThrow(() -> new LibreriaException("No existe un libro con el ISBN " + in.isbnLibro() + "."));
-        validar(in.estado(), in.ubicacion(), in.fechaIngreso(), in.precioReposicion());
+        validar(in.estado(), in.ubicacion(), in.fechaIngreso(), in.precioReposicion(), in.numeroPrestamos());
 
         Ejemplar ejemplar = new EjemplarBuilder()
                 .conCodigo(in.codigo().trim())
@@ -92,6 +97,7 @@ public class ServicioEjemplar {
                 .conUbicacion(in.ubicacion().trim())
                 .conFechaIngreso(in.fechaIngreso())
                 .conPrecioReposicion(in.precioReposicion())
+                .conNumeroPrestamos(in.numeroPrestamos())
                 .conIsbnLibro(libro.getIsbn())
                 .construir();
 
@@ -103,12 +109,13 @@ public class ServicioEjemplar {
     public synchronized Ejemplar actualizar(String codigo, EjemplarUpdateInput in) {
         Ejemplar ejemplar = buscarPorCodigo(codigo)
                 .orElseThrow(() -> new LibreriaException("No existe un ejemplar con el código " + codigo + "."));
-        validar(in.estado(), in.ubicacion(), in.fechaIngreso(), in.precioReposicion());
+        validar(in.estado(), in.ubicacion(), in.fechaIngreso(), in.precioReposicion(), in.numeroPrestamos());
 
         ejemplar.setEstado(in.estado());
         ejemplar.setUbicacion(in.ubicacion().trim());
         ejemplar.setFechaIngreso(in.fechaIngreso());
         ejemplar.setPrecioReposicion(in.precioReposicion());
+        ejemplar.setNumeroPrestamos(in.numeroPrestamos());
 
         notificarListado();
         return ejemplar;
@@ -126,7 +133,8 @@ public class ServicioEjemplar {
         observable.notificarCambio(repositorio::listar);
     }
 
-    private void validar(EstadoEjemplar estado, String ubicacion, LocalDateTime fechaIngreso, double precio) {
+    private void validar(EstadoEjemplar estado, String ubicacion, LocalDateTime fechaIngreso, double precio,
+                         int numeroPrestamos) {
         if (estado == null) {
             throw new LibreriaException("El estado del ejemplar es obligatorio.");
         }
@@ -141,6 +149,9 @@ public class ServicioEjemplar {
         }
         if (precio <= 0) {
             throw new LibreriaException("El precio de reposición debe ser mayor que cero.");
+        }
+        if (numeroPrestamos < 0) {
+            throw new LibreriaException("El número de préstamos no puede ser negativo.");
         }
     }
 }

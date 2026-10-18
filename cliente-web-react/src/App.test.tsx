@@ -3,27 +3,31 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
-import { listarLibros } from "./graphql/servicioLibro";
-import { listarEjemplares } from "./graphql/servicioEjemplar";
+import { consultarResumenInventario } from "./graphql/servicioResumen";
 import { ErrorGraphQL } from "./graphql/clienteGraphQL";
-import { Ejemplar, Libro } from "./types";
+import { ResumenInventario } from "./types";
 
 vi.mock("./graphql/servicioLibro", () => ({
-  listarLibros: vi.fn(),
   consultarRevisionLibros: vi.fn()
 }));
 vi.mock("./graphql/servicioEjemplar", () => ({
-  listarEjemplares: vi.fn(),
   consultarRevisionEjemplares: vi.fn()
 }));
+vi.mock("./graphql/servicioResumen", () => ({
+  consultarResumenInventario: vi.fn()
+}));
 
-const LIBRO: Libro = {
-  isbn: "1", titulo: "Delirio", autor: "Laura Restrepo", precio: 55000,
-  numeroPaginas: 352, fechaPublicacion: "2004-03-01T00:00:00", genero: "FICCION"
+/** Lo que respondería el servidor: totales y conteo por estado ya calculados. */
+const RESUMEN: ResumenInventario = {
+  totalLibros: 2,
+  totalEjemplares: 3,
+  ejemplaresPorEstado: [
+    { estado: "DISPONIBLE", cantidad: 2, porcentaje: 66.67 },
+    { estado: "PRESTADO", cantidad: 1, porcentaje: 33.33 },
+    { estado: "DANIADO", cantidad: 0, porcentaje: 0 },
+    { estado: "DADO_DE_BAJA", cantidad: 0, porcentaje: 0 }
+  ]
 };
-const ejemplar = (codigo: string, estado: Ejemplar["estado"]): Ejemplar => ({
-  codigo, estado, ubicacion: "Estante", fechaIngreso: "2024-01-01T00:00:00", precioReposicion: 1000, isbnLibro: "1"
-});
 
 function renderizarEn(ruta: string) {
   return render(
@@ -39,13 +43,10 @@ describe("Ventana principal", () => {
     const ejemplarServicio = await import("./graphql/servicioEjemplar");
     vi.mocked(libro.consultarRevisionLibros).mockReturnValue(new Promise(() => {}));
     vi.mocked(ejemplarServicio.consultarRevisionEjemplares).mockReturnValue(new Promise(() => {}));
-    vi.mocked(listarLibros).mockResolvedValue([LIBRO, { ...LIBRO, isbn: "2" }]);
-    vi.mocked(listarEjemplares).mockResolvedValue([
-      ejemplar("EJ-1", "DISPONIBLE"), ejemplar("EJ-2", "DISPONIBLE"), ejemplar("EJ-3", "PRESTADO")
-    ]);
+    vi.mocked(consultarResumenInventario).mockResolvedValue(RESUMEN);
   });
 
-  it("muestra el resumen del inventario que trae del servidor", async () => {
+  it("muestra el resumen del inventario que calcula el servidor (no cuenta en la pantalla)", async () => {
     renderizarEn("/");
     const inventario = screen.getByRole("region", { name: "Inventario" });
 
@@ -58,10 +59,11 @@ describe("Ventana principal", () => {
     expect(cantidad("Prestados")).toHaveTextContent("Prestados1");
     expect(cantidad("Dañados")).toHaveTextContent("Dañados0");
     expect(cantidad("Dados de baja")).toHaveTextContent("Dados de baja0");
+    expect(consultarResumenInventario).toHaveBeenCalled();
   });
 
   it("avisa si no hay conexión con el servidor", async () => {
-    vi.mocked(listarLibros).mockRejectedValue(new ErrorGraphQL("No se pudo conectar con el servidor."));
+    vi.mocked(consultarResumenInventario).mockRejectedValue(new ErrorGraphQL("No se pudo conectar con el servidor."));
 
     renderizarEn("/");
 

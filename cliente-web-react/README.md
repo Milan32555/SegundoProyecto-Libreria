@@ -32,7 +32,8 @@ src/
 ├── graphql/                 Acceso a datos
 │   ├── clienteGraphQL.ts    Singleton que envía las peticiones y traduce los errores
 │   ├── servicioLibro.ts     Consultas/mutaciones de Libro
-│   └── servicioEjemplar.ts  Consultas/mutaciones de Ejemplar
+│   ├── servicioEjemplar.ts  Consultas/mutaciones de Ejemplar
+│   └── servicioResumen.ts   Resumen del inventario (lo calcula el servidor)
 ├── observer/
 │   ├── Observable.ts        Sujeto del patrón Observer (uno por colección)
 │   └── useListadoObservado.ts  Hook que suscribe las pantallas de Listar
@@ -66,6 +67,10 @@ el resto con **Plus Jakarta Sans** (incluidas en `src/assets/fuentes`, no depend
 ## Observer
 
 Las pantallas de Listar se suscriben al sujeto de su colección mientras están abiertas.
-El sujeto las notifica cuando otra pantalla de este cliente hace un cambio y, además, consulta
-cada 3 s el número de revisión del servidor para detectar cambios hechos desde **otro cliente**
-(por ejemplo, la app Flutter). Al refrescar se usan los filtros que el usuario tiene escritos.
+El sujeto las notifica de inmediato cuando otra pantalla de este cliente hace un cambio
+(obligatorio). Además, de forma opcional, consulta cada 15 s el número de revisión del servidor
+para detectar cambios hechos desde **otro cliente** (por ejemplo, la app Flutter). Al refrescar
+se usan los filtros que el usuario tiene escritos.
+
+La ventana principal y las pantallas de Listar no cuentan nada: el total de cada Listar y el
+resumen del inventario vienen calculados del servidor.

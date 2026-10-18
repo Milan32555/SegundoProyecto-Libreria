@@ -10,10 +10,12 @@ import { ESTADOS_EJEMPLAR, EstadoEjemplar, Ejemplar, etiquetaEstado } from "../.
 
 /**
  * Caso de uso: Listar Ejemplares en una grilla, con filtro (del lado del servidor) por estado
- * y/o ISBN del libro. Observer igual que en ListarLibros.
+ * y/o ISBN del libro. El total encontrado también lo calcula el servidor. Observer igual que
+ * en ListarLibros.
  */
 export default function ListarEjemplares() {
   const [ejemplares, setEjemplares] = useState<Ejemplar[]>([]);
+  const [total, setTotal] = useState(0);
   const [estado, setEstado] = useState<EstadoEjemplar | "">("");
   const [isbnLibro, setIsbnLibro] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +25,9 @@ export default function ListarEjemplares() {
     setCargando(true);
     setError(null);
     try {
-      setEjemplares(await listarEjemplaresFiltrados(filtroEstado, isbnLibro));
+      const listado = await listarEjemplaresFiltrados(filtroEstado, isbnLibro);
+      setEjemplares(listado.ejemplares);
+      setTotal(listado.total);
     } catch (err) {
       setError(mensajeDeError(err));
     } finally {
@@ -63,14 +67,14 @@ export default function ListarEjemplares() {
       {error && <Aviso>{error}</Aviso>}
 
       <div className="resumen-lista">
-        <span className="conteo">{ejemplares.length === 1 ? "1 ejemplar" : `${ejemplares.length} ejemplares`}</span>
+        <span className="conteo">{total === 1 ? "1 ejemplar" : `${total} ejemplares`}</span>
       </div>
       <div className="tabla-contenedor">
         <table>
           <thead>
             <tr>
               <th>Ejemplar</th><th>Estado</th><th className="numero">Reposición</th>
-              <th>Ingreso</th><th>Libro (ISBN)</th>
+              <th className="numero">Préstamos</th><th>Ingreso</th><th>Libro (ISBN)</th>
             </tr>
           </thead>
           <tbody>
@@ -79,12 +83,13 @@ export default function ListarEjemplares() {
                 <td className="celda-doble"><strong>{e.codigo}</strong><small>{e.ubicacion}</small></td>
                 <td><Pastilla color={colorEstado(e.estado)}>{etiquetaEstado(e.estado)}</Pastilla></td>
                 <td className="numero precio">{formatearPrecio(e.precioReposicion)}</td>
+                <td className="numero">{e.numeroPrestamos}</td>
                 <td>{formatearFechaCorta(e.fechaIngreso)}</td>
                 <td className="apagado">{e.isbnLibro}</td>
               </tr>
             ))}
             {ejemplares.length === 0 && !cargando && (
-              <tr><td colSpan={5} className="sin-datos">No hay ejemplares para mostrar.</td></tr>
+              <tr><td colSpan={6} className="sin-datos">No hay ejemplares para mostrar.</td></tr>
             )}
           </tbody>
         </table>

@@ -38,7 +38,7 @@ class ServicioEjemplarTest {
     }
 
     private EjemplarInput ejemplar(String codigo, EstadoEjemplar estado) {
-        return new EjemplarInput(codigo, estado, "Estante A1", FECHA, 30000, isbn);
+        return new EjemplarInput(codigo, estado, "Estante A1", FECHA, 30000, 0, isbn);
     }
 
     @Test
@@ -46,10 +46,11 @@ class ServicioEjemplarTest {
         String codigo = codigoUnico();
 
         Ejemplar creado = servicio.crear(new EjemplarInput(" " + codigo + " ", EstadoEjemplar.DISPONIBLE,
-                " Estante B2 ", FECHA, 15000, isbn.toLowerCase()));
+                " Estante B2 ", FECHA, 15000, 3, isbn.toLowerCase()));
 
         assertThat(creado.getCodigo()).isEqualTo(codigo);
         assertThat(creado.getUbicacion()).isEqualTo("Estante B2");
+        assertThat(creado.getNumeroPrestamos()).isEqualTo(3);
         // Se guarda el ISBN tal como está registrado en el libro, no como lo escribió el usuario.
         assertThat(creado.getIsbnLibro()).isEqualTo(isbn);
         assertThat(servicio.porLibro(isbn)).extracting(Ejemplar::getCodigo).containsExactly(codigo);
@@ -57,7 +58,7 @@ class ServicioEjemplarTest {
 
     @Test
     void noPermiteEjemplaresDeUnLibroInexistente() {
-        EjemplarInput huerfano = new EjemplarInput(codigoUnico(), EstadoEjemplar.DISPONIBLE, "X", FECHA, 1, "no-existe");
+        EjemplarInput huerfano = new EjemplarInput(codigoUnico(), EstadoEjemplar.DISPONIBLE, "X", FECHA, 1, 0, "no-existe");
 
         assertThatThrownBy(() -> servicio.crear(huerfano))
                 .isInstanceOf(LibreriaException.class)
@@ -80,14 +81,29 @@ class ServicioEjemplarTest {
         assertThatThrownBy(() -> servicio.crear(ejemplar(codigoUnico(), null)))
                 .hasMessageContaining("estado del ejemplar es obligatorio");
         assertThatThrownBy(() -> servicio.crear(
-                new EjemplarInput(codigoUnico(), EstadoEjemplar.DISPONIBLE, "", FECHA, 1, isbn)))
+                new EjemplarInput(codigoUnico(), EstadoEjemplar.DISPONIBLE, "", FECHA, 1, 0, isbn)))
                 .hasMessageContaining("ubicación es obligatoria");
         assertThatThrownBy(() -> servicio.crear(
-                new EjemplarInput(codigoUnico(), EstadoEjemplar.DISPONIBLE, "X", FECHA, -5, isbn)))
+                new EjemplarInput(codigoUnico(), EstadoEjemplar.DISPONIBLE, "X", FECHA, -5, 0, isbn)))
                 .hasMessageContaining("mayor que cero");
         assertThatThrownBy(() -> servicio.crear(new EjemplarInput(codigoUnico(), EstadoEjemplar.DISPONIBLE, "X",
-                LocalDateTime.now().plusHours(2), 1, isbn)))
+                LocalDateTime.now().plusHours(2), 1, 0, isbn)))
                 .hasMessageContaining("no puede ser futura");
+        assertThatThrownBy(() -> servicio.crear(
+                new EjemplarInput(codigoUnico(), EstadoEjemplar.DISPONIBLE, "X", FECHA, 1, -1, isbn)))
+                .hasMessageContaining("número de préstamos no puede ser negativo");
+    }
+
+    @Test
+    void elNumeroDePrestamosNoPuedeQuedarNegativoAlActualizar() {
+        String codigo = codigoUnico();
+        servicio.crear(ejemplar(codigo, EstadoEjemplar.DISPONIBLE));
+
+        assertThatThrownBy(() -> servicio.actualizar(codigo,
+                new EjemplarUpdateInput(EstadoEjemplar.PRESTADO, "X", FECHA, 1, -3)))
+                .isInstanceOf(LibreriaException.class)
+                .hasMessageContaining("número de préstamos no puede ser negativo");
+        assertThat(servicio.buscarPorCodigo(codigo)).map(Ejemplar::getNumeroPrestamos).contains(0);
     }
 
     @Test
@@ -104,6 +120,11 @@ class ServicioEjemplarTest {
         assertThat(servicio.filtrar(EstadoEjemplar.PRESTADO, null))
                 .allMatch(e -> e.getEstado() == EstadoEjemplar.PRESTADO);
         assertThat(servicio.filtrar(null, "  ")).hasSameSizeAs(servicio.listar());
+
+        // El total que muestra la pantalla Listar lo calcula el servidor con el mismo filtro.
+        assertThat(servicio.contarFiltrados(null, isbn)).isEqualTo(2);
+        assertThat(servicio.contarFiltrados(EstadoEjemplar.PRESTADO, isbn)).isEqualTo(1);
+        assertThat(servicio.contarFiltrados(null, null)).isEqualTo(servicio.listar().size());
     }
 
     @Test
@@ -113,12 +134,13 @@ class ServicioEjemplarTest {
         LocalDateTime nuevaFecha = LocalDateTime.of(2023, 1, 1, 8, 0);
 
         Ejemplar actualizado = servicio.actualizar(codigo,
-                new EjemplarUpdateInput(EstadoEjemplar.DANIADO, " Bodega ", nuevaFecha, 12345.5));
+                new EjemplarUpdateInput(EstadoEjemplar.DANIADO, " Bodega ", nuevaFecha, 12345.5, 7));
 
         assertThat(actualizado.getEstado()).isEqualTo(EstadoEjemplar.DANIADO);
         assertThat(actualizado.getUbicacion()).isEqualTo("Bodega");
         assertThat(actualizado.getFechaIngreso()).isEqualTo(nuevaFecha);
         assertThat(actualizado.getPrecioReposicion()).isEqualTo(12345.5);
+        assertThat(actualizado.getNumeroPrestamos()).isEqualTo(7);
         assertThat(actualizado.getIsbnLibro()).isEqualTo(isbn);
 
         assertThat(servicio.eliminar(codigo).getCodigo()).isEqualTo(codigo);

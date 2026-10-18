@@ -13,6 +13,7 @@ export default function AgregarEjemplar() {
   const [ubicacion, setUbicacion] = useState("");
   const [fechaIngreso, setFechaIngreso] = useState("");
   const [precioReposicion, setPrecioReposicion] = useState("");
+  const [numeroPrestamos, setNumeroPrestamos] = useState("0");
   const [isbnLibro, setIsbnLibro] = useState("");
 
   const [error, setError] = useState<string | null>(null);
@@ -26,12 +27,13 @@ export default function AgregarEjemplar() {
       const ejemplar = await crearEjemplar({
         codigo, estado, ubicacion, fechaIngreso,
         precioReposicion: Number(precioReposicion),
+        numeroPrestamos: Number(numeroPrestamos),
         isbnLibro
       });
       setExito(`Ejemplar "${ejemplar.codigo}" creado correctamente.`);
       ejemplarObservable.notificar();
       setCodigo(""); setUbicacion(""); setFechaIngreso("");
-      setPrecioReposicion(""); setIsbnLibro("");
+      setPrecioReposicion(""); setNumeroPrestamos("0"); setIsbnLibro("");
     } catch (err) {
       setError(mensajeDeError(err));
     } finally {
@@ -65,6 +67,10 @@ export default function AgregarEjemplar() {
           <label>Precio de reposición
             <input type="number" min="0.01" step="0.01" value={precioReposicion}
                    onChange={(e) => setPrecioReposicion(e.target.value)} required />
+          </label>
+          <label>Número de préstamos
+            <input type="number" min="0" step="1" value={numeroPrestamos}
+                   onChange={(e) => setNumeroPrestamos(e.target.value)} required />
           </label>
         </div>
         <SelectorChips etiqueta="Estado" nombre="estado" opciones={ESTADOS_EJEMPLAR} valor={estado}

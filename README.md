@@ -228,18 +228,3 @@ query {
   }
 }
 ```
-
-## Guía rápida para la sustentación
-
-1. Levantar el servidor y los dos clientes. Dejar visible la ventana del servidor: ahí aparece
-   cada operación con la hora y el cliente que la hizo.
-2. En el navegador abrir **Libro → Listar**. En la app Flutter, **Adicionar** un libro.
-   En máximo 15 s aparece en la grilla del navegador sin recargar (Observer entre clientes,
-   opcional). Dentro de un mismo cliente el refresco es inmediato.
-3. **Eliminar** el libro `978-0307474728`: se muestra la ficha completa y, al confirmar, el
-   servidor rechaza la operación porque tiene ejemplares. Eliminar `978-9584276193` (sin
-   ejemplares) sí funciona.
-4. **Buscar por criterios**: consultar un libro por ISBN o por título (`la voragine`).
-   **Actualizar** el ejemplar `EJ-001` a *Prestado*: su número de préstamos pasa de 4 a 5
-   (lo calcula el servidor).
-5. **Ayuda → Acerca de...** muestra integrantes y versión.

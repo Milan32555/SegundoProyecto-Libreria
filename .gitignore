@@ -9,6 +9,11 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# Resultados de pruebas (cobertura, Playwright)
+coverage/
+test-results/
+playwright-report/
+
 # Flutter / Dart
 .dart_tool/
 build/

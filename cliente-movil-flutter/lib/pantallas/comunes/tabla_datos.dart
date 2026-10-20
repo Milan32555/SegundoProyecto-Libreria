@@ -70,6 +70,9 @@ class _TablaDatosState<T> extends State<TablaDatos<T>> {
     decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: kGris100))),
     child: DefaultTextStyle.merge(
       style: TextStyle(fontSize: 14, color: kGris900, fontFeatures: c.numerica ? cifrasTabulares : null),
+      maxLines: 1,
+      softWrap: false,
+      overflow: TextOverflow.ellipsis,
       child: c.celda(fila),
     ),
   );

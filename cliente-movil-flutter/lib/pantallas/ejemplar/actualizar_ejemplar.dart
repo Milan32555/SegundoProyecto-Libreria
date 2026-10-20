@@ -170,6 +170,7 @@ class _ActualizarEjemplarState extends State<ActualizarEjemplar> {
         DropdownButtonFormField<String>(
           initialValue: _estado,
           decoration: const InputDecoration(labelText: 'Estado'),
+          style: const TextStyle(fontFamily: fuenteUi, fontSize: 16, color: kGris900),
           icon: const Icon(LucideIcons.chevronDown, size: 18),
           items: [for (final e in estadosEjemplar) DropdownMenuItem(value: e, child: InsigniaEstado(e))],
           onChanged: (e) => setState(() => _estado = e!),

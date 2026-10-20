@@ -13,7 +13,7 @@ import '../comunes/tabla_datos.dart';
 final _columnas = <ColumnaTabla<Ejemplar>>[
   ColumnaTabla(titulo: 'Código', ancho: 124, celda: (e) => CeldaDoble(principal: e.codigo, secundario: e.ubicacion)),
   ColumnaTabla(titulo: 'Estado', ancho: 136, celda: (e) => InsigniaEstado(e.estado)),
-  ColumnaTabla(titulo: 'Libro (ISBN)', ancho: 140, celda: (e) => Text(e.isbnLibro, style: const TextStyle(color: kGris600))),
+  ColumnaTabla(titulo: 'Libro (ISBN)', ancho: 164, celda: (e) => Text(e.isbnLibro, style: const TextStyle(color: kGris600))),
   ColumnaTabla(titulo: 'Ingreso', ancho: 112, celda: (e) => Text(formatearFechaCortaIso(e.fechaIngreso), style: const TextStyle(color: kGris600))),
   ColumnaTabla(titulo: 'Préstamos', ancho: 96, numerica: true, celda: (e) => Text('${e.numeroPrestamos}')),
   ColumnaTabla(titulo: 'Reposición', ancho: 112, numerica: true, celda: (e) => Text(formatearPrecio(e.precioReposicion))),

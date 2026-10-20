@@ -203,6 +203,7 @@ class _ActualizarLibroState extends State<ActualizarLibro> {
         DropdownButtonFormField<String>(
           initialValue: _genero,
           decoration: const InputDecoration(labelText: 'Género'),
+          style: const TextStyle(fontFamily: fuenteUi, fontSize: 16, color: kGris900),
           icon: const Icon(LucideIcons.chevronDown, size: 18),
           items: [for (final g in generos) DropdownMenuItem(value: g, child: Text(etiquetaGenero(g)))],
           onChanged: (g) => setState(() => _genero = g!),

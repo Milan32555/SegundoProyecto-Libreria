@@ -1,207 +1,90 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../modelos/ejemplar.dart';
+import '../../modelos/libro.dart';
 import '../../tema/tema.dart';
 
-/// Color que identifica cada estado de un ejemplar.
-Color colorEstado(String estado) => switch (estado) {
-  'DISPONIBLE' => kVerde,
-  'PRESTADO' => kAzul,
-  'DANIADO' => kNaranja,
-  'DADO_DE_BAJA' => kRojo,
-  _ => kTinta2,
+/// Colores de cada estado de un ejemplar: (fondo, punto, texto).
+(Color, Color, Color) coloresEstado(String estado) => switch (estado) {
+  'DISPONIBLE' => (kExitoFondo, kExitoPunto, kExitoTexto),
+  'PRESTADO' => (kInfoFondo, kInfoPunto, kInfoTexto),
+  'DANIADO' => (kAvisoFondo, kAvisoPunto, kAvisoTexto),
+  _ => (kNeutroFondo, kNeutroPunto, kNeutroTexto),
 };
 
-/// Etiqueta pequeña en mayúsculas que encabeza una sección.
-class EtiquetaSeccion extends StatelessWidget {
-  const EtiquetaSeccion(this.texto, {super.key, this.color = kTinta3});
-
-  final String texto;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Text(texto.toUpperCase(), style: estiloEtiqueta.copyWith(color: color));
-}
-
-/// Título de una sección (serif) con un ícono a la izquierda y, opcionalmente, un detalle a la derecha.
-class TituloSeccion extends StatelessWidget {
-  const TituloSeccion({super.key, required this.icono, required this.titulo, this.detalle});
-
-  final IconData icono;
-  final String titulo;
-  final String? detalle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icono, size: 20, color: kPrimario),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            titulo,
-            style: const TextStyle(fontFamily: fuenteTitulos, color: kTinta, fontSize: 22, fontWeight: FontWeight.w700),
-          ),
-        ),
-        if (detalle != null)
-          Text(
-            detalle!,
-            style: const TextStyle(color: kTinta3, fontSize: 12, fontWeight: FontWeight.w600),
-          ),
-      ],
-    );
-  }
-}
-
-/// Encabezado de cada pantalla: etiqueta, título grande y una línea de ayuda.
+/// Encabezado de cada pantalla: sección (Libros / Ejemplares), título y una línea de ayuda.
 class EncabezadoPantalla extends StatelessWidget {
-  const EncabezadoPantalla({super.key, required this.etiqueta, required this.titulo, this.descripcion});
+  const EncabezadoPantalla({super.key, this.seccion, required this.titulo, this.descripcion});
 
-  final String etiqueta;
+  final String? seccion;
   final String titulo;
   final String? descripcion;
 
   @override
   Widget build(BuildContext context) {
-    final texto = Theme.of(context).textTheme;
+    final textos = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: Espacio.lg),
+      padding: const EdgeInsets.only(bottom: Espacio.e4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          EtiquetaSeccion(etiqueta, color: kPrimario),
-          const SizedBox(height: Espacio.xs),
-          Text(titulo, style: texto.headlineSmall),
-          if (descripcion != null) ...[const SizedBox(height: Espacio.xs), Text(descripcion!, style: texto.bodyMedium)],
+          if (seccion != null)
+            Text(seccion!, style: textos.labelMedium!.copyWith(color: kGris500)),
+          Semantics(header: true, child: Text(titulo, style: textos.headlineSmall)),
+          if (descripcion != null) ...[
+            const SizedBox(height: Espacio.e1),
+            Text(descripcion!, style: textos.bodyMedium!.copyWith(color: kGris600)),
+          ],
         ],
       ),
     );
   }
 }
 
-/// Tarjeta principal de una pantalla (fichas, avisos destacados): hoja con borde fino y sombra suave.
-class TarjetaHero extends StatelessWidget {
-  const TarjetaHero({super.key, required this.child});
+/// Superficie blanca con borde fino: agrupa contenido (fichas, formularios, tablas).
+class Panel extends StatelessWidget {
+  const Panel({super.key, required this.child, this.padding = const EdgeInsets.all(Espacio.e4)});
 
   final Widget child;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: padding,
       decoration: BoxDecoration(
-        color: kHoja,
-        borderRadius: Redondeo.hero,
-        border: Border.all(color: kBorde),
-        boxShadow: sombraSuave,
+        color: kGris0,
+        borderRadius: Radios.panel,
+        border: Border.all(color: kGris100),
       ),
       child: child,
     );
   }
 }
 
-/// Entrada escalonada: el contenido aparece y sube un poco cuando [animacion]
-/// pasa por [inicio] (0..1). Varias piezas con distinto [inicio] entran una tras otra.
-class Aparecer extends StatelessWidget {
-  const Aparecer({super.key, required this.animacion, required this.inicio, required this.child});
+/// Estado de un ejemplar: punto + texto, así no depende solo del color.
+class InsigniaEstado extends StatelessWidget {
+  const InsigniaEstado(this.estado, {super.key, this.texto});
 
-  final Animation<double> animacion;
-  final double inicio;
-  final Widget child;
+  final String estado;
+  final String? texto;
 
   @override
   Widget build(BuildContext context) {
-    final curva = CurvedAnimation(
-      parent: animacion,
-      curve: Interval(inicio, (inicio + 0.5).clamp(0.0, 1.0), curve: Curves.easeOutCubic),
-    );
-    return FadeTransition(
-      opacity: curva,
-      child: SlideTransition(
-        position: Tween(begin: const Offset(0, 0.12), end: Offset.zero).animate(curva),
-        child: child,
-      ),
-    );
-  }
-}
-
-/// Ícono dentro de un cuadro redondeado con el color de acento tenue.
-class IconoAcento extends StatelessWidget {
-  const IconoAcento(this.icono, {super.key, this.color = kPrimario, this.tamano = 44});
-
-  final IconData icono;
-  final Color color;
-  final double tamano;
-
-  @override
-  Widget build(BuildContext context) {
+    final (fondo, punto, color) = coloresEstado(estado);
     return Container(
-      width: tamano,
-      height: tamano,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(tamano * 0.3),
-      ),
-      child: Icon(icono, color: color, size: tamano * 0.5),
-    );
-  }
-}
-
-/// Pastilla de color para estados y categorías (Disponible, Ficción…).
-class Pastilla extends StatelessWidget {
-  const Pastilla(this.texto, {super.key, this.color = kPrimario});
-
-  final String texto;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      child: Text(
-        texto,
-        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w700),
-      ),
-    );
-  }
-}
-
-enum TipoAviso { error, exito, advertencia }
-
-/// Mensaje destacado dentro de la pantalla (errores del servidor, advertencias…).
-class Aviso extends StatelessWidget {
-  const Aviso(this.mensaje, {super.key, this.tipo = TipoAviso.error});
-
-  final String mensaje;
-  final TipoAviso tipo;
-
-  @override
-  Widget build(BuildContext context) {
-    final (color, icono) = switch (tipo) {
-      TipoAviso.error => (kRojo, Icons.error_outline_rounded),
-      TipoAviso.exito => (kVerde, Icons.check_circle_outline_rounded),
-      TipoAviso.advertencia => (kNaranja, Icons.warning_amber_rounded),
-    };
-    return Container(
-      margin: const EdgeInsets.only(top: Espacio.md),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: Redondeo.campo,
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Espacio.e2, vertical: 2),
+      decoration: BoxDecoration(color: fondo, borderRadius: BorderRadius.circular(999)),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icono, color: color, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(mensaje, style: TextStyle(color: color, fontSize: 14, height: 1.35)),
+          Container(width: 6, height: 6, decoration: BoxDecoration(color: punto, shape: BoxShape.circle)),
+          const SizedBox(width: 6),
+          Text(
+            texto ?? etiquetaEstado(estado),
+            style: TextStyle(color: color, fontSize: 12, height: 16 / 12, fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -209,46 +92,138 @@ class Aviso extends StatelessWidget {
   }
 }
 
-/// Pantalla vacía o sin resultados.
-class EstadoVacio extends StatelessWidget {
-  const EstadoVacio({super.key, required this.icono, required this.mensaje});
+/// Género de un libro: categoría neutra, sin punto y con borde.
+class InsigniaGenero extends StatelessWidget {
+  const InsigniaGenero(this.genero, {super.key});
 
-  final IconData icono;
-  final String mensaje;
+  final String genero;
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: Espacio.e2, vertical: 2),
+      decoration: BoxDecoration(
+        color: kGris25,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: kGris100),
+      ),
+      child: Text(
+        etiquetaGenero(genero),
+        style: const TextStyle(color: kGris600, fontSize: 12, height: 16 / 12, fontWeight: FontWeight.w500),
+      ),
+    );
+  }
+}
+
+enum TonoAviso { critico, exito, info }
+
+/// Mensaje dentro de la pantalla: errores del servidor (que no deben perderse) o resultados.
+class Aviso extends StatelessWidget {
+  const Aviso(this.mensaje, {super.key, this.titulo, this.tono = TonoAviso.critico, this.accion});
+
+  final String mensaje;
+  final String? titulo;
+  final TonoAviso tono;
+  final Widget? accion;
+
+  @override
+  Widget build(BuildContext context) {
+    final (fondo, borde, color, icono) = switch (tono) {
+      TonoAviso.critico => (kPeligroFondo, kPeligroBorde, kPeligroTexto, LucideIcons.circleAlert),
+      TonoAviso.exito => (kExitoFondo, kExitoFondo, kExitoTexto, LucideIcons.circleCheck),
+      TonoAviso.info => (kInfoFondo, kInfoFondo, kInfoTexto, LucideIcons.info),
+    };
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(top: Espacio.e4),
+        padding: const EdgeInsets.all(Espacio.e3),
+        decoration: BoxDecoration(color: fondo, borderRadius: Radios.panel, border: Border.all(color: borde)),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(padding: const EdgeInsets.only(top: 2), child: Icon(icono, size: 18, color: color)),
+            const SizedBox(width: Espacio.e3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (titulo != null)
+                    Text(titulo!, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w600)),
+                  Text(mensaje, style: TextStyle(color: color, fontSize: 14, height: 20 / 14)),
+                  if (accion != null) ...[const SizedBox(height: Espacio.e2), accion!],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Lista o búsqueda sin resultados, con una acción útil opcional.
+class EstadoVacio extends StatelessWidget {
+  const EstadoVacio({super.key, required this.icono, required this.titulo, this.descripcion, this.accion});
+
+  final IconData icono;
+  final String titulo;
+  final String? descripcion;
+  final Widget? accion;
+
+  @override
+  Widget build(BuildContext context) {
+    final textos = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: Espacio.xl),
+      padding: const EdgeInsets.symmetric(vertical: Espacio.e8, horizontal: Espacio.e4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconoAcento(icono, color: kTinta3, tamano: 64),
-          const SizedBox(height: Espacio.md),
-          Text(mensaje, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+          Icon(icono, size: 28, color: kGris500),
+          const SizedBox(height: Espacio.e3),
+          Text(titulo, textAlign: TextAlign.center, style: textos.titleSmall),
+          if (descripcion != null) ...[
+            const SizedBox(height: Espacio.e1),
+            Text(descripcion!, textAlign: TextAlign.center, style: textos.bodyMedium!.copyWith(color: kGris600)),
+          ],
+          if (accion != null) ...[const SizedBox(height: Espacio.e4), accion!],
         ],
       ),
     );
   }
 }
 
-/// Campo de búsqueda por clave (ISBN o código) + botón "Buscar".
-/// Lo usan los casos de uso que exigen buscar el objeto antes de actuar.
-class BuscadorClave extends StatelessWidget {
+/// Buscar un objeto por su clave (ISBN o código) antes de actuar: lo usan Consultar,
+/// Actualizar y Eliminar. Valida que no esté vacío y llama a [onBuscar].
+class BuscadorClave extends StatefulWidget {
   const BuscadorClave({
     super.key,
     required this.controller,
     required this.etiqueta,
-    required this.icono,
+    this.pista,
     required this.onBuscar,
     required this.cargando,
   });
 
   final TextEditingController controller;
   final String etiqueta;
-  final IconData icono;
+  final String? pista;
   final VoidCallback onBuscar;
   final bool cargando;
+
+  @override
+  State<BuscadorClave> createState() => _BuscadorClaveState();
+}
+
+class _BuscadorClaveState extends State<BuscadorClave> {
+  String? _error;
+
+  void _buscar() {
+    final error = widget.controller.text.trim().isEmpty ? 'Este campo es obligatorio.' : null;
+    setState(() => _error = error);
+    if (error == null) widget.onBuscar();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -256,17 +231,26 @@ class BuscadorClave extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TextField(
-          controller: controller,
+          controller: widget.controller,
           textInputAction: TextInputAction.search,
-          decoration: InputDecoration(labelText: etiqueta, prefixIcon: Icon(icono)),
-          onSubmitted: (_) => onBuscar(),
+          autocorrect: false,
+          decoration: InputDecoration(
+            labelText: widget.etiqueta,
+            hintText: widget.pista,
+            prefixIcon: const Icon(LucideIcons.search, size: 18),
+            errorText: _error,
+          ),
+          onChanged: (_) {
+            if (_error != null) setState(() => _error = null);
+          },
+          onSubmitted: (_) => _buscar(),
         ),
-        const SizedBox(height: Espacio.md),
+        const SizedBox(height: Espacio.e3),
         FilledButton.icon(
-          onPressed: cargando ? null : onBuscar,
-          icon: cargando
-              ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2.4, color: kTinta3))
-              : const Icon(Icons.search_rounded),
+          onPressed: widget.cargando ? null : _buscar,
+          icon: widget.cargando
+              ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2, color: kGris500))
+              : const Icon(LucideIcons.search, size: 18),
           label: const Text('Buscar'),
         ),
       ],
@@ -274,17 +258,49 @@ class BuscadorClave extends StatelessWidget {
   }
 }
 
-/// Fila de chips de selección única (género, estado). Con [textoTodos] agrega
-/// la opción "todos" (valor null), útil para filtros.
-class SelectorChips extends StatelessWidget {
-  const SelectorChips({
+/// Grupo de campos de un formulario con su título y una línea de ayuda.
+class SeccionFormulario extends StatelessWidget {
+  const SeccionFormulario({super.key, required this.titulo, this.descripcion, required this.children});
+
+  final String titulo;
+  final String? descripcion;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final textos = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Espacio.e6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Semantics(header: true, child: Text(titulo, style: textos.titleSmall)),
+          if (descripcion != null) ...[
+            const SizedBox(height: 2),
+            Text(descripcion!, style: textos.bodySmall),
+          ],
+          const SizedBox(height: Espacio.e3),
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const SizedBox(height: Espacio.e3),
+            children[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Fila horizontal de chips de selección única para filtros (género, estado).
+/// Con [textoTodos] agrega la opción "todos" (valor null).
+class FiltroChips extends StatelessWidget {
+  const FiltroChips({
     super.key,
     required this.opciones,
     required this.seleccionado,
     required this.etiquetaDe,
     required this.alSeleccionar,
     this.textoTodos,
-    this.desplazable = false,
+    this.adorno,
   });
 
   final List<String> opciones;
@@ -292,84 +308,63 @@ class SelectorChips extends StatelessWidget {
   final String Function(String) etiquetaDe;
   final ValueChanged<String?> alSeleccionar;
   final String? textoTodos;
-  final bool desplazable;
 
-  Widget _chip(String texto, bool activo, VoidCallback alTocar) {
-    return ChoiceChip(
-      label: Text(texto),
-      selected: activo,
-      showCheckmark: false,
-      onSelected: (_) => alTocar(),
-      backgroundColor: kHoja,
-      selectedColor: kPrimario,
-      side: BorderSide(color: activo ? kPrimario : kBorde2),
-      shape: const StadiumBorder(),
-      labelStyle: TextStyle(
-        color: activo ? Colors.white : kTinta2,
-        fontWeight: activo ? FontWeight.w700 : FontWeight.w600,
+  /// Ícono o punto antes del texto de cada opción (p. ej. el color del estado).
+  final Widget Function(String)? adorno;
+
+  Widget _chip(String texto, bool activo, VoidCallback alTocar, [Widget? avatar]) {
+    return Padding(
+      padding: const EdgeInsets.only(right: Espacio.e2),
+      child: ChoiceChip(
+        label: Text(texto),
+        avatar: avatar,
+        selected: activo,
+        onSelected: (_) => alTocar(),
+        side: BorderSide(color: activo ? kMarca600 : kGris200),
+        labelStyle: TextStyle(
+          fontFamily: fuenteUi,
+          fontSize: 14,
+          fontWeight: activo ? FontWeight.w600 : FontWeight.w500,
+          color: activo ? kMarca600 : kGris800,
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final chips = [
-      if (textoTodos != null) _chip(textoTodos!, seleccionado == null, () => alSeleccionar(null)),
-      for (final opcion in opciones) _chip(etiquetaDe(opcion), seleccionado == opcion, () => alSeleccionar(opcion)),
-    ];
-    if (!desplazable) {
-      return Wrap(spacing: Espacio.sm, runSpacing: Espacio.sm, children: chips);
-    }
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          for (final chip in chips)
-            Padding(
-              padding: const EdgeInsets.only(right: Espacio.sm),
-              child: chip,
-            ),
+          if (textoTodos != null) _chip(textoTodos!, seleccionado == null, () => alSeleccionar(null)),
+          for (final opcion in opciones)
+            _chip(etiquetaDe(opcion), seleccionado == opcion, () => alSeleccionar(opcion), adorno?.call(opcion)),
         ],
       ),
     );
   }
 }
 
-/// Celda de tabla con un dato principal y uno secundario debajo.
-class CeldaDoble extends StatelessWidget {
-  const CeldaDoble({super.key, required this.principal, required this.secundario});
-
-  final String principal;
-  final String secundario;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          principal,
-          style: const TextStyle(color: kTinta, fontWeight: FontWeight.w700, fontSize: 14),
-        ),
-        const SizedBox(height: 2),
-        Text(secundario, style: const TextStyle(color: kTinta3, fontSize: 12)),
-      ],
-    );
-  }
+/// Punto del color de un estado (para los chips de filtro).
+Widget puntoEstado(String estado) {
+  final (_, punto, _) = coloresEstado(estado);
+  return Container(width: 8, height: 8, decoration: BoxDecoration(color: punto, shape: BoxShape.circle));
 }
 
-/// Pista para el usuario: la grilla tiene más columnas a la derecha.
-class PistaDesplazamiento extends StatelessWidget {
-  const PistaDesplazamiento({super.key});
+/// Cantidad que respondió el servidor encima de una tabla: "12 libros".
+class ConteoServidor extends StatelessWidget {
+  const ConteoServidor({super.key, required this.texto});
+
+  final String texto;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: [
-        Icon(Icons.swipe_left_rounded, size: 16, color: kTinta3),
-        SizedBox(width: 6),
-        Text('Desliza la tabla para ver todas las columnas', style: TextStyle(color: kTinta3, fontSize: 12)),
+        Text(texto, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, fontFeatures: cifrasTabulares)),
+        const Spacer(),
+        const Text('Total calculado por el servidor', style: TextStyle(color: kGris500, fontSize: 12)),
       ],
     );
   }

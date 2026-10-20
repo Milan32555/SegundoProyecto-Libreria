@@ -36,7 +36,7 @@ class AplicacionLibreria extends StatelessWidget {
       // Android dibuja la app detrás de la barra de navegación del sistema: se deja ese espacio
       // libre (con el color del papel) para que ningún botón ni texto quede tapado.
       builder: (context, child) => ColoredBox(
-        color: kPapel,
+        color: kGris25,
         child: SafeArea(top: false, left: false, right: false, child: child!),
       ),
       initialRoute: rutaInicial,

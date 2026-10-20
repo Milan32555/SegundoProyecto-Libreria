@@ -95,12 +95,12 @@ class ServidorSimulado {
 }
 
 Map<String, dynamic> libroJson({
-  String isbn = '978-9584276193',
+  String isbn = '978-8420401751',
   String titulo = 'Delirio',
   String autor = 'Laura Restrepo',
   num precio = 55000,
   int numeroPaginas = 352,
-  String fechaPublicacion = '2004-03-01T00:00:00',
+  String fechaPublicacion = '2004-03-01T10:30:00',
   String genero = 'FICCION',
 }) => {
   'isbn': isbn,

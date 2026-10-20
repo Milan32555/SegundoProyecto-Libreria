@@ -11,7 +11,8 @@ dependencies:
     sdk: flutter
   http: ^1.2.2
   intl: ^0.20.2
-  cupertino_icons: ^1.0.8
+  # Íconos Lucide: la misma familia que usa el cliente web (lucide-react).
+  lucide_icons_flutter: 3.1.21
 
 dev_dependencies:
   flutter_test:
@@ -20,26 +21,23 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # Fuentes incluidas en la app (no dependen de internet) — SIL Open Font License,
-  # ver assets/fuentes/OFL-*.txt. Playfair Display para títulos, Plus Jakarta Sans para el resto.
+  # Fuentes incluidas en la app (no dependen de internet), licencia SIL Open Font License
+  # (ver assets/fuentes/OFL-*.txt). Las mismas del cliente web: IBM Plex Sans para la interfaz
+  # y Literata para los títulos de libros y el logotipo.
   fonts:
-    - family: PlayfairDisplay
+    - family: IBMPlexSans
       fonts:
-        - asset: assets/fuentes/PlayfairDisplay-600.ttf
-          weight: 600
-        - asset: assets/fuentes/PlayfairDisplay-700.ttf
-          weight: 700
-        - asset: assets/fuentes/PlayfairDisplay-800.ttf
-          weight: 800
-    - family: PlusJakartaSans
-      fonts:
-        - asset: assets/fuentes/PlusJakartaSans-400.ttf
+        - asset: assets/fuentes/IBMPlexSans-Regular.ttf
           weight: 400
-        - asset: assets/fuentes/PlusJakartaSans-500.ttf
+        - asset: assets/fuentes/IBMPlexSans-Medium.ttf
           weight: 500
-        - asset: assets/fuentes/PlusJakartaSans-600.ttf
+        - asset: assets/fuentes/IBMPlexSans-SemiBold.ttf
           weight: 600
-        - asset: assets/fuentes/PlusJakartaSans-700.ttf
+        - asset: assets/fuentes/IBMPlexSans-Bold.ttf
           weight: 700
-        - asset: assets/fuentes/PlusJakartaSans-800.ttf
-          weight: 800
+    - family: Literata
+      fonts:
+        - asset: assets/fuentes/Literata-Medium.ttf
+          weight: 500
+        - asset: assets/fuentes/Literata-SemiBold.ttf
+          weight: 600

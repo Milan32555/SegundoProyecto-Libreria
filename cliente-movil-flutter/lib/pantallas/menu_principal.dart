@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../modelos/ejemplar.dart';
 import '../modelos/resumen_inventario.dart';
 import '../observador/listado_observable.dart';
 import '../servicios/cliente_graphql.dart';
@@ -8,15 +9,21 @@ import '../servicios/servicio_resumen.dart';
 import '../tema/tema.dart';
 import '../utilidades/formato.dart';
 import 'comunes/componentes.dart';
-import 'comunes/estanteria.dart';
 import 'menu_lateral.dart';
 
-/// Ventana principal: encabezado con el resumen del inventario (se actualiza solo,
-/// patrón Observer), estado de los ejemplares y accesos a cada caso de uso.
-/// El menú lateral tiene las mismas opciones y "Ayuda".
+const _nombreEstado = {
+  'DISPONIBLE': 'Disponibles',
+  'PRESTADO': 'Prestados',
+  'DANIADO': 'Dañados',
+  'DADO_DE_BAJA': 'Dados de baja',
+};
+
+/// Ventana principal: buscador de libros, resumen del inventario y accesos a cada caso de uso
+/// (el menú lateral tiene las mismas opciones y "Ayuda").
 ///
-/// Los totales y la distribución por estado los calcula el servidor (query
-/// resumenInventario): esta pantalla no cuenta nada, solo muestra lo que recibe.
+/// Todas las cifras las calcula el servidor (query resumenInventario): esta pantalla no cuenta
+/// nada, solo muestra lo que recibe. Se suscribe a los dos sujetos del Observer, así que se
+/// actualiza sola cuando cambian los libros o los ejemplares.
 class MenuPrincipal extends StatefulWidget {
   const MenuPrincipal({super.key});
 
@@ -24,20 +31,13 @@ class MenuPrincipal extends StatefulWidget {
   State<MenuPrincipal> createState() => _MenuPrincipalState();
 }
 
-class _MenuPrincipalState extends State<MenuPrincipal> with SingleTickerProviderStateMixin {
-  /// Animación de entrada: la estantería crece y el contenido aparece escalonado.
-  late final AnimationController _entrada = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1400),
-  );
-
+class _MenuPrincipalState extends State<MenuPrincipal> {
   ResumenInventario? _resumen;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _entrada.forward();
     _cargar();
     libroObservable.suscribir(_cargar);
     ejemplarObservable.suscribir(_cargar);
@@ -47,76 +47,95 @@ class _MenuPrincipalState extends State<MenuPrincipal> with SingleTickerProvider
   void dispose() {
     libroObservable.desuscribir(_cargar);
     ejemplarObservable.desuscribir(_cargar);
-    _entrada.dispose();
     super.dispose();
   }
 
   Future<void> _cargar() async {
     try {
       final resumen = await consultarResumenInventario();
-      if (!mounted) return;
-      setState(() {
-        _error = null;
-        _resumen = resumen;
-      });
+      if (mounted) {
+        setState(() {
+          _resumen = resumen;
+          _error = null;
+        });
+      }
     } on ErrorGraphQL catch (e) {
       if (mounted) setState(() => _error = e.mensaje);
     }
   }
 
+  /// La búsqueda del inicio abre Consultar libro; si el texto parece un ISBN busca por ISBN.
+  void _buscar(String texto) {
+    final valor = texto.trim();
+    if (valor.isEmpty) return;
+    final criterio = RegExp(r'^[0-9Xx-]+$').hasMatch(valor) ? 'isbn' : 'titulo';
+    Navigator.pushNamed(context, '/libros/consultar', arguments: (criterio: criterio, valor: valor));
+  }
+
+  int? _cantidad(String estado) {
+    for (final c in _resumen?.ejemplaresPorEstado ?? const <ConteoEstado>[]) {
+      if (c.estado == estado) return c.cantidad;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final arriba = MediaQuery.paddingOf(context).top;
+    final textos = Theme.of(context).textTheme;
     return Scaffold(
+      appBar: AppBar(title: const Marca()),
       drawer: const MenuLateral(),
       body: RefreshIndicator(
-        color: kPrimario,
-        edgeOffset: arriba + kToolbarHeight,
         onRefresh: _cargar,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            _EncabezadoInicio(entrada: _entrada, libros: _resumen?.totalLibros, ejemplares: _resumen?.totalEjemplares),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(Espacio.md, Espacio.lg, Espacio.md, Espacio.xl),
-              sliver: SliverList.list(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(Espacio.e4, Espacio.e4, Espacio.e4, Espacio.e8),
+          children: [
+            Text('Inicio', style: textos.headlineSmall),
+            Text(formatearFechaLarga(DateTime.now()), style: textos.bodyMedium!.copyWith(color: kGris600)),
+            const SizedBox(height: Espacio.e4),
+            SearchBar(
+              hintText: 'Buscar un libro por ISBN o título',
+              leading: const Icon(LucideIcons.search, size: 18, color: kGris500),
+              textInputAction: TextInputAction.search,
+              onSubmitted: _buscar,
+            ),
+            if (_error != null)
+              Aviso(
+                _error!,
+                titulo: 'No se pudo cargar el resumen del inventario',
+                accion: OutlinedButton.icon(
+                  onPressed: _cargar,
+                  icon: const Icon(LucideIcons.rotateCw, size: 16),
+                  label: const Text('Reintentar'),
+                ),
+              ),
+            const SizedBox(height: Espacio.e4),
+            Semantics(
+              container: true,
+              label: 'Inventario',
+              child: GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: Espacio.e3,
+                crossAxisSpacing: Espacio.e3,
+                childAspectRatio: 1.55,
                 children: [
-                  Aparecer(
-                    animacion: _entrada,
-                    inicio: 0.35,
-                    child: _error != null
-                        ? _TarjetaError(mensaje: _error!, alReintentar: _cargar)
-                        : _TarjetaEstados(conteos: _resumen?.ejemplaresPorEstado),
-                  ),
-                  const SizedBox(height: Espacio.lg),
-                  Aparecer(
-                    animacion: _entrada,
-                    inicio: 0.45,
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        TituloSeccion(icono: Icons.menu_book_rounded, titulo: 'Libros'),
-                        SizedBox(height: 12),
-                        _GrupoAcciones(rutaBase: '/libros', objeto: 'libros'),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: Espacio.lg),
-                  Aparecer(
-                    animacion: _entrada,
-                    inicio: 0.55,
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        TituloSeccion(icono: Icons.inventory_2_rounded, titulo: 'Ejemplares'),
-                        SizedBox(height: 12),
-                        _GrupoAcciones(rutaBase: '/ejemplares', objeto: 'ejemplares'),
-                      ],
-                    ),
-                  ),
+                  _Cifra(etiqueta: 'Títulos', valor: _resumen?.totalLibros, detalle: 'Libros en el catálogo'),
+                  _Cifra(etiqueta: 'Ejemplares', valor: _resumen?.totalEjemplares, detalle: 'Copias físicas'),
+                  _Cifra(etiqueta: 'Disponibles', valor: _cantidad('DISPONIBLE'), detalle: 'Listas para prestar'),
+                  _Cifra(etiqueta: 'Prestados', valor: _cantidad('PRESTADO'), detalle: 'Fuera de la librería'),
                 ],
               ),
             ),
+            const SizedBox(height: Espacio.e4),
+            _EstadoEjemplares(conteos: _resumen?.ejemplaresPorEstado, total: _resumen?.totalEjemplares),
+            const SizedBox(height: Espacio.e6),
+            Text('Accesos directos', style: textos.titleMedium),
+            const SizedBox(height: Espacio.e2),
+            const _Accesos(titulo: 'Libros', base: '/libros', singular: 'libro'),
+            const SizedBox(height: Espacio.e3),
+            const _Accesos(titulo: 'Ejemplares', base: '/ejemplares', singular: 'ejemplar'),
           ],
         ),
       ),
@@ -124,471 +143,165 @@ class _MenuPrincipalState extends State<MenuPrincipal> with SingleTickerProvider
   }
 }
 
-// ── Encabezado ────────────────────────────────────────────────────────────────
-
-const _altoEstante = 70.0;
-
-/// Encabezado verde de borde a borde: saludo, fecha, cifras del inventario y una
-/// estantería dibujada. Al desplazar se contrae y deja solo la barra con "Librería".
-class _EncabezadoInicio extends StatelessWidget {
-  const _EncabezadoInicio({required this.entrada, required this.libros, required this.ejemplares});
-
-  final Animation<double> entrada;
-  final int? libros;
-  final int? ejemplares;
-
-  @override
-  Widget build(BuildContext context) {
-    final ahora = DateTime.now();
-    // Barra + espacio para el texto (crece con el tamaño de letra del sistema) + estantería.
-    final altoAbierto = kToolbarHeight + 52 + MediaQuery.textScalerOf(context).scale(186) + _altoEstante;
-    return SliverAppBar(
-      pinned: true,
-      expandedHeight: altoAbierto,
-      backgroundColor: kPrimarioOscuro,
-      foregroundColor: kCrema,
-      surfaceTintColor: Colors.transparent,
-      systemOverlayStyle: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.transparent,
-        systemNavigationBarDividerColor: Colors.transparent,
-        systemNavigationBarIconBrightness: Brightness.dark,
-        systemNavigationBarContrastEnforced: false,
-      ),
-      title: const Text(
-        'Librería',
-        style: TextStyle(fontFamily: fuenteTitulos, color: kCrema, fontSize: 22, fontWeight: FontWeight.w700),
-      ),
-      actions: [
-        IconButton(
-          tooltip: 'Acerca de...',
-          icon: const Icon(Icons.info_outline_rounded),
-          onPressed: () => Navigator.pushNamed(context, '/acerca-de'),
-        ),
-      ],
-      flexibleSpace: LayoutBuilder(
-        builder: (context, limites) {
-          final arriba = MediaQuery.paddingOf(context).top;
-          // 1 = completamente abierto, 0 = contraído a la barra.
-          final abierto = ((limites.maxHeight - arriba - kToolbarHeight) / (altoAbierto - kToolbarHeight)).clamp(
-            0.0,
-            1.0,
-          );
-          return DecoratedBox(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF24684F), kPrimarioOscuro],
-              ),
-            ),
-            child: ClipRect(
-              child: Opacity(
-                opacity: Curves.easeIn.transform(abierto),
-                child: Stack(
-                  children: [
-                    // Halo de luz cálida, como una lámpara de biblioteca.
-                    Positioned(
-                      right: -80,
-                      top: -60,
-                      child: Container(
-                        width: 260,
-                        height: 260,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [const Color(0xFFE9C46A).withValues(alpha: 0.22), Colors.transparent],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      height: _altoEstante,
-                      child: Estanteria(progreso: entrada),
-                    ),
-                    Positioned(
-                      left: 20,
-                      right: 20,
-                      bottom: _altoEstante + 22,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Aparecer(
-                            animacion: entrada,
-                            inicio: 0,
-                            child: Text(
-                              formatearFechaLarga(ahora).toUpperCase(),
-                              style: TextStyle(
-                                color: kCrema.withValues(alpha: 0.7),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.4,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Aparecer(
-                            animacion: entrada,
-                            inicio: 0.05,
-                            child: Text(
-                              '${saludo(ahora)}.',
-                              style: const TextStyle(
-                                fontFamily: fuenteTitulos,
-                                color: Colors.white,
-                                fontSize: 36,
-                                fontWeight: FontWeight.w800,
-                                height: 1.1,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Aparecer(
-                            animacion: entrada,
-                            inicio: 0.1,
-                            child: Text(
-                              'Así está tu inventario hoy.',
-                              style: TextStyle(color: kCrema.withValues(alpha: 0.85), fontSize: 14, height: 1.4),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Aparecer(
-                            animacion: entrada,
-                            inicio: 0.18,
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: _Cifra(valor: libros, leyenda: 'Títulos'),
-                                ),
-                                Container(width: 1, height: 48, color: kCrema.withValues(alpha: 0.22)),
-                                const SizedBox(width: 20),
-                                Expanded(
-                                  child: _Cifra(valor: ejemplares, leyenda: 'Ejemplares'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// Cifra grande que cuenta desde su valor anterior hasta el nuevo.
 class _Cifra extends StatelessWidget {
-  const _Cifra({required this.valor, required this.leyenda});
+  const _Cifra({required this.etiqueta, required this.valor, required this.detalle});
 
+  final String etiqueta;
   final int? valor;
-  final String leyenda;
+  final String detalle;
 
   @override
   Widget build(BuildContext context) {
-    const estilo = TextStyle(
-      color: Colors.white,
-      fontSize: 46,
-      fontWeight: FontWeight.w800,
-      height: 1,
-      letterSpacing: -1.5,
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (valor == null)
-          const Text('—', style: estilo)
-        else
-          TweenAnimationBuilder<double>(
-            tween: Tween(end: valor!.toDouble()),
-            duration: const Duration(milliseconds: 1100),
-            curve: Curves.easeOutCubic,
-            builder: (context, v, _) => Text(v.round().toString(), style: estilo),
-          ),
-        const SizedBox(height: 6),
-        Text(
-          leyenda,
-          style: TextStyle(color: kCrema.withValues(alpha: 0.75), fontSize: 13, fontWeight: FontWeight.w600),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Cuerpo ────────────────────────────────────────────────────────────────────
-
-/// Nombre de cada estado en la leyenda (en plural).
-const _nombreEstado = {
-  'DISPONIBLE': 'Disponibles',
-  'PRESTADO': 'Prestados',
-  'DANIADO': 'Dañados',
-  'DADO_DE_BAJA': 'Dados de baja',
-};
-
-/// Distribución de los ejemplares por estado: barra proporcional + leyenda.
-/// Cantidad y porcentaje de cada estado vienen calculados del servidor.
-class _TarjetaEstados extends StatelessWidget {
-  const _TarjetaEstados({required this.conteos});
-
-  final List<ConteoEstado>? conteos;
-
-  @override
-  Widget build(BuildContext context) {
-    // Mientras llega la respuesta del servidor: los cuatro estados, sin cifras.
-    final filas = [
-      for (final c in conteos ?? _nombreEstado.keys.map((e) => ConteoEstado(estado: e, cantidad: 0, porcentaje: 0)))
-        (estado: c.estado, cantidad: conteos == null ? null : c.cantidad, porcentaje: c.porcentaje),
-    ];
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: kHoja,
-        borderRadius: Redondeo.hero,
-        border: Border.all(color: kBorde),
-        boxShadow: sombraSuave,
-      ),
+    final textos = Theme.of(context).textTheme;
+    return Panel(
+      padding: const EdgeInsets.all(Espacio.e3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Estado de los ejemplares', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 2),
+          Text(etiqueta, style: textos.labelMedium!.copyWith(color: kGris600)),
           Text(
-            conteos == null ? 'Cargando…' : 'Copias físicas registradas en el inventario',
-            style: Theme.of(context).textTheme.bodySmall,
+            valor?.toString() ?? '—',
+            style: textos.headlineSmall!.copyWith(fontFeatures: cifrasTabulares),
           ),
-          const SizedBox(height: Espacio.md),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: SizedBox(
-              height: 12,
-              child: LayoutBuilder(
-                builder: (context, limites) => Container(
-                  color: kPergamino,
-                  child: Row(
+          Text(detalle, maxLines: 1, overflow: TextOverflow.ellipsis, style: textos.bodySmall!.copyWith(color: kGris500)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Distribución de los ejemplares por estado; cantidades y porcentajes vienen del servidor.
+class _EstadoEjemplares extends StatelessWidget {
+  const _EstadoEjemplares({required this.conteos, required this.total});
+
+  final List<ConteoEstado>? conteos;
+  final int? total;
+
+  @override
+  Widget build(BuildContext context) {
+    final textos = Theme.of(context).textTheme;
+    final filas = [
+      for (final estado in estadosEjemplar)
+        conteos?.where((c) => c.estado == estado).firstOrNull ?? ConteoEstado(estado: estado, cantidad: -1, porcentaje: 0),
+    ];
+    final porcentaje = NumberFormatoPorcentaje.formatear;
+    return Semantics(
+      container: true,
+      label: 'Estado de los ejemplares',
+      child: Panel(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Estado de los ejemplares', style: textos.titleMedium),
+            Text(
+              total == null ? 'Cargando…' : '$total copias · calculado por el servidor',
+              style: textos.bodySmall!.copyWith(color: kGris500),
+            ),
+            const SizedBox(height: Espacio.e3),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: SizedBox(
+                height: 8,
+                child: LayoutBuilder(
+                  builder: (context, restricciones) => Row(
                     children: [
-                      for (final e in filas)
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 700),
-                          curve: Curves.easeOutCubic,
-                          width: limites.maxWidth * e.porcentaje / 100,
-                          color: colorEstado(e.estado),
-                        ),
+                      for (final f in filas)
+                        if (f.porcentaje > 0)
+                          Container(
+                            width: (restricciones.maxWidth * f.porcentaje / 100 - 2).clamp(0, double.infinity),
+                            margin: const EdgeInsets.only(right: 2),
+                            color: coloresEstado(f.estado).$2,
+                          ),
                     ],
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: Espacio.md),
-          LayoutBuilder(
-            builder: (context, limites) => Wrap(
-              runSpacing: 10,
-              children: [
-                for (final e in filas)
-                  SizedBox(
-                    width: limites.maxWidth / 2,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(color: colorEstado(e.estado), shape: BoxShape.circle),
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            _nombreEstado[e.estado] ?? e.estado,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: kTinta2, fontSize: 13, fontWeight: FontWeight.w500),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          e.cantidad == null ? '—' : '${e.cantidad}',
-                          style: const TextStyle(color: kTinta, fontSize: 14, fontWeight: FontWeight.w800),
-                        ),
-                      ],
+            const SizedBox(height: Espacio.e2),
+            for (final f in filas)
+              Container(
+                height: 40,
+                decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: kGris100))),
+                child: Row(
+                  children: [
+                    InsigniaEstado(f.estado, texto: _nombreEstado[f.estado]),
+                    const Spacer(),
+                    SizedBox(
+                      width: 48,
+                      child: Text(
+                        f.cantidad < 0 ? '—' : '${f.cantidad}',
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(fontSize: 14, fontFeatures: cifrasTabulares),
+                      ),
                     ),
-                  ),
-              ],
-            ),
-          ),
-        ],
+                    SizedBox(
+                      width: 64,
+                      child: Text(
+                        f.cantidad < 0 ? '' : porcentaje(f.porcentaje),
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(fontSize: 14, color: kGris500, fontFeatures: cifrasTabulares),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _TarjetaError extends StatelessWidget {
-  const _TarjetaError({required this.mensaje, required this.alReintentar});
+const _accesos = [
+  (ruta: 'listar', texto: 'Listar', icono: LucideIcons.list),
+  (ruta: 'consultar', texto: 'Consultar', icono: LucideIcons.search),
+  (ruta: 'agregar', texto: 'Adicionar', icono: LucideIcons.plus),
+  (ruta: 'actualizar', texto: 'Actualizar', icono: LucideIcons.pencil),
+  (ruta: 'eliminar', texto: 'Eliminar', icono: LucideIcons.trash2),
+];
 
-  final String mensaje;
-  final VoidCallback alReintentar;
+class _Accesos extends StatelessWidget {
+  const _Accesos({required this.titulo, required this.base, required this.singular});
+
+  final String titulo;
+  final String base;
+  final String singular;
 
   @override
   Widget build(BuildContext context) {
-    return TarjetaHero(
+    return Panel(
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const EtiquetaSeccion('Sin conexión', color: kRojo),
-          const SizedBox(height: Espacio.sm),
-          Text(mensaje, style: const TextStyle(color: kRojo, fontSize: 14, height: 1.35)),
-          const SizedBox(height: Espacio.md),
-          OutlinedButton.icon(
-            onPressed: alReintentar,
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Reintentar'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Espacio.e4, Espacio.e3, Espacio.e4, Espacio.e1),
+            child: Text(titulo, style: Theme.of(context).textTheme.labelSmall!.copyWith(fontWeight: FontWeight.w600)),
           ),
+          for (final a in _accesos)
+            ListTile(
+              dense: true,
+              leading: Icon(a.icono, size: 18),
+              title: Text(a.ruta == 'listar' ? '${a.texto} ${titulo.toLowerCase()}' : '${a.texto} $singular'),
+              trailing: const Icon(LucideIcons.chevronRight, size: 16, color: kGris400),
+              onTap: () => Navigator.pushNamed(context, '$base/${a.ruta}'),
+            ),
         ],
       ),
     );
   }
 }
 
-/// Accesos a los cinco casos de uso de un objeto (cada uno abre su propia pantalla).
-class _GrupoAcciones extends StatelessWidget {
-  const _GrupoAcciones({required this.rutaBase, required this.objeto});
+/// Porcentaje con una cifra decimal como máximo: 33,3 %.
+class NumberFormatoPorcentaje {
+  NumberFormatoPorcentaje._();
 
-  final String rutaBase;
-  final String objeto;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _TarjetaAccion(
-          destacada: true,
-          icono: Icons.view_list_rounded,
-          titulo: 'Listar',
-          descripcion: 'Ver todos los $objeto y filtrar',
-          ruta: '$rutaBase/listar',
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _TarjetaAccion(
-                icono: Icons.add_rounded,
-                titulo: 'Adicionar',
-                descripcion: 'Registrar nuevo',
-                ruta: '$rutaBase/agregar',
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _TarjetaAccion(
-                icono: Icons.search_rounded,
-                titulo: 'Buscar',
-                descripcion: 'Consultar uno',
-                ruta: '$rutaBase/consultar',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _TarjetaAccion(
-                icono: Icons.edit_rounded,
-                titulo: 'Actualizar',
-                descripcion: 'Modificar datos',
-                ruta: '$rutaBase/actualizar',
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _TarjetaAccion(
-                icono: Icons.delete_outline_rounded,
-                titulo: 'Eliminar',
-                descripcion: 'Quitar del sistema',
-                ruta: '$rutaBase/eliminar',
-                color: kRojo,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _TarjetaAccion extends StatelessWidget {
-  const _TarjetaAccion({
-    required this.icono,
-    required this.titulo,
-    required this.descripcion,
-    required this.ruta,
-    this.color = kPrimario,
-    this.destacada = false,
-  });
-
-  final IconData icono;
-  final String titulo;
-  final String descripcion;
-  final String ruta;
-  final Color color;
-  final bool destacada;
-
-  @override
-  Widget build(BuildContext context) {
-    final textos = [
-      Text(
-        titulo,
-        style: TextStyle(color: destacada ? Colors.white : kTinta, fontSize: 16, fontWeight: FontWeight.w800),
-      ),
-      const SizedBox(height: 2),
-      Text(
-        descripcion,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: destacada
-            ? TextStyle(color: kCrema.withValues(alpha: 0.8), fontSize: 12)
-            : Theme.of(context).textTheme.bodySmall,
-      ),
-    ];
-    return Card(
-      color: destacada ? kPrimario : null,
-      shape: RoundedRectangleBorder(
-        borderRadius: Redondeo.tarjeta,
-        side: BorderSide(color: destacada ? kPrimario : kBorde),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => Navigator.pushNamed(context, ruta),
-        child: Padding(
-          padding: const EdgeInsets.all(Espacio.md),
-          child: destacada
-              ? Row(
-                  children: [
-                    IconoAcento(icono, color: kCrema),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: textos),
-                    ),
-                    Icon(Icons.arrow_forward_rounded, color: kCrema.withValues(alpha: 0.9)),
-                  ],
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    IconoAcento(icono, color: color, tamano: 40),
-                    const SizedBox(height: 12),
-                    ...textos,
-                  ],
-                ),
-        ),
-      ),
-    );
+  static String formatear(double valor) {
+    final redondeado = (valor * 10).round() / 10;
+    final texto = redondeado == redondeado.roundToDouble()
+        ? redondeado.toStringAsFixed(0)
+        : redondeado.toStringAsFixed(1).replaceAll('.', ',');
+    return '$texto %';
   }
 }

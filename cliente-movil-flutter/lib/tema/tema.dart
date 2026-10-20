@@ -1,91 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// ── Identidad visual: "papel y tinta" ─────────────────────────────────────────
-// Fondo crema como las páginas de un libro, texto color tinta, verde de las
-// lámparas de biblioteca como color principal y dorado (como el de los lomos)
-// para precios y detalles.
-const kPapel = Color(0xFFF6F1E6);
-const kHoja = Color(0xFFFFFDF8);
-const kPergamino = Color(0xFFEFE7D6);
-const kPergaminoOscuro = Color(0xFFE4D9C3);
-const kTinta = Color(0xFF1E2430);
-const kTinta2 = Color(0xFF515867);
-const kTinta3 = Color(0xFF6E7280);
-const kBorde = Color(0xFFE6DCC8);
-const kBorde2 = Color(0xFFD5C9B0);
+import 'tokens.dart';
 
-const kPrimario = Color(0xFF1F5C4A); // verde biblioteca
-const kPrimarioOscuro = Color(0xFF133B30);
-const kDorado = Color(0xFFA8741F);
-const kCrema = Color(0xFFF6EBD3); // texto sobre el verde
+export 'tokens.dart';
 
-// Estados (tonos que se leen sobre papel).
-const kVerde = Color(0xFF2E7D4F);
-const kAzul = Color(0xFF2F5DA8);
-const kNaranja = Color(0xFFB45F12);
-const kRojo = Color(0xFFB3261E);
+/// Esquema de color de Material 3 escrito a mano desde los tokens (no generado con fromSeed):
+/// así la app usa exactamente los mismos colores que el cliente web.
+const ColorScheme esquemaLibreria = ColorScheme(
+  brightness: Brightness.light,
+  primary: kMarca600,
+  onPrimary: kGris0,
+  primaryContainer: kMarca50,
+  onPrimaryContainer: kMarca600,
+  secondary: kGris600,
+  onSecondary: kGris0,
+  secondaryContainer: kGris100,
+  onSecondaryContainer: kGris900,
+  tertiary: kInfoPunto,
+  onTertiary: kGris0,
+  error: kPeligro600,
+  onError: kGris0,
+  errorContainer: kPeligroFondo,
+  onErrorContainer: kPeligroTexto,
+  surface: kGris0,
+  onSurface: kGris900,
+  onSurfaceVariant: kGris600,
+  surfaceContainerLowest: kGris0,
+  surfaceContainerLow: kGris25,
+  surfaceContainer: kGris50,
+  surfaceContainerHigh: kGris50,
+  surfaceContainerHighest: kGris100,
+  outline: kGris400,
+  outlineVariant: kGris100,
+  inverseSurface: kGris900,
+  onInverseSurface: kGris25,
+  inversePrimary: kMarca100,
+  surfaceTint: Colors.transparent,
+);
 
-// Tipografías incluidas en assets/fuentes (licencia OFL): serif editorial para
-// títulos y una sans moderna para el resto de la interfaz.
-const fuenteTitulos = 'PlayfairDisplay';
-const fuenteTexto = 'PlusJakartaSans';
-
-// ── Medidas ──────────────────────────────────────────────────────────────────
-class Espacio {
-  Espacio._();
-  static const double xs = 4;
-  static const double sm = 8;
-  static const double md = 16;
-  static const double lg = 24;
-  static const double xl = 32;
-}
-
-class Redondeo {
-  Redondeo._();
-  static const campo = BorderRadius.all(Radius.circular(12));
-  static const tarjeta = BorderRadius.all(Radius.circular(16));
-  static const hero = BorderRadius.all(Radius.circular(20));
-}
-
-/// Sombra cálida y suave para las tarjetas destacadas.
-const sombraSuave = [BoxShadow(color: Color(0x1A5B4A2E), blurRadius: 18, offset: Offset(0, 6))];
-
-/// Etiqueta pequeña en mayúsculas que encabeza secciones y datos (LIBRO, ISBN…).
-const estiloEtiqueta = TextStyle(color: kTinta3, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2);
+/// Escala tipográfica (IBM Plex Sans), la misma del cliente web: 12 · 13 · 14 · 16 · 20 · 24 · 30.
+const TextTheme textosLibreria = TextTheme(
+  displaySmall: TextStyle(fontSize: 30, height: 38 / 30, fontWeight: FontWeight.w600, letterSpacing: -0.5, color: kGris900),
+  headlineSmall: TextStyle(fontSize: 24, height: 32 / 24, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: kGris900),
+  titleLarge: TextStyle(fontSize: 20, height: 28 / 20, fontWeight: FontWeight.w600, color: kGris900),
+  titleMedium: TextStyle(fontSize: 16, height: 24 / 16, fontWeight: FontWeight.w600, color: kGris900),
+  titleSmall: TextStyle(fontSize: 14, height: 20 / 14, fontWeight: FontWeight.w600, color: kGris900),
+  bodyLarge: TextStyle(fontSize: 16, height: 24 / 16, color: kGris900),
+  bodyMedium: TextStyle(fontSize: 14, height: 20 / 14, color: kGris900),
+  bodySmall: TextStyle(fontSize: 12, height: 16 / 12, color: kGris600),
+  labelLarge: TextStyle(fontSize: 14, height: 20 / 14, fontWeight: FontWeight.w500, color: kGris900),
+  labelMedium: TextStyle(fontSize: 13, height: 18 / 13, fontWeight: FontWeight.w500, color: kGris800),
+  labelSmall: TextStyle(fontSize: 12, height: 16 / 12, fontWeight: FontWeight.w500, color: kGris600),
+);
 
 ThemeData construirTema() {
-  OutlineInputBorder bordeCampo(Color color, [double ancho = 1]) => OutlineInputBorder(
-    borderRadius: Redondeo.campo,
-    borderSide: BorderSide(color: color, width: ancho),
-  );
+  OutlineInputBorder borde(Color color, [double ancho = 1]) =>
+      OutlineInputBorder(borderRadius: Radios.control, borderSide: BorderSide(color: color, width: ancho));
 
-  final tema = ThemeData(
+  return ThemeData(
     useMaterial3: true,
-    brightness: Brightness.light,
-    // Fuente de todo el texto; los títulos (display/headline) se cambian a la serif al final.
-    fontFamily: fuenteTexto,
-    scaffoldBackgroundColor: kPapel,
-    colorScheme: const ColorScheme.light(
-      primary: kPrimario,
-      onPrimary: Colors.white,
-      secondary: kDorado,
-      onSecondary: Colors.white,
-      surface: kHoja,
-      onSurface: kTinta,
-      surfaceContainerHighest: kPergamino,
-      error: kRojo,
-      onError: Colors.white,
-      outline: kBorde2,
-      outlineVariant: kBorde,
-    ),
+    colorScheme: esquemaLibreria,
+    fontFamily: fuenteUi,
+    textTheme: textosLibreria,
+    scaffoldBackgroundColor: kGris25,
+    visualDensity: VisualDensity.standard,
     appBarTheme: const AppBarTheme(
-      backgroundColor: kPapel,
-      foregroundColor: kTinta,
+      backgroundColor: kGris25,
+      foregroundColor: kGris900,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      // También define la barra de navegación del sistema: transparente, con íconos oscuros sobre el papel.
+      titleTextStyle: TextStyle(fontFamily: fuenteUi, fontSize: 16, fontWeight: FontWeight.w600, color: kGris900),
+      shape: Border(bottom: BorderSide(color: kGris100)),
       systemOverlayStyle: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
@@ -95,127 +83,185 @@ ThemeData construirTema() {
         systemNavigationBarIconBrightness: Brightness.dark,
         systemNavigationBarContrastEnforced: false,
       ),
-      titleTextStyle: TextStyle(fontFamily: fuenteTitulos, color: kTinta, fontSize: 22, fontWeight: FontWeight.w700),
     ),
-    textTheme: const TextTheme(
-      displaySmall: TextStyle(
-        color: kTinta,
-        fontSize: 34,
-        fontWeight: FontWeight.w700,
-        height: 1.1,
-        letterSpacing: -0.5,
-      ),
-      headlineSmall: TextStyle(color: kTinta, fontSize: 26, fontWeight: FontWeight.w700, height: 1.15),
-      titleLarge: TextStyle(color: kTinta, fontSize: 17, fontWeight: FontWeight.w700),
-      titleMedium: TextStyle(color: kTinta, fontSize: 15, fontWeight: FontWeight.w600),
-      bodyLarge: TextStyle(color: kTinta, fontSize: 15, height: 1.4),
-      bodyMedium: TextStyle(color: kTinta2, fontSize: 14, height: 1.45),
-      bodySmall: TextStyle(color: kTinta3, fontSize: 12, height: 1.3),
-    ),
-    iconTheme: const IconThemeData(color: kTinta2),
+    iconTheme: const IconThemeData(color: kGris600, size: 20),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: kHoja,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: bordeCampo(kBorde2),
-      enabledBorder: bordeCampo(kBorde2),
-      focusedBorder: bordeCampo(kPrimario, 1.6),
-      errorBorder: bordeCampo(kRojo, 1.4),
-      focusedErrorBorder: bordeCampo(kRojo, 1.6),
-      labelStyle: const TextStyle(color: kTinta3, fontSize: 14),
-      floatingLabelStyle: const TextStyle(color: kPrimario, fontWeight: FontWeight.w600),
-      hintStyle: const TextStyle(color: kTinta3, fontSize: 14),
-      prefixIconColor: kTinta3,
-      suffixIconColor: kTinta2,
-      errorStyle: const TextStyle(color: kRojo, fontSize: 12, height: 1.3),
-      errorMaxLines: 3,
+      fillColor: kGris0,
+      isDense: false,
+      contentPadding: const EdgeInsets.symmetric(horizontal: Espacio.e3, vertical: 14),
+      border: borde(kGris400),
+      enabledBorder: borde(kGris400),
+      focusedBorder: borde(kMarca600, 2),
+      errorBorder: borde(kPeligro600),
+      focusedErrorBorder: borde(kPeligro600, 2),
+      disabledBorder: borde(kGris100),
+      labelStyle: const TextStyle(color: kGris600, fontSize: 14),
+      floatingLabelStyle: WidgetStateTextStyle.resolveWith(
+        (estados) => TextStyle(
+          color: estados.contains(WidgetState.error)
+              ? kPeligro600
+              : estados.contains(WidgetState.focused)
+              ? kMarca600
+              : kGris600,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      hintStyle: const TextStyle(color: kGris500, fontSize: 14),
+      helperStyle: const TextStyle(color: kGris500, fontSize: 12, height: 16 / 12),
+      errorStyle: const TextStyle(color: kPeligro600, fontSize: 12, height: 16 / 12),
+      helperMaxLines: 2,
+      errorMaxLines: 2,
+      prefixIconColor: kGris500,
+      suffixIconColor: kGris500,
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: kPrimario,
-        foregroundColor: Colors.white,
-        disabledBackgroundColor: kPergaminoOscuro,
-        disabledForegroundColor: kTinta3,
-        minimumSize: const Size.fromHeight(52),
-        shape: const RoundedRectangleBorder(borderRadius: Redondeo.campo),
-        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.2),
+        backgroundColor: kMarca600,
+        foregroundColor: kGris0,
+        disabledBackgroundColor: kGris100,
+        disabledForegroundColor: kGris500,
+        minimumSize: const Size(64, 48),
+        padding: const EdgeInsets.symmetric(horizontal: Espacio.e4),
+        shape: const RoundedRectangleBorder(borderRadius: Radios.control),
+        textStyle: const TextStyle(fontFamily: fuenteUi, fontWeight: FontWeight.w600, fontSize: 15),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: kTinta,
-        backgroundColor: kHoja,
-        minimumSize: const Size.fromHeight(52),
-        side: const BorderSide(color: kBorde2),
-        shape: const RoundedRectangleBorder(borderRadius: Redondeo.campo),
-        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+        foregroundColor: kGris900,
+        backgroundColor: kGris0,
+        minimumSize: const Size(64, 48),
+        padding: const EdgeInsets.symmetric(horizontal: Espacio.e4),
+        side: const BorderSide(color: kGris200),
+        shape: const RoundedRectangleBorder(borderRadius: Radios.control),
+        textStyle: const TextStyle(fontFamily: fuenteUi, fontWeight: FontWeight.w600, fontSize: 15),
       ),
     ),
-    textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: kPrimario)),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: kMarca600,
+        shape: const RoundedRectangleBorder(borderRadius: Radios.control),
+        textStyle: const TextStyle(fontFamily: fuenteUi, fontWeight: FontWeight.w600, fontSize: 14),
+      ),
+    ),
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: kMarca600,
+      foregroundColor: kGris0,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: Radios.dialogo),
+    ),
     cardTheme: const CardThemeData(
-      color: kHoja,
+      color: kGris0,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
       margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: Redondeo.tarjeta,
-        side: BorderSide(color: kBorde),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: Radios.panel, side: BorderSide(color: kGris100)),
     ),
-    dividerTheme: const DividerThemeData(color: kBorde, thickness: 1, space: 1),
-    drawerTheme: const DrawerThemeData(
-      backgroundColor: kPapel,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.horizontal(right: Radius.circular(20))),
+    chipTheme: const ChipThemeData(
+      backgroundColor: kGris0,
+      selectedColor: kMarca50,
+      disabledColor: kGris50,
+      side: BorderSide(color: kGris200),
+      shape: RoundedRectangleBorder(borderRadius: Radios.control),
+      labelStyle: TextStyle(fontFamily: fuenteUi, fontSize: 14, fontWeight: FontWeight.w500, color: kGris800),
+      secondaryLabelStyle: TextStyle(fontFamily: fuenteUi, fontSize: 14, fontWeight: FontWeight.w600, color: kMarca600),
+      padding: EdgeInsets.symmetric(horizontal: Espacio.e2, vertical: Espacio.e1),
+      showCheckmark: false,
     ),
-    listTileTheme: const ListTileThemeData(textColor: kTinta, iconColor: kTinta2),
-    snackBarTheme: const SnackBarThemeData(
-      backgroundColor: kTinta,
-      contentTextStyle: TextStyle(color: kPapel, fontSize: 14),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: Redondeo.campo),
-    ),
-    dataTableTheme: const DataTableThemeData(
-      headingRowColor: WidgetStatePropertyAll(kPergamino),
-      headingTextStyle: TextStyle(color: kTinta3, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1),
-      dataTextStyle: TextStyle(color: kTinta, fontSize: 14),
-      headingRowHeight: 44,
-      dataRowMinHeight: 58,
-      dataRowMaxHeight: 68,
-      horizontalMargin: 16,
-      columnSpacing: 28,
-      dividerThickness: 1,
-    ),
-    progressIndicatorTheme: const ProgressIndicatorThemeData(color: kPrimario, linearTrackColor: kPergamino),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
-        backgroundColor: WidgetStateProperty.resolveWith(
-          (estados) => estados.contains(WidgetState.selected) ? kPrimario : kHoja,
-        ),
-        foregroundColor: WidgetStateProperty.resolveWith(
-          (estados) => estados.contains(WidgetState.selected) ? Colors.white : kTinta2,
-        ),
-        side: const WidgetStatePropertyAll(BorderSide(color: kBorde2)),
-        shape: const WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: Redondeo.campo)),
-        textStyle: const WidgetStatePropertyAll(TextStyle(fontWeight: FontWeight.w700)),
+        backgroundColor: WidgetStateProperty.resolveWith((e) => e.contains(WidgetState.selected) ? kMarca50 : kGris0),
+        foregroundColor: WidgetStateProperty.resolveWith((e) => e.contains(WidgetState.selected) ? kMarca600 : kGris600),
+        side: const WidgetStatePropertyAll(BorderSide(color: kGris200)),
+        shape: const WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: Radios.control)),
+        textStyle: const WidgetStatePropertyAll(TextStyle(fontFamily: fuenteUi, fontWeight: FontWeight.w600, fontSize: 14)),
+        minimumSize: const WidgetStatePropertyAll(Size(0, 44)),
       ),
     ),
-    datePickerTheme: const DatePickerThemeData(
-      backgroundColor: kHoja,
-      headerBackgroundColor: kPrimario,
-      headerForegroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: Redondeo.hero),
+    navigationDrawerTheme: NavigationDrawerThemeData(
+      backgroundColor: kGris50,
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: kMarca50,
+      indicatorShape: const RoundedRectangleBorder(borderRadius: Radios.control),
+      tileHeight: 44,
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (e) => TextStyle(
+          fontFamily: fuenteUi,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: e.contains(WidgetState.selected) ? kMarca600 : kGris800,
+        ),
+      ),
+      iconTheme: WidgetStateProperty.resolveWith(
+        (e) => IconThemeData(size: 18, color: e.contains(WidgetState.selected) ? kMarca600 : kGris500),
+      ),
+    ),
+    drawerTheme: const DrawerThemeData(
+      backgroundColor: kGris50,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.horizontal(right: Radius.circular(12))),
+    ),
+    dividerTheme: const DividerThemeData(color: kGris100, thickness: 1, space: 1),
+    listTileTheme: const ListTileThemeData(
+      textColor: kGris900,
+      iconColor: kGris500,
+      contentPadding: EdgeInsets.symmetric(horizontal: Espacio.e4),
+      titleTextStyle: TextStyle(fontFamily: fuenteUi, fontSize: 15, fontWeight: FontWeight.w500, color: kGris900),
+      subtitleTextStyle: TextStyle(fontFamily: fuenteUi, fontSize: 13, color: kGris600),
+    ),
+    snackBarTheme: const SnackBarThemeData(
+      backgroundColor: kGris900,
+      contentTextStyle: TextStyle(fontFamily: fuenteUi, color: kGris25, fontSize: 14, height: 20 / 14),
+      actionTextColor: kMarca100,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: Radios.panel),
+      showCloseIcon: true,
+      closeIconColor: kGris200,
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: kGris0,
+      surfaceTintColor: Colors.transparent,
+      showDragHandle: true,
+      dragHandleColor: kGris200,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
     ),
     dialogTheme: const DialogThemeData(
-      backgroundColor: kHoja,
-      shape: RoundedRectangleBorder(borderRadius: Redondeo.hero),
+      backgroundColor: kGris0,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: Radios.dialogo),
     ),
-  );
-
-  // ThemeData.fontFamily se aplica a todo el textTheme; los títulos vuelven a la serif aquí.
-  final textos = tema.textTheme;
-  return tema.copyWith(
-    textTheme: textos.copyWith(
-      displaySmall: textos.displaySmall!.copyWith(fontFamily: fuenteTitulos),
-      headlineSmall: textos.headlineSmall!.copyWith(fontFamily: fuenteTitulos),
+    datePickerTheme: const DatePickerThemeData(
+      backgroundColor: kGris0,
+      surfaceTintColor: Colors.transparent,
+      headerBackgroundColor: kMarca600,
+      headerForegroundColor: kGris0,
+      shape: RoundedRectangleBorder(borderRadius: Radios.dialogo),
+    ),
+    timePickerTheme: const TimePickerThemeData(
+      backgroundColor: kGris0,
+      shape: RoundedRectangleBorder(borderRadius: Radios.dialogo),
+    ),
+    dropdownMenuTheme: const DropdownMenuThemeData(
+      menuStyle: MenuStyle(
+        backgroundColor: WidgetStatePropertyAll(kGris0),
+        surfaceTintColor: WidgetStatePropertyAll(Colors.transparent),
+        shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: Radios.panel)),
+      ),
+    ),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(color: kMarca600, linearTrackColor: kGris100),
+    searchBarTheme: SearchBarThemeData(
+      elevation: const WidgetStatePropertyAll(0),
+      backgroundColor: const WidgetStatePropertyAll(kGris0),
+      surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+      side: WidgetStateProperty.resolveWith(
+        (e) => BorderSide(color: e.contains(WidgetState.focused) ? kMarca600 : kGris400, width: e.contains(WidgetState.focused) ? 2 : 1),
+      ),
+      shape: const WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: Radios.panel)),
+      constraints: const BoxConstraints(minHeight: 48),
+      padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: Espacio.e3)),
+      textStyle: const WidgetStatePropertyAll(TextStyle(fontFamily: fuenteUi, fontSize: 15, color: kGris900)),
+      hintStyle: const WidgetStatePropertyAll(TextStyle(fontFamily: fuenteUi, fontSize: 15, color: kGris500)),
     ),
   );
 }

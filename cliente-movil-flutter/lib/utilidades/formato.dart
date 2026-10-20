@@ -47,10 +47,3 @@ const _meses = [
 /// Fecha larga en español para encabezados: "Viernes, 17 de octubre".
 /// (Sin DateFormat con locale para no tener que inicializar los datos de idioma de intl.)
 String formatearFechaLarga(DateTime fecha) => '${_dias[fecha.weekday - 1]}, ${fecha.day} de ${_meses[fecha.month - 1]}';
-
-/// Saludo según la hora del día.
-String saludo(DateTime hora) => switch (hora.hour) {
-  >= 5 && < 12 => 'Buenos días',
-  >= 12 && < 19 => 'Buenas tardes',
-  _ => 'Buenas noches',
-};

@@ -18,7 +18,7 @@ void main() {
     test('Libro se construye desde el JSON del servidor', () {
       final libro = Libro.desdeJson(libroJson(precio: 55000));
 
-      expect(libro.isbn, '978-9584276193');
+      expect(libro.isbn, '978-8420401751');
       expect(libro.precio, 55000.0); // un entero del JSON se convierte a double
       expect(libro.numeroPaginas, 352);
       expect(libro.genero, 'FICCION');
@@ -191,18 +191,23 @@ void main() {
   });
 
   group('Utilidades', () {
-    test('validaciones de formulario', () {
-      expect(validarObligatorio('  '), 'Obligatorio');
+    test('validaciones de formulario (los mismos mensajes que el cliente web)', () {
+      expect(validarObligatorio('  '), 'Este campo es obligatorio.');
       expect(validarObligatorio('x'), isNull);
-      expect(validarDecimalPositivo('abc'), 'Número inválido');
-      expect(validarDecimalPositivo('0'), 'Debe ser mayor que cero');
+      expect(validarDecimalPositivo(''), 'Este campo es obligatorio.');
+      expect(validarDecimalPositivo('abc'), 'Escribe un número válido.');
+      expect(validarDecimalPositivo('0'), 'Debe ser mayor que cero.');
       expect(validarDecimalPositivo('1500.5'), isNull);
-      expect(validarEnteroPositivo('1.5'), 'Número entero inválido');
-      expect(validarEnteroPositivo('-3'), 'Debe ser mayor que cero');
+      expect(validarEnteroPositivo(''), 'Este campo es obligatorio.');
+      expect(validarEnteroPositivo('1.5'), 'Escribe un número entero.');
+      expect(validarEnteroPositivo('-3'), 'Debe ser mayor que cero.');
       expect(validarEnteroPositivo('120'), isNull);
+      expect(validarEnteroNoNegativo(''), 'Este campo es obligatorio.');
       expect(validarEnteroNoNegativo('0'), isNull);
-      expect(validarEnteroNoNegativo('-1'), 'No puede ser negativo');
-      expect(validarEnteroNoNegativo('2.5'), 'Número entero inválido');
+      expect(validarEnteroNoNegativo('-1'), 'No puede ser negativo.');
+      expect(validarEnteroNoNegativo('2.5'), 'Escribe un número entero.');
+      expect(validarFecha(null), 'Elige la fecha y la hora.');
+      expect(validarFecha(DateTime(2024)), isNull);
     });
 
     test('formatos de fecha y precio', () {
@@ -214,13 +219,11 @@ void main() {
       expect(formatearPrecio(65000), '\$ 65.000');
     });
 
-    test('fecha larga y saludo del inicio', () {
+    test('fecha larga del encabezado del inicio', () {
       expect(formatearFechaLarga(DateTime(2026, 10, 17)), 'Sábado, 17 de octubre');
       expect(formatearFechaLarga(DateTime(2026, 3, 2)), 'Lunes, 2 de marzo');
-      expect(saludo(DateTime(2026, 1, 1, 8)), 'Buenos días');
-      expect(saludo(DateTime(2026, 1, 1, 15)), 'Buenas tardes');
-      expect(saludo(DateTime(2026, 1, 1, 22)), 'Buenas noches');
-      expect(saludo(DateTime(2026, 1, 1, 2)), 'Buenas noches');
+      expect(formatearFechaCortaIso('2024-02-10T09:05:00'), '10/02/2024');
+      expect(formatearFechaCortaIso('no es fecha'), 'no es fecha');
     });
   });
 }

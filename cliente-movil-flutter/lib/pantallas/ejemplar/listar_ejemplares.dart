@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../modelos/ejemplar.dart';
 import '../../observador/listado_observable.dart';
@@ -7,10 +8,19 @@ import '../../servicios/servicio_ejemplar.dart';
 import '../../tema/tema.dart';
 import '../../utilidades/formato.dart';
 import '../comunes/componentes.dart';
+import '../comunes/tabla_datos.dart';
 
-/// Caso de uso: Listar Ejemplares en una grilla, con filtro (del lado del servidor)
-/// por estado y/o ISBN del libro. El total encontrado también lo calcula el servidor.
-/// Observer: igual patrón que ListarLibros.
+final _columnas = <ColumnaTabla<Ejemplar>>[
+  ColumnaTabla(titulo: 'Código', ancho: 124, celda: (e) => CeldaDoble(principal: e.codigo, secundario: e.ubicacion)),
+  ColumnaTabla(titulo: 'Estado', ancho: 136, celda: (e) => InsigniaEstado(e.estado)),
+  ColumnaTabla(titulo: 'Libro (ISBN)', ancho: 140, celda: (e) => Text(e.isbnLibro, style: const TextStyle(color: kGris600))),
+  ColumnaTabla(titulo: 'Ingreso', ancho: 112, celda: (e) => Text(formatearFechaCortaIso(e.fechaIngreso), style: const TextStyle(color: kGris600))),
+  ColumnaTabla(titulo: 'Préstamos', ancho: 96, numerica: true, celda: (e) => Text('${e.numeroPrestamos}')),
+  ColumnaTabla(titulo: 'Reposición', ancho: 112, numerica: true, celda: (e) => Text(formatearPrecio(e.precioReposicion))),
+];
+
+/// Caso de uso: Listar Ejemplares en una grilla con filtro por estado y/o ISBN del libro. El
+/// filtro y el total los resuelve el servidor. Observer igual que en Listar Libros.
 class ListarEjemplares extends StatefulWidget {
   const ListarEjemplares({super.key});
 
@@ -23,7 +33,8 @@ class _ListarEjemplaresState extends State<ListarEjemplares> {
   String? _estado;
   List<Ejemplar> _ejemplares = [];
   int _total = 0;
-  bool _cargando = false;
+  bool _cargando = true;
+  bool _cargado = false;
   String? _error;
 
   @override
@@ -56,115 +67,111 @@ class _ListarEjemplaresState extends State<ListarEjemplares> {
     } on ErrorGraphQL catch (e) {
       if (mounted) setState(() => _error = e.mensaje);
     } finally {
-      if (mounted) setState(() => _cargando = false);
+      if (mounted) {
+        setState(() {
+          _cargando = false;
+          _cargado = true;
+        });
+      }
     }
   }
 
-  /// Filtro pedido por el usuario (el refresco del Observer usa _cargar sin cerrar el teclado).
   void _filtrar() {
     FocusManager.instance.primaryFocus?.unfocus();
     _cargar();
   }
 
+  void _limpiar() {
+    _isbnLibro.clear();
+    setState(() => _estado = null);
+    _cargar();
+  }
+
+  bool get _hayFiltros => _isbnLibro.text.trim().isNotEmpty || _estado != null;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Ejemplares')),
+      appBar: AppBar(title: const Text('Listar ejemplares')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.pushNamed(context, '/ejemplares/agregar'),
+        icon: const Icon(LucideIcons.plus, size: 20),
+        label: const Text('Adicionar ejemplar'),
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(Espacio.md, Espacio.sm, Espacio.md, Espacio.sm),
+            padding: const EdgeInsets.fromLTRB(Espacio.e4, Espacio.e3, Espacio.e4, Espacio.e2),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextField(
+                SearchBar(
                   controller: _isbnLibro,
+                  hintText: 'Filtrar por ISBN del libro',
+                  leading: const Icon(LucideIcons.search, size: 18, color: kGris500),
+                  trailing: [
+                    if (_hayFiltros)
+                      IconButton(tooltip: 'Limpiar filtros', onPressed: _limpiar, icon: const Icon(LucideIcons.x, size: 18)),
+                    IconButton(tooltip: 'Filtrar', onPressed: _filtrar, icon: const Icon(LucideIcons.arrowRight, size: 18)),
+                  ],
                   textInputAction: TextInputAction.search,
-                  decoration: InputDecoration(
-                    labelText: 'ISBN del libro (opcional)',
-                    prefixIcon: const Icon(Icons.qr_code_2_rounded),
-                    suffixIcon: IconButton(
-                      tooltip: 'Filtrar',
-                      onPressed: _cargando ? null : _filtrar,
-                      icon: const Icon(Icons.tune_rounded),
-                    ),
-                  ),
                   onSubmitted: (_) => _filtrar(),
                 ),
-                const SizedBox(height: 12),
-                SelectorChips(
+                const SizedBox(height: Espacio.e3),
+                FiltroChips(
                   opciones: estadosEjemplar,
                   seleccionado: _estado,
                   etiquetaDe: etiquetaEstado,
                   textoTodos: 'Todos',
-                  desplazable: true,
+                  adorno: puntoEstado,
                   alSeleccionar: (estado) {
                     setState(() => _estado = estado);
                     _filtrar();
                   },
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  _total == 1 ? '1 ejemplar' : '$_total ejemplares',
-                  style: const TextStyle(color: kTinta, fontWeight: FontWeight.w800, fontSize: 15),
-                ),
+                const SizedBox(height: Espacio.e3),
+                ConteoServidor(texto: _total == 1 ? '1 ejemplar' : '$_total ejemplares'),
               ],
             ),
           ),
           SizedBox(height: 2, child: _cargando ? const LinearProgressIndicator() : null),
           if (_error != null)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Espacio.md),
-              child: Aviso(_error!),
+              padding: const EdgeInsets.symmetric(horizontal: Espacio.e4),
+              child: Aviso(
+                _error!,
+                titulo: 'No se pudo cargar la lista',
+                accion: OutlinedButton.icon(
+                  onPressed: _cargar,
+                  icon: const Icon(LucideIcons.rotateCw, size: 16),
+                  label: const Text('Reintentar'),
+                ),
+              ),
             ),
           Expanded(
-            child: _ejemplares.isEmpty
-                ? const EstadoVacio(icono: Icons.inventory_2_outlined, mensaje: 'No hay ejemplares para mostrar.')
-                : ListView(
-                    padding: const EdgeInsets.all(Espacio.md),
-                    children: [
-                      const PistaDesplazamiento(),
-                      const SizedBox(height: Espacio.sm),
-                      Card(
-                        clipBehavior: Clip.antiAlias,
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: DataTable(
-                            columns: const [
-                              DataColumn(label: Text('EJEMPLAR')),
-                              DataColumn(label: Text('ESTADO')),
-                              DataColumn(label: Text('REPOSICIÓN'), numeric: true),
-                              DataColumn(label: Text('PRÉSTAMOS'), numeric: true),
-                              DataColumn(label: Text('INGRESO')),
-                              DataColumn(label: Text('LIBRO (ISBN)')),
-                            ],
-                            rows: [
-                              for (final e in _ejemplares)
-                                DataRow(
-                                  cells: [
-                                    DataCell(CeldaDoble(principal: e.codigo, secundario: e.ubicacion)),
-                                    DataCell(Pastilla(etiquetaEstado(e.estado), color: colorEstado(e.estado))),
-                                    DataCell(
-                                      Text(
-                                        formatearPrecio(e.precioReposicion),
-                                        style: const TextStyle(color: kDorado, fontWeight: FontWeight.w700),
-                                      ),
-                                    ),
-                                    DataCell(Text('${e.numeroPrestamos}')),
-                                    DataCell(Text(formatearFechaCortaIso(e.fechaIngreso))),
-                                    DataCell(Text(e.isbnLibro, style: const TextStyle(color: kTinta3))),
-                                  ],
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(Espacio.e4, Espacio.e2, Espacio.e4, 88),
+              child: _ejemplares.isEmpty
+                  ? (_cargado && _error == null ? _vacio() : const SizedBox.shrink())
+                  : TablaDatos<Ejemplar>(etiqueta: 'Ejemplares del inventario', columnas: _columnas, filas: _ejemplares),
+            ),
           ),
         ],
       ),
     );
   }
+
+  Widget _vacio() => _hayFiltros
+      ? EstadoVacio(
+          icono: LucideIcons.filterX,
+          titulo: 'Ningún ejemplar coincide con el filtro',
+          descripcion: 'Prueba con otro estado o revisa el ISBN.',
+          accion: OutlinedButton(onPressed: _limpiar, child: const Text('Limpiar filtros')),
+        )
+      : const EstadoVacio(
+          icono: LucideIcons.library,
+          titulo: 'Todavía no hay ejemplares',
+          descripcion: 'Las copias que registres aparecerán aquí.',
+        );
 }

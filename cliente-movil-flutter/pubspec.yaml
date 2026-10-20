@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Textos de Material (selector de fecha, menús) en español.
+  flutter_localizations:
+    sdk: flutter
   http: ^1.2.2
   intl: ^0.20.2
   # Íconos Lucide: la misma familia que usa el cliente web (lucide-react).
@@ -16,6 +19,11 @@ dependencies:
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  # Recorrido en el celular real (integration_test/ y test_driver/).
+  integration_test:
+    sdk: flutter
+  flutter_driver:
     sdk: flutter
   flutter_lints: ^6.0.0
 

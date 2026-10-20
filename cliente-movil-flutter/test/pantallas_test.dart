@@ -36,15 +36,22 @@ Future<void> elegir(WidgetTester tester, String etiqueta, String opcion) async {
 /// Abre el campo de fecha, acepta el día de hoy y luego la hora (opcionalmente escribiéndola).
 Future<void> elegirFechaYHora(WidgetTester tester, {String? hora, String? minuto}) async {
   await tocar(tester, find.byType(CampoFecha));
-  await tocar(tester, find.text('OK')); // calendario
+  final aceptar = textosMaterial(tester).okButtonLabel;
+  await tocar(tester, find.text(aceptar)); // calendario
   if (hora != null && minuto != null) {
     await tocar(tester, find.byIcon(Icons.keyboard_outlined)); // escribir la hora en vez de usar el reloj
     final campos = find.descendant(of: find.byType(Dialog), matching: find.byType(TextField));
     await tester.enterText(campos.at(0), hora);
     await tester.enterText(campos.at(1), minuto);
   }
-  await tocar(tester, find.text('OK')); // hora
+  await tocar(tester, find.text(aceptar)); // hora
 }
+
+/// Textos propios de Material en el idioma de la app (español de Colombia).
+MaterialLocalizations textosMaterial(WidgetTester tester) =>
+    MaterialLocalizations.of(tester.element(find.byType(Scaffold).first));
+
+Finder botonMenu(WidgetTester tester) => find.byTooltip(textosMaterial(tester).openAppDrawerTooltip);
 
 Finder campoDeBusqueda() => find.descendant(of: find.byType(SearchBar), matching: find.byType(TextField));
 
@@ -96,7 +103,7 @@ void main() {
         .instalar();
       await abrir(tester, '/');
 
-      await tocar(tester, find.byTooltip('Open navigation menu'));
+      await tocar(tester, botonMenu(tester));
 
       final menu = find.byType(NavigationDrawer);
       for (final seccion in ['Libros', 'Ejemplares', 'Ayuda']) {
@@ -121,7 +128,7 @@ void main() {
         .instalar();
       await abrir(tester, '/');
 
-      await tocar(tester, find.byTooltip('Open navigation menu'));
+      await tocar(tester, botonMenu(tester));
       await tocar(tester, find.descendant(of: find.byType(NavigationDrawer), matching: find.text('Adicionar')).last);
 
       expect(find.text('Adicionar ejemplar'), findsWidgets);
@@ -144,8 +151,7 @@ void main() {
       expect(servidor.variablesDe('libroPorTitulo').single, {'titulo': 'la voragine'});
       expect(find.text('La vorágine'), findsOneWidget);
 
-      await tester.pageBack();
-      await tester.pumpAndSettle();
+      await tocar(tester, find.byTooltip(textosMaterial(tester).backButtonTooltip));
       await tocar(tester, find.text('Adicionar libro'));
       expect(find.widgetWithText(FilledButton, 'Adicionar libro'), findsOneWidget);
     });

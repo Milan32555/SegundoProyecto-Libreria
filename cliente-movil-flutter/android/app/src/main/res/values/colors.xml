@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Mismo fondo papel de la app: la pantalla de arranque no cambia de color al abrirla. -->
-    <color name="fondo_app">#F6F1E6</color>
+    <!-- Mismo fondo de la app (kGris25): la pantalla de arranque no cambia de color al abrirla. -->
+    <color name="fondo_app">#FAFAF9</color>
     <!-- Fondo del ícono adaptativo. -->
     <color name="fondo_icono">#1F5C4A</color>
 </resources>

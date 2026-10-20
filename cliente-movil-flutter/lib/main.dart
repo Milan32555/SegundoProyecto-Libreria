@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'tema/tema.dart';
 
@@ -33,8 +34,13 @@ class AplicacionLibreria extends StatelessWidget {
       title: 'Librería',
       debugShowCheckedModeBanner: false,
       theme: construirTema(),
+      // Todo en español de Colombia, incluidos los textos propios de Material
+      // (selector de fecha y hora, botones de los diálogos, menús).
+      locale: const Locale('es', 'CO'),
+      supportedLocales: const [Locale('es', 'CO'), Locale('es')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       // Android dibuja la app detrás de la barra de navegación del sistema: se deja ese espacio
-      // libre (con el color del papel) para que ningún botón ni texto quede tapado.
+      // libre (con el color de fondo) para que ningún botón ni texto quede tapado.
       builder: (context, child) => ColoredBox(
         color: kGris25,
         child: SafeArea(top: false, left: false, right: false, child: child!),

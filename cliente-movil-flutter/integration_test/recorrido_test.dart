@@ -19,22 +19,22 @@ const _sufijoDefinido = String.fromEnvironment('SUFIJO');
 const _sinCapturas = bool.fromEnvironment('SIN_CAPTURAS');
 
 void main() {
-  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   final sufijo = _sufijoDefinido.isNotEmpty ? _sufijoDefinido : '${DateTime.now().millisecondsSinceEpoch % 10000000}';
   final isbnNuevo = '978-MOV-$sufijo';
   final codigoNuevo = 'EJ-MOV-$sufijo';
-  var capturaInicial = true;
-
-  Future<void> captura(String nombre) async {
-    if (_sinCapturas) return;
-    if (capturaInicial) {
-      await binding.convertFlutterSurfaceToImage(); // necesario en Android para poder capturar
-      capturaInicial = false;
-    }
-    await binding.takeScreenshot(nombre);
-  }
 
   testWidgets('recorrido de todos los casos de uso en el celular', (tester) async {
+    /// Pide una captura de la pantalla real del celular: imprime una marca que el computador lee
+    /// del registro (adb logcat) y responde con `adb exec-out screencap`; mientras tanto la
+    /// pantalla queda quieta. (takeScreenshot de integration_test se cuelga en algunos equipos.)
+    Future<void> captura(String nombre) async {
+      if (_sinCapturas) return;
+      await tester.pumpAndSettle();
+      debugPrint('CAPTURA:$nombre');
+      await Future<void>.delayed(const Duration(milliseconds: 2500));
+    }
+
     MaterialLocalizations textos() => MaterialLocalizations.of(tester.element(find.byType(Scaffold).last));
 
     /// Espera (en tiempo real) a que aparezca algo que depende de la respuesta del servidor.
@@ -62,12 +62,15 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    Future<void> escribir(String etiqueta, String texto) async {
-      final campo = find.widgetWithText(TextField, etiqueta);
+    /// Escribe en un campo a través de su controlador. En el teléfono real no se usa el teclado
+    /// simulado: el teclado del sistema puede devolver el texto anterior y pisar lo escrito.
+    Future<void> escribirEn(Finder campo, String texto) async {
       await mostrar(campo);
-      await tester.enterText(campo.first, texto);
+      tester.widget<TextField>(campo.first).controller!.text = texto;
       await tester.pumpAndSettle();
     }
+
+    Future<void> escribir(String etiqueta, String texto) => escribirEn(find.widgetWithText(TextField, etiqueta), texto);
 
     Future<void> elegir(String etiqueta, String opcion) async {
       await tocar(find.widgetWithText(DropdownButtonFormField<String>, etiqueta));
@@ -187,7 +190,7 @@ void main() {
     await tester.drag(find.text('Ficción').last, const Offset(-260, 0)); // desliza la tabla
     await tester.pumpAndSettle();
     await captura('51-libro-listar-desplazada');
-    await tester.enterText(find.descendant(of: find.byType(SearchBar), matching: find.byType(TextField)), 'garcia');
+    await escribirEn(find.descendant(of: find.byType(SearchBar), matching: find.byType(TextField)), 'garcia');
     await tocar(find.byTooltip('Filtrar'));
     await esperar(find.text('1 libro'));
     await captura('52-libro-listar-autor');

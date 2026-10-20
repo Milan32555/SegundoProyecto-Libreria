@@ -44,43 +44,32 @@ lib/
 ├── observador/
 │   └── listado_observable.dart  Sujeto del patrón Observer (uno por colección)
 ├── pantallas/                   Vistas
-│   ├── menu_principal.dart      Resumen del inventario en vivo + accesos a cada caso de uso
-│   ├── menu_lateral.dart        Menú con todas las opciones y "Ayuda → Acerca de..."
+│   ├── menu_principal.dart      Inicio: buscador, resumen del inventario y accesos a cada caso de uso
+│   ├── menu_lateral.dart        NavigationDrawer con todas las opciones y "Ayuda → Acerca de..."
 │   ├── acerca_de.dart           Integrantes y versión
 │   ├── libro/                   agregar, eliminar, actualizar, listar, consultar
 │   ├── ejemplar/                agregar, eliminar, actualizar, listar, consultar
-│   └── comunes/                 Fichas, campo de fecha y hora, y componentes visuales reutilizables
-├── tema/tema.dart               Sistema de diseño: paleta, medidas y ThemeData
+│   └── comunes/                 Fichas, tabla con columna fija, campo de fecha y hora, hoja de confirmación y componentes
+├── tema/                       tokens.dart (mismos valores que la web) y tema.dart (Material 3)
 └── utilidades/                  Formatos de fecha/precio y validaciones de formularios
 ```
 
 ## Diseño
 
-Identidad propia de librería, "papel y tinta" (`lib/tema/tema.dart`):
+Material 3 con el mismo sistema de diseño del cliente web (`lib/tema/tokens.dart`), tomando
+ideas de apps de librerías y lectura (Libby, Goodreads, Kindle, Buscalibre) y de Shopify POS:
 
-- Fondo crema como las páginas de un libro, texto color tinta y **verde biblioteca** como color
-  principal; **dorado** para precios. Títulos con la serif **Playfair Display** y el resto del texto
-  con **Plus Jakarta Sans** (incluidas en `assets/fuentes`, licencia SIL OFL), por lo que no
-  depende de internet.
-- Inicio con un encabezado verde que se contrae al desplazar: saludo y fecha, cifras del
-  inventario que cuentan hasta su valor y una estantería dibujada cuyos libros "crecen" al abrir
-  la app; debajo, la distribución de los ejemplares por estado en una barra proporcional.
-- Las fichas (consultar y antes de eliminar) son tarjetas limpias con borde fino y sombra suave,
-  y muestran las fechas con su hora.
-- El campo de fecha de Adicionar y Actualizar elige el día y luego la hora (24 h), igual que la
-  web. En *Actualizar Ejemplar* el número de préstamos se ve pero no se edita (lo lleva el
-  servidor).
-- *Acerca de...* con estilo de app profesional: tarjeta del producto con su versión, el equipo,
-  un **diagrama animado de la arquitectura** (los clientes envían peticiones GraphQL al servidor)
-  que mide en el momento si el servidor responde y en cuántos milisegundos, los patrones de diseño
-  aplicados y las tecnologías.
-- Estados con color (Disponible, Prestado, Dañado, Dado de baja) y chips para elegir
-  género/estado. Las pantallas de inicio y Listar se actualizan solas (Observer) sin necesidad de
-  recargar: de inmediato tras un cambio en esta app y, de forma opcional, cada 15 s si el cambio
-  lo hizo otro cliente.
-- Las cifras del inicio y el total de cada Listar vienen calculados del servidor; la app no
-  cuenta nada.
-- Ícono propio (Android adaptativo, web y Windows) y barra de navegación del sistema transparente.
+- `ColorScheme` propio (neutros cálidos y verde de marca `#1F5C4A`), IBM Plex Sans para la
+  interfaz y Literata para los títulos de libros (incluidas en `assets/fuentes`, licencia SIL OFL).
+- Inicio con buscador (`SearchBar`), cifras del inventario calculadas por el servidor y
+  distribución de los ejemplares por estado; menú en un `NavigationDrawer`.
+- Listar en una tabla con encabezado fijo y la primera columna (título / código) fija al
+  desplazar en horizontal; filtros con chips y búsqueda; botón flotante para adicionar.
+- Formularios por secciones con el teclado adecuado a cada campo y validación en línea;
+  eliminar se confirma en una hoja inferior y los resultados se avisan con un `SnackBar`.
+- Estados de un ejemplar como insignias con punto + texto. Íconos Lucide (la misma familia que
+  la web). Textos de Material (selector de fecha y hora) en español.
+- Ícono de la app con el logotipo (se regenera con `scripts/generar-icono-app.py`).
 
 ## Problemas comunes
 

@@ -37,32 +37,39 @@ src/
 ├── observer/
 │   ├── Observable.ts        Sujeto del patrón Observer (uno por colección)
 │   └── useListadoObservado.ts  Hook que suscribe las pantallas de Listar
-├── componentes/             BarraMenu (menú + Ayuda), FichaLibro, FichaEjemplar, Basicos
-│                            (Encabezado, Aviso, Pastilla, SelectorChips…) e Icono (SVG)
+├── componentes/             Estructura y Navegacion (menú lateral + Ayuda), FichaLibro, FichaEjemplar
+│   └── ui/                  Sistema de diseño: Boton, Campo, Selector, Segmentado, TablaDatos,
+│                            Banner, Insignias, Avisos (toasts), ConfirmarEliminacion, Ayuda (tooltip)…
+├── estilos/                 tokens.css (colores, tipografía, espaciado, radios) y app.css
 ├── paginas/                 Vistas: una pantalla por caso de uso
 │   ├── libro/               Agregar, Eliminar, Actualizar, Listar, Consultar
 │   ├── ejemplar/            Agregar, Eliminar, Actualizar, Listar, Consultar
 │   ├── MenuPrincipal.tsx
 │   └── AcercaDe.tsx         Integrantes y versión
+├── validaciones.ts          Validaciones de formato de los formularios (las reglas las decide el servidor)
 └── formato.ts               Formato de precios y fechas
 ```
 
-Cada pantalla implementa un solo caso de uso y se abre desde el menú superior
-(**Libro**, **Ejemplar**, **Ayuda → Acerca de...**).
+Pruebas: `src/**/*.test.ts(x)` (Vitest) y `e2e/` (Playwright contra el servidor real).
+
+Cada pantalla implementa un solo caso de uso y se abre desde el menú lateral
+(**Libros**, **Ejemplares**, **Ayuda → Acerca de...**); en celular el menú se abre como un cajón.
 
 ## Diseño
 
-Misma identidad "papel y tinta" que el cliente móvil: fondo crema, texto color tinta, verde
-biblioteca como color principal y dorado para precios. Títulos con la serif **Playfair Display** y
-el resto con **Plus Jakarta Sans** (incluidas en `src/assets/fuentes`, no dependen de internet).
+Panel de administración al estilo de Shopify Polaris, Linear y Stripe, con el mismo sistema de
+diseño de la app móvil (`src/estilos/tokens.css`):
 
-- Inicio con el mismo encabezado verde de la app: saludo y fecha, cifras que cuentan hasta su
-  valor, una estantería cuyos libros "crecen" al cargar y la barra de ejemplares por estado.
-- *Acerca de...* profesional: tarjeta del producto, equipo, diagrama animado de la arquitectura
-  que mide la respuesta real del servidor (clic para medir de nuevo), patrones y tecnologías.
-- Las animaciones se desactivan si el sistema pide reducir el movimiento
-  (`prefers-reduced-motion`), y el diseño se adapta a pantallas de celular. Los colores están
-  definidos como variables en `src/estilos.css`.
+- Menú lateral fijo agrupado por objeto; encabezado de página con la acción principal a la
+  derecha; formularios por secciones; tablas densas con encabezado fijo, números alineados a la
+  derecha y estados de carga (skeleton), vacío (con una acción útil) y error (con *Reintentar*).
+- Neutros cálidos y un solo color de marca (verde `#1F5C4A`); los estados de un ejemplar son
+  insignias con punto + texto. Contraste AA verificado.
+- IBM Plex Sans para la interfaz y Literata para los títulos de libros y el logotipo
+  (paquetes `@fontsource`, incluidas en el build: no dependen de internet).
+- Componentes accesibles de Radix UI: diálogo para confirmar eliminar, selects, avisos (toasts)
+  y tooltips; íconos Lucide. Foco visible, etiquetas en todos los campos y validación en línea.
+- Usable en 1366×768 y en celular (menú en cajón y primera columna de la tabla fija).
 
 ## Observer
 

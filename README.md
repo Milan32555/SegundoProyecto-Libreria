@@ -98,12 +98,12 @@ solo un aviso rápido; el servidor vuelve a validar todo.
 | Información almacenada en una **Lista** | `RepositorioLibros` y `RepositorioEjemplares` guardan `ArrayList` en memoria |
 | Al menos 5 atributos (int, double, String, LocalDateTime y otro) | Ver diagrama de clases; escalar GraphQL propio `LocalDateTime` |
 | **Insertar** | Pantallas *Adicionar Libro / Ejemplar* |
-| **Eliminar** con búsqueda previa y mostrando TODA la información | Pantallas *Eliminar*: buscar → ficha completa → *Confirmar eliminación* |
-| **Actualizar** con búsqueda previa y mostrando TODA la información | Pantallas *Actualizar*: buscar → formulario con todos los datos actuales → guardar |
-| **Listar** en grilla con filtro (del lado del servidor) | Tabla/`DataTable`; Libros por autor y/o género, Ejemplares por estado y/o ISBN (`librosFiltrados`, `ejemplaresFiltrados`); el total encontrado también lo calcula el servidor |
+| **Eliminar** con búsqueda previa y mostrando TODA la información | Pantallas *Eliminar*: buscar → ficha con todos los atributos (fecha con hora) → confirmar en un diálogo (web) o en una hoja inferior (móvil) |
+| **Actualizar** con búsqueda previa y mostrando TODA la información | Pantallas *Actualizar*: buscar → ficha con los datos actuales + formulario → guardar → ficha con lo que respondió el servidor |
+| **Listar** en grilla con filtro (del lado del servidor) | Tabla con encabezado fijo (y primera columna fija en celular); Libros por autor y/o género, Ejemplares por estado y/o ISBN (`librosFiltrados`, `ejemplaresFiltrados`); el total encontrado también lo calcula el servidor |
 | **Consultar UN objeto** por parámetros | Libro por ISBN **o** por título; Ejemplar por código |
 | Una ventana por caso de uso | Cada opción del menú abre una pantalla/ruta dedicada a un solo caso de uso |
-| Menú principal + **Ayuda → Acerca de...** con integrantes y versión | `BarraMenu` (React) y `MenuLateral` (Flutter) |
+| Menú principal + **Ayuda → Acerca de...** con integrantes y versión | `Navegacion` (React: menú lateral fijo, cajón en celular) y `MenuLateral` (Flutter: `NavigationDrawer`) |
 | Patrones MVC, Singleton, Builder, Observer y SOLID | Ver tabla siguiente |
 | Subido a GitHub y compartido con el docente | Este repositorio |
 
@@ -135,6 +135,26 @@ solo un aviso rápido; el servidor vuelve a validar todo.
 Así, si la pantalla *Listar* está abierta en el navegador y alguien agrega un libro **desde
 la app Flutter** (u otra pestaña), la grilla se actualiza sola en máximo 15 s, respetando
 los filtros que tenga escritos el usuario.
+
+## Sistema de diseño
+
+Los dos clientes usan el mismo sistema de diseño, definido como tokens en código:
+[`tokens.css`](cliente-web-react/src/estilos/tokens.css) (web) y
+[`tokens.dart`](cliente-movil-flutter/lib/tema/tokens.dart) (móvil).
+
+- **Color:** neutros cálidos, un color de marca (verde `#1F5C4A`) solo para acciones primarias,
+  selección y foco, y colores semánticos para los estados de un ejemplar. Los estados se
+  distinguen también por la forma (insignia con punto + texto), no solo por el color.
+  Contraste AA verificado con [`scripts/verificar-contraste.py`](scripts/verificar-contraste.py).
+- **Tipografía:** IBM Plex Sans para la interfaz (con cifras tabulares) y Literata para los
+  títulos de libros y el logotipo. Incluidas en el proyecto: la demo funciona sin internet.
+- **Escalas:** texto 12 · 13 · 14 · 16 · 20 · 24 · 30 px; espaciado en múltiplos de 4; radios de
+  6 (controles), 8 (paneles) y 12 px (diálogos); dos niveles de elevación.
+- **Web:** componentes accesibles de [Radix UI](https://www.radix-ui.com/) (diálogo de
+  confirmación, selects, avisos, tooltips) e íconos [Lucide](https://lucide.dev/).
+- **Móvil:** Material 3 con un `ColorScheme` propio, `NavigationDrawer`, `SearchBar`, hoja
+  inferior para confirmar, `SnackBar`, validación en línea, textos de Material en español e
+  íconos Lucide (la misma familia que la web).
 
 ## Ejecución
 
@@ -196,9 +216,11 @@ flutter run --dart-define=URL_GRAPHQL=http://<IP-del-computador>:8081/graphql
 | Proyecto | Comando | Qué cubre |
 |---|---|---|
 | Servidor | `./mvnw verify` | 50 pruebas: servicios (CRUD, validaciones, filtros, totales, resumen del inventario, regla de préstamos, integridad, Observer), patrones, API GraphQL completa, registro de operaciones y servidor HTTP real con CORS |
-| Cliente web | `npm test` · `npm run lint` | 41 pruebas: cliente GraphQL, Observer (incluida la detección de cambios de otro cliente cada 15 s), formatos y flujos de las pantallas |
-| Cliente móvil | `flutter test` · `flutter analyze` | 33 pruebas: modelos, cliente GraphQL, Observer, validaciones y flujos de las pantallas con un servidor simulado |
+| Cliente web | `npm test` · `npm run lint` · `npm run build` | 71 pruebas (93 % de las líneas): cliente GraphQL, Observer (incluida la detección de cambios de otro cliente cada 15 s), validaciones y flujos de todas las pantallas |
+| Cliente web ↔ servidor real (E2E) | `npm run e2e` (Playwright; levanta el servidor y la web) | Todos los casos de uso de Libro y Ejemplar en 1366×768 y 390×844, con capturas: adicionar (válido e inválido), consultar, actualizar, eliminar (cancelar y confirmar), eliminar libro con ejemplares (rechazado), listar con cada filtro, Observer entre pestañas, menú y Acerca de |
+| Cliente móvil | `flutter test` · `flutter analyze` | 40 pruebas (94 % de las líneas): modelos, cliente GraphQL, Observer, validaciones y flujos de todas las pantallas con un servidor simulado |
 | Cliente móvil ↔ servidor real | `flutter test test/integracion_servidor_test.dart --dart-define=URL_GRAPHQL=http://localhost:8081/graphql` | CRUD completo de Libro y Ejemplar contra el servidor en ejecución |
+| Recorrido en el celular | `flutter drive --driver=test_driver/integration_test.dart --target=integration_test/recorrido_test.dart -d <celular> --dart-define=URL_GRAPHQL=http://localhost:8081/graphql` | Todos los casos de uso en el teléfono real (con `adb reverse tcp:8081 tcp:8081`), con capturas |
 
 GitHub Actions ejecuta las pruebas, el lint y el build de los tres proyectos en cada push
 ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).

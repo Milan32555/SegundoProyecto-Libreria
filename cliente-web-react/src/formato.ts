@@ -40,11 +40,3 @@ const MESES = [
 export function formatearFechaLarga(fecha: Date): string {
   return `${DIAS[fecha.getDay()]}, ${fecha.getDate()} de ${MESES[fecha.getMonth()]}`;
 }
-
-/** Saludo según la hora del día. */
-export function saludo(fecha: Date): string {
-  const hora = fecha.getHours();
-  if (hora >= 5 && hora < 12) return "Buenos días";
-  if (hora >= 12 && hora < 19) return "Buenas tardes";
-  return "Buenas noches";
-}

@@ -1,37 +1,68 @@
 import { FormEvent, useState } from "react";
+import { FilterX, Library, Plus, Search } from "lucide-react";
 import { listarEjemplaresFiltrados } from "../../graphql/servicioEjemplar";
 import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { ejemplarObservable } from "../../observer/Observable";
 import { useListadoObservado } from "../../observer/useListadoObservado";
 import { formatearFechaCorta, formatearPrecio } from "../../formato";
-import { Aviso, Encabezado, Pastilla, SelectorChips, colorEstado } from "../../componentes/Basicos";
-import Icono from "../../componentes/Icono";
+import { Banner } from "../../componentes/ui/Banner";
+import { Boton, BotonEnlace } from "../../componentes/ui/Boton";
+import { Campo } from "../../componentes/ui/Campo";
+import { Encabezado } from "../../componentes/ui/Encabezado";
+import { InsigniaEstado } from "../../componentes/ui/Insignias";
+import { Segmentado } from "../../componentes/ui/Segmentado";
+import { Columna, TablaDatos } from "../../componentes/ui/TablaDatos";
 import { ESTADOS_EJEMPLAR, EstadoEjemplar, Ejemplar, etiquetaEstado } from "../../types";
 
+type FiltroEstado = EstadoEjemplar | "TODOS";
+
+const OPCIONES_FILTRO_ESTADO = [
+  { valor: "TODOS" as FiltroEstado, texto: "Todos" },
+  ...ESTADOS_EJEMPLAR.map((e) => ({ valor: e as FiltroEstado, texto: etiquetaEstado(e) }))
+];
+
+const COLUMNAS: Columna<Ejemplar>[] = [
+  {
+    titulo: "Código",
+    celda: (e) => (
+      <span className="celda-titulo">
+        <strong>{e.codigo}</strong>
+        <small>{e.ubicacion}</small>
+      </span>
+    )
+  },
+  { titulo: "Estado", celda: (e) => <InsigniaEstado estado={e.estado} /> },
+  { titulo: "Libro (ISBN)", celda: (e) => e.isbnLibro, apagada: true },
+  { titulo: "Ingreso", celda: (e) => formatearFechaCorta(e.fechaIngreso), apagada: true },
+  { titulo: "Préstamos", celda: (e) => e.numeroPrestamos, numerica: true },
+  { titulo: "Reposición", celda: (e) => formatearPrecio(e.precioReposicion), numerica: true }
+];
+
 /**
- * Caso de uso: Listar Ejemplares en una grilla, con filtro (del lado del servidor) por estado
- * y/o ISBN del libro. El total encontrado también lo calcula el servidor. Observer igual que
- * en ListarLibros.
+ * Caso de uso: Listar Ejemplares en una grilla con filtro por estado y/o ISBN del libro. El
+ * filtro y el total los resuelve el servidor. Observer igual que en Listar Libros.
  */
 export default function ListarEjemplares() {
   const [ejemplares, setEjemplares] = useState<Ejemplar[]>([]);
   const [total, setTotal] = useState(0);
-  const [estado, setEstado] = useState<EstadoEjemplar | "">("");
+  const [estado, setEstado] = useState<FiltroEstado>("TODOS");
   const [isbnLibro, setIsbnLibro] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [cargando, setCargando] = useState(false);
+  const [cargando, setCargando] = useState(true);
+  const [cargado, setCargado] = useState(false);
 
-  async function cargar(filtroEstado: EstadoEjemplar | "" = estado) {
+  async function cargar(filtroEstado: FiltroEstado = estado, filtroIsbn: string = isbnLibro) {
     setCargando(true);
     setError(null);
     try {
-      const listado = await listarEjemplaresFiltrados(filtroEstado, isbnLibro);
+      const listado = await listarEjemplaresFiltrados(filtroEstado === "TODOS" ? "" : filtroEstado, filtroIsbn);
       setEjemplares(listado.ejemplares);
       setTotal(listado.total);
     } catch (err) {
       setError(mensajeDeError(err));
     } finally {
       setCargando(false);
+      setCargado(true);
     }
   }
 
@@ -42,58 +73,74 @@ export default function ListarEjemplares() {
     void cargar();
   }
 
-  function cambiarEstado(nuevo: EstadoEjemplar | "") {
+  function cambiarEstado(nuevo: FiltroEstado) {
     setEstado(nuevo);
     void cargar(nuevo);
   }
 
+  function limpiar() {
+    setEstado("TODOS");
+    setIsbnLibro("");
+    void cargar("TODOS", "");
+  }
+
+  const hayFiltros = estado !== "TODOS" || isbnLibro.trim() !== "";
+
   return (
     <>
-      <Encabezado etiqueta="Ejemplares" titulo="Listar ejemplares">
-        Todas las copias físicas en inventario. El filtro se aplica en el servidor.
-      </Encabezado>
+      <Encabezado
+        seccion="Ejemplares"
+        titulo="Listar ejemplares"
+        descripcion="Todas las copias físicas del inventario. El filtro lo aplica el servidor."
+        acciones={<BotonEnlace to="/ejemplares/agregar" variante="primario" icono={Plus}>Adicionar ejemplar</BotonEnlace>}
+      />
 
-      <section className="tarjeta filtros">
-        <form className="filtros-fila" role="search" onSubmit={filtrar}>
-          <label>ISBN del libro
-            <input value={isbnLibro} onChange={(e) => setIsbnLibro(e.target.value)} placeholder="opcional" />
-          </label>
-          <button type="submit" disabled={cargando}><Icono nombre="buscar" /> Filtrar</button>
+      {error && ejemplares.length > 0 && <Banner titulo="No se pudo actualizar la lista" className="espacio-abajo">{error}</Banner>}
+
+      <section className="panel" aria-label="Ejemplares">
+        <form className="barra-filtros" role="search" onSubmit={filtrar}>
+          <Segmentado etiqueta="Estado" nombre="estado" valor={estado} opciones={OPCIONES_FILTRO_ESTADO} alCambiar={cambiarEstado} />
+          <Campo
+            className="campo-busqueda"
+            etiqueta="ISBN del libro"
+            value={isbnLibro}
+            onChange={(e) => setIsbnLibro(e.target.value)}
+            placeholder="Opcional"
+            autoComplete="off"
+          />
+          <Boton type="submit" icono={Search} disabled={cargando && !cargado}>Filtrar</Boton>
+          {hayFiltros && <Boton variante="fantasma" icono={FilterX} onClick={limpiar}>Limpiar filtros</Boton>}
         </form>
-        <SelectorChips etiqueta="Estado" nombre="estado" opciones={ESTADOS_EJEMPLAR} valor={estado}
-                       etiquetaDe={etiquetaEstado} alCambiar={cambiarEstado} textoTodos="Todos" />
+
+        <div className="barra-tabla" aria-live="polite">
+          <span className="conteo">{total === 1 ? "1 ejemplar" : `${total} ejemplares`}</span>
+          <span>Total calculado por el servidor</span>
+        </div>
+
+        <TablaDatos
+          etiqueta="Ejemplares del inventario"
+          columnas={COLUMNAS}
+          filas={ejemplares}
+          claveFila={(e) => e.codigo}
+          cargandoInicial={!cargado}
+          ocupada={cargando}
+          error={error}
+          alReintentar={() => void cargar()}
+          vacio={hayFiltros
+            ? {
+                icono: FilterX,
+                titulo: "Ningún ejemplar coincide con el filtro",
+                descripcion: "Prueba con otro estado o revisa el ISBN.",
+                accion: <Boton icono={FilterX} onClick={limpiar}>Limpiar filtros</Boton>
+              }
+            : {
+                icono: Library,
+                titulo: "Todavía no hay ejemplares",
+                descripcion: "Las copias que registres aparecerán aquí.",
+                accion: <BotonEnlace to="/ejemplares/agregar" icono={Plus}>Adicionar ejemplar</BotonEnlace>
+              }}
+        />
       </section>
-
-      {error && <Aviso>{error}</Aviso>}
-
-      <div className="resumen-lista">
-        <span className="conteo">{total === 1 ? "1 ejemplar" : `${total} ejemplares`}</span>
-      </div>
-      <div className="tabla-contenedor">
-        <table>
-          <thead>
-            <tr>
-              <th>Ejemplar</th><th>Estado</th><th className="numero">Reposición</th>
-              <th className="numero">Préstamos</th><th>Ingreso</th><th>Libro (ISBN)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ejemplares.map((e) => (
-              <tr key={e.codigo}>
-                <td className="celda-doble"><strong>{e.codigo}</strong><small>{e.ubicacion}</small></td>
-                <td><Pastilla color={colorEstado(e.estado)}>{etiquetaEstado(e.estado)}</Pastilla></td>
-                <td className="numero precio">{formatearPrecio(e.precioReposicion)}</td>
-                <td className="numero">{e.numeroPrestamos}</td>
-                <td>{formatearFechaCorta(e.fechaIngreso)}</td>
-                <td className="apagado">{e.isbnLibro}</td>
-              </tr>
-            ))}
-            {ejemplares.length === 0 && !cargando && (
-              <tr><td colSpan={6} className="sin-datos">No hay ejemplares para mostrar.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
     </>
   );
 }

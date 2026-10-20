@@ -51,12 +51,12 @@ class ServidorHttpTest {
     @Test
     void registraEnConsolaCadaOperacionConElClienteQueLaHizo(CapturedOutput consola) throws Exception {
         enviar("movil", "{\"query\":\"query ($isbn: ID!) { libroPorIsbn(isbn: $isbn) { titulo } }\","
-                + "\"variables\":{\"isbn\":\"978-8420471839\"}}");
+                + "\"variables\":{\"isbn\":\"978-8437609355\"}}");
         enviar("web", "{\"query\":\"mutation { eliminarLibro(isbn: \\\"978-0307474728\\\") { isbn } }\"}");
         enviar("web", "{\"query\":\"{ revisionLibros }\"}");
 
         assertThat(consola.getOut())
-                .contains("App móvil    | consulta libroPorIsbn (isbn=978-8420471839)")
+                .contains("App móvil    | consulta libroPorIsbn (isbn=978-8437609355)")
                 .contains("Cliente web  | mutación eliminarLibro  -> RECHAZADA: No se puede eliminar el libro")
                 .doesNotContain("revisionLibros"); // el sondeo del Observer no llena la consola
     }

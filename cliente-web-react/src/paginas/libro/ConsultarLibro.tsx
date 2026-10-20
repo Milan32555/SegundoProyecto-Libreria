@@ -1,37 +1,37 @@
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { buscarLibroPorIsbn, buscarLibroPorTitulo } from "../../graphql/servicioLibro";
 import { mensajeDeError } from "../../graphql/clienteGraphQL";
-import { Aviso, Encabezado, SelectorChips } from "../../componentes/Basicos";
 import FichaLibro from "../../componentes/FichaLibro";
-import Icono from "../../componentes/Icono";
+import { Banner } from "../../componentes/ui/Banner";
+import { BuscadorClave } from "../../componentes/ui/BuscadorClave";
+import { Encabezado } from "../../componentes/ui/Encabezado";
+import { Segmentado } from "../../componentes/ui/Segmentado";
+import { SinResultados } from "../../componentes/ui/SinResultados";
 import { Libro } from "../../types";
 
 type Criterio = "isbn" | "titulo";
 
-const CRITERIOS: readonly Criterio[] = ["isbn", "titulo"];
-const ETIQUETAS: Record<Criterio, string> = { isbn: "ISBN", titulo: "Título" };
-const OPCIONES_CRITERIO: Record<Criterio, string> = { isbn: "Por ISBN", titulo: "Por título" };
+const CRITERIOS = [
+  { valor: "isbn", texto: "Por ISBN" },
+  { valor: "titulo", texto: "Por título" }
+] as const;
 
-/** Caso de uso: Buscar/Consultar UN SOLO Libro a partir de un criterio (ISBN o título). */
+/** Caso de uso: Consultar UN SOLO Libro por un criterio (ISBN o título). */
 export default function ConsultarLibro() {
   const [criterio, setCriterio] = useState<Criterio>("isbn");
-  const [valor, setValor] = useState("");
   const [libro, setLibro] = useState<Libro | null>(null);
   const [sinResultado, setSinResultado] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
 
-  async function buscar(e: FormEvent) {
-    e.preventDefault();
+  async function buscar(valor: string) {
     setError(null); setLibro(null); setSinResultado(null);
     setCargando(true);
     try {
-      const resultado = criterio === "isbn"
-        ? await buscarLibroPorIsbn(valor)
-        : await buscarLibroPorTitulo(valor);
+      const resultado = criterio === "isbn" ? await buscarLibroPorIsbn(valor) : await buscarLibroPorTitulo(valor);
       setLibro(resultado);
       if (!resultado) {
-        setSinResultado(`No se encontró ningún libro con ${criterio === "isbn" ? "el ISBN" : "el título"} "${valor}".`);
+        setSinResultado(criterio === "isbn" ? `No hay ningún libro con el ISBN «${valor}».` : `No hay ningún libro titulado «${valor}».`);
       }
     } catch (err) {
       setError(mensajeDeError(err));
@@ -42,25 +42,24 @@ export default function ConsultarLibro() {
 
   return (
     <>
-      <Encabezado etiqueta="Libro" titulo="Buscar un libro">
-        Consulta un solo libro por su ISBN o por su título exacto.
-      </Encabezado>
+      <Encabezado
+        seccion="Libros"
+        titulo="Consultar libro"
+        descripcion="Busca un solo libro por su ISBN o por su título (sin importar mayúsculas ni tildes)."
+      />
 
-      <form className="tarjeta" role="search" onSubmit={buscar}>
-        <SelectorChips etiqueta="Buscar por" nombre="criterio" opciones={CRITERIOS} valor={criterio}
-                       etiquetaDe={(c) => OPCIONES_CRITERIO[c]}
-                       alCambiar={(c) => setCriterio(c || criterio)} />
-        <div className="filtros-fila">
-          <label>{ETIQUETAS[criterio]}
-            <input value={valor} onChange={(e) => setValor(e.target.value)} required />
-          </label>
-          <button type="submit" disabled={cargando}><Icono nombre="buscar" /> Buscar</button>
-        </div>
-      </form>
-
-      {error && <Aviso>{error}</Aviso>}
-      {sinResultado && <Aviso tipo="advertencia">{sinResultado}</Aviso>}
-      {libro && <FichaLibro libro={libro} />}
+      <div className="pila">
+        <BuscadorClave
+          etiqueta={criterio === "isbn" ? "ISBN" : "Título"}
+          placeholder={criterio === "isbn" ? "978-0307474728" : "Cien años de soledad"}
+          cargando={cargando}
+          alBuscar={buscar}
+          antes={<Segmentado etiqueta="Buscar por" nombre="criterio" valor={criterio} opciones={CRITERIOS} alCambiar={setCriterio} />}
+        />
+        {error && <Banner titulo="No se pudo consultar">{error}</Banner>}
+        {sinResultado && <SinResultados titulo="Sin resultados">{sinResultado}</SinResultados>}
+        {libro && <FichaLibro libro={libro} />}
+      </div>
     </>
   );
 }

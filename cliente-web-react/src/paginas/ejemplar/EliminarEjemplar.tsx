@@ -1,34 +1,36 @@
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { buscarEjemplarPorCodigo, eliminarEjemplar } from "../../graphql/servicioEjemplar";
 import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { ejemplarObservable } from "../../observer/Observable";
-import { Aviso, Encabezado } from "../../componentes/Basicos";
 import FichaEjemplar from "../../componentes/FichaEjemplar";
-import Icono from "../../componentes/Icono";
+import { useAvisos } from "../../componentes/ui/Avisos";
+import { Banner } from "../../componentes/ui/Banner";
+import { Boton } from "../../componentes/ui/Boton";
+import { BuscadorClave } from "../../componentes/ui/BuscadorClave";
+import { ConfirmarEliminacion } from "../../componentes/ui/ConfirmarEliminacion";
+import { Encabezado } from "../../componentes/ui/Encabezado";
+import { SinResultados } from "../../componentes/ui/SinResultados";
 import { Ejemplar } from "../../types";
 
 /**
- * Caso de uso: Eliminar Ejemplar. Primero se busca y se muestra TODA su información;
- * solo después de confirmar se elimina.
+ * Caso de uso: Eliminar Ejemplar. Primero se busca y se muestra TODA su información; solo se
+ * elimina después de confirmarlo en el diálogo.
  */
 export default function EliminarEjemplar() {
-  const [codigo, setCodigo] = useState("");
   const [ejemplar, setEjemplar] = useState<Ejemplar | null>(null);
+  const [sinResultado, setSinResultado] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [exito, setExito] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
+  const [busqueda, setBusqueda] = useState(0);
+  const avisar = useAvisos();
 
-  async function buscar(e: FormEvent) {
-    e.preventDefault();
-    setError(null); setExito(null); setEjemplar(null);
+  async function buscar(codigo: string) {
+    setError(null); setSinResultado(null); setEjemplar(null);
     setCargando(true);
     try {
       const resultado = await buscarEjemplarPorCodigo(codigo);
-      if (!resultado) {
-        setError(`No se encontró ningún ejemplar con el código "${codigo}".`);
-      } else {
-        setEjemplar(resultado);
-      }
+      if (resultado) setEjemplar(resultado);
+      else setSinResultado(`No hay ningún ejemplar con el código «${codigo}».`);
     } catch (err) {
       setError(mensajeDeError(err));
     } finally {
@@ -36,15 +38,15 @@ export default function EliminarEjemplar() {
     }
   }
 
-  async function confirmarEliminacion() {
+  async function confirmar() {
     if (!ejemplar) return;
     setCargando(true); setError(null);
     try {
       await eliminarEjemplar(ejemplar.codigo);
-      setExito(`Ejemplar "${ejemplar.codigo}" eliminado correctamente.`);
       ejemplarObservable.notificar();
+      avisar({ titulo: "Ejemplar eliminado", descripcion: `${ejemplar.codigo} ya no está en el inventario.` });
       setEjemplar(null);
-      setCodigo("");
+      setBusqueda((n) => n + 1);
     } catch (err) {
       setError(mensajeDeError(err));
     } finally {
@@ -54,33 +56,31 @@ export default function EliminarEjemplar() {
 
   return (
     <>
-      <Encabezado etiqueta="Ejemplar" titulo="Eliminar ejemplar">
-        Busca el ejemplar por su código para revisar toda su información antes de eliminarlo.
-      </Encabezado>
-      {exito && <Aviso tipo="exito">{exito}</Aviso>}
-
-      <form className="tarjeta filtros-fila" role="search" onSubmit={buscar}>
-        <label>Código del ejemplar a eliminar
-          <input value={codigo} onChange={(e) => setCodigo(e.target.value)} required />
-        </label>
-        <button type="submit" disabled={cargando}><Icono nombre="buscar" /> Buscar</button>
-      </form>
-
-      {!ejemplar && error && <Aviso>{error}</Aviso>}
-
-      {ejemplar && (
-        <>
-          <FichaEjemplar ejemplar={ejemplar} />
-          <Aviso tipo="advertencia">¿Seguro que desea eliminar este ejemplar? Esta acción no se puede deshacer.</Aviso>
-          {error && <Aviso>{error}</Aviso>}
-          <div className="acciones">
-            <button type="button" className="peligro" onClick={confirmarEliminacion} disabled={cargando}>
-              <Icono nombre="eliminar" /> Confirmar eliminación
-            </button>
-            <button type="button" className="secundario" onClick={() => setEjemplar(null)}>Cancelar</button>
-          </div>
-        </>
-      )}
+      <Encabezado
+        seccion="Ejemplares"
+        titulo="Eliminar ejemplar"
+        descripcion="Busca la copia por su código y revisa toda su información antes de eliminarla."
+      />
+      <div className="pila">
+        <BuscadorClave key={busqueda} etiqueta="Código del ejemplar" placeholder="EJ-020" cargando={cargando && !ejemplar} alBuscar={buscar} />
+        {error && <Banner titulo={ejemplar ? "El servidor no permitió eliminar el ejemplar" : "No se pudo buscar el ejemplar"}>{error}</Banner>}
+        {sinResultado && <SinResultados titulo="Sin resultados">{sinResultado}</SinResultados>}
+        {ejemplar && (
+          <>
+            <FichaEjemplar ejemplar={ejemplar} titulo="Ejemplar a eliminar" />
+            <div className="acciones">
+              <Boton onClick={() => { setEjemplar(null); setError(null); }}>Cancelar</Boton>
+              <ConfirmarEliminacion
+                textoBoton="Eliminar ejemplar"
+                titulo={`¿Eliminar el ejemplar ${ejemplar.codigo}?`}
+                descripcion="La copia se quitará del inventario. Esta acción no se puede deshacer."
+                cargando={cargando}
+                alConfirmar={confirmar}
+              />
+            </div>
+          </>
+        )}
+      </div>
     </>
   );
 }

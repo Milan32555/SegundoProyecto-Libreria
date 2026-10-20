@@ -1,29 +1,27 @@
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { buscarEjemplarPorCodigo } from "../../graphql/servicioEjemplar";
 import { mensajeDeError } from "../../graphql/clienteGraphQL";
-import { Aviso, Encabezado } from "../../componentes/Basicos";
 import FichaEjemplar from "../../componentes/FichaEjemplar";
-import Icono from "../../componentes/Icono";
+import { Banner } from "../../componentes/ui/Banner";
+import { BuscadorClave } from "../../componentes/ui/BuscadorClave";
+import { Encabezado } from "../../componentes/ui/Encabezado";
+import { SinResultados } from "../../componentes/ui/SinResultados";
 import { Ejemplar } from "../../types";
 
-/** Caso de uso: Buscar/Consultar UN SOLO Ejemplar a partir de su código. */
+/** Caso de uso: Consultar UN SOLO Ejemplar por su código. */
 export default function ConsultarEjemplar() {
-  const [codigo, setCodigo] = useState("");
   const [ejemplar, setEjemplar] = useState<Ejemplar | null>(null);
   const [sinResultado, setSinResultado] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
 
-  async function buscar(e: FormEvent) {
-    e.preventDefault();
+  async function buscar(codigo: string) {
     setError(null); setEjemplar(null); setSinResultado(null);
     setCargando(true);
     try {
       const resultado = await buscarEjemplarPorCodigo(codigo);
       setEjemplar(resultado);
-      if (!resultado) {
-        setSinResultado(`No se encontró ningún ejemplar con el código "${codigo}".`);
-      }
+      if (!resultado) setSinResultado(`No hay ningún ejemplar con el código «${codigo}».`);
     } catch (err) {
       setError(mensajeDeError(err));
     } finally {
@@ -33,20 +31,13 @@ export default function ConsultarEjemplar() {
 
   return (
     <>
-      <Encabezado etiqueta="Ejemplar" titulo="Buscar un ejemplar">
-        Consulta un solo ejemplar por su código.
-      </Encabezado>
-
-      <form className="tarjeta filtros-fila" role="search" onSubmit={buscar}>
-        <label>Código del ejemplar
-          <input value={codigo} onChange={(e) => setCodigo(e.target.value)} required />
-        </label>
-        <button type="submit" disabled={cargando}><Icono nombre="buscar" /> Buscar</button>
-      </form>
-
-      {error && <Aviso>{error}</Aviso>}
-      {sinResultado && <Aviso tipo="advertencia">{sinResultado}</Aviso>}
-      {ejemplar && <FichaEjemplar ejemplar={ejemplar} />}
+      <Encabezado seccion="Ejemplares" titulo="Consultar ejemplar" descripcion="Busca una copia por su código (sin importar mayúsculas)." />
+      <div className="pila">
+        <BuscadorClave etiqueta="Código del ejemplar" placeholder="EJ-001" cargando={cargando} alBuscar={buscar} />
+        {error && <Banner titulo="No se pudo consultar">{error}</Banner>}
+        {sinResultado && <SinResultados titulo="Sin resultados">{sinResultado}</SinResultados>}
+        {ejemplar && <FichaEjemplar ejemplar={ejemplar} />}
+      </div>
     </>
   );
 }

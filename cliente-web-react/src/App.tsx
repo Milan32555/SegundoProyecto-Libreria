@@ -1,4 +1,7 @@
 import { Route, Routes } from "react-router-dom";
+import Estructura from "./componentes/Estructura";
+import { ProveedorAvisos } from "./componentes/ui/Avisos";
+import { ProveedorAyudas } from "./componentes/ui/Ayuda";
 import MenuPrincipal from "./paginas/MenuPrincipal";
 import AcercaDe from "./paginas/AcercaDe";
 
@@ -14,31 +17,31 @@ import EliminarEjemplar from "./paginas/ejemplar/EliminarEjemplar";
 import ListarEjemplares from "./paginas/ejemplar/ListarEjemplares";
 import ConsultarEjemplar from "./paginas/ejemplar/ConsultarEjemplar";
 
-import BarraMenu from "./componentes/BarraMenu";
-
+/** Una ruta (pantalla) por caso de uso. */
 export default function App() {
   return (
-    <>
-      <BarraMenu />
-      <main className="contenedor">
-        <Routes>
-          <Route path="/" element={<MenuPrincipal />} />
+    <ProveedorAyudas delayDuration={300}>
+      <ProveedorAvisos>
+        <Estructura>
+          <Routes>
+            <Route path="/" element={<MenuPrincipal />} />
 
-          <Route path="/libros/agregar" element={<AgregarLibro />} />
-          <Route path="/libros/actualizar" element={<ActualizarLibro />} />
-          <Route path="/libros/eliminar" element={<EliminarLibro />} />
-          <Route path="/libros/listar" element={<ListarLibros />} />
-          <Route path="/libros/consultar" element={<ConsultarLibro />} />
+            <Route path="/libros/listar" element={<ListarLibros />} />
+            <Route path="/libros/consultar" element={<ConsultarLibro />} />
+            <Route path="/libros/agregar" element={<AgregarLibro />} />
+            <Route path="/libros/actualizar" element={<ActualizarLibro />} />
+            <Route path="/libros/eliminar" element={<EliminarLibro />} />
 
-          <Route path="/ejemplares/agregar" element={<AgregarEjemplar />} />
-          <Route path="/ejemplares/actualizar" element={<ActualizarEjemplar />} />
-          <Route path="/ejemplares/eliminar" element={<EliminarEjemplar />} />
-          <Route path="/ejemplares/listar" element={<ListarEjemplares />} />
-          <Route path="/ejemplares/consultar" element={<ConsultarEjemplar />} />
+            <Route path="/ejemplares/listar" element={<ListarEjemplares />} />
+            <Route path="/ejemplares/consultar" element={<ConsultarEjemplar />} />
+            <Route path="/ejemplares/agregar" element={<AgregarEjemplar />} />
+            <Route path="/ejemplares/actualizar" element={<ActualizarEjemplar />} />
+            <Route path="/ejemplares/eliminar" element={<EliminarEjemplar />} />
 
-          <Route path="/acerca-de" element={<AcercaDe />} />
-        </Routes>
-      </main>
-    </>
+            <Route path="/acerca-de" element={<AcercaDe />} />
+          </Routes>
+        </Estructura>
+      </ProveedorAvisos>
+    </ProveedorAyudas>
   );
 }

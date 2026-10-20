@@ -65,7 +65,7 @@ class GraphQlApiTest {
     void consultaUnLibroPorTitulo() {
         graphQlTester.document("{ libroPorTitulo(titulo: \"la voragine\") { isbn } }")
                 .execute()
-                .path("libroPorTitulo.isbn").entity(String.class).isEqualTo("978-8420471839");
+                .path("libroPorTitulo.isbn").entity(String.class).isEqualTo("978-8437609355");
     }
 
     @Test

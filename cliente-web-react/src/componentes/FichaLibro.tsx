@@ -1,26 +1,40 @@
+import { ReactNode } from "react";
 import { formatearFecha, formatearPrecio } from "../formato";
-import { Libro, etiquetaGenero } from "../types";
-import { Pastilla } from "./Basicos";
+import { Libro } from "../types";
+import { InsigniaGenero } from "./ui/Insignias";
 
-/** Muestra TODA la información de un Libro (se usa al consultar y antes de eliminar). */
-export default function FichaLibro({ libro }: { libro: Libro }) {
+/**
+ * Muestra TODA la información de un Libro: título y autor en la cabecera y el resto de
+ * atributos debajo (la fecha con hora). Se usa al consultar, antes de eliminar y antes de editar.
+ */
+export default function FichaLibro({ libro, titulo = "Libro" }: { libro: Libro; titulo?: string }) {
   return (
-    <article className="ficha" aria-label={`Libro ${libro.titulo}`}>
-      <div className="ficha-cabecera">
-        <span className="etiqueta etiqueta-acento">Libro</span>
-        <Pastilla>{etiquetaGenero(libro.genero)}</Pastilla>
-      </div>
-      <h2 className="ficha-titulo">{libro.titulo}</h2>
-      <p className="ficha-subtitulo">por {libro.autor}</p>
-      <p className="ficha-precio">{formatearPrecio(libro.precio)}</p>
-      <span className="leyenda">Precio de venta</span>
+    <article className="panel" aria-label={`Libro ${libro.titulo}`}>
+      <header className="ficha-cabecera">
+        <div>
+          <p className="ficha-tipo">{titulo}</p>
+          <h2 className="ficha-titulo titulo-libro">{libro.titulo}</h2>
+          <p className="ficha-subtitulo">{libro.autor}</p>
+        </div>
+      </header>
       <dl className="ficha-datos">
-        <div><dt className="etiqueta">ISBN</dt><dd>{libro.isbn}</dd></div>
-        <div><dt className="etiqueta">Autor</dt><dd>{libro.autor}</dd></div>
-        <div><dt className="etiqueta">Páginas</dt><dd>{libro.numeroPaginas}</dd></div>
-        <div><dt className="etiqueta">Publicación</dt><dd>{formatearFecha(libro.fechaPublicacion)}</dd></div>
-        <div><dt className="etiqueta">Género</dt><dd>{etiquetaGenero(libro.genero)}</dd></div>
+        <Dato termino="ISBN" valor={libro.isbn} />
+        <Dato termino="Autor" valor={libro.autor} />
+        <Dato termino="Género" valor={<InsigniaGenero genero={libro.genero} />} />
+        <Dato termino="Precio de venta" valor={formatearPrecio(libro.precio)} />
+        <Dato termino="Número de páginas" valor={libro.numeroPaginas} />
+        <Dato termino="Fecha de publicación" valor={formatearFecha(libro.fechaPublicacion)} />
       </dl>
     </article>
+  );
+}
+
+export function Dato({ termino, valor, nota }: { termino: string; valor: ReactNode; nota?: ReactNode }) {
+  return (
+    <div>
+      <dt>{termino}</dt>
+      <dd>{valor}</dd>
+      {nota && <dd className="ficha-nota">{nota}</dd>}
+    </div>
   );
 }

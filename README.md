@@ -153,8 +153,9 @@ cd servidor/ServidorLibreria
 ./mvnw spring-boot:run          # Windows: mvnw.cmd spring-boot:run
 ```
 GraphQL en `http://localhost:8081/graphql` · consola GraphiQL en `http://localhost:8081/graphiql`.
-Arranca con datos de prueba: 3 libros (ISBN `978-0307474728`, `978-8420471839`,
-`978-9584276193`) y 3 ejemplares (`EJ-001`, `EJ-002`, `EJ-003`).
+Arranca con datos de prueba: 12 libros de literatura colombiana y latinoamericana con ISBN de
+ediciones reales (por ejemplo `978-0307474728`, *Cien años de soledad*) y 20 ejemplares
+(`EJ-001` a `EJ-020`) en los cuatro estados. *Delirio* (`978-8420401751`) no tiene ejemplares.
 
 La ventana del servidor muestra una línea por cada operación, con la hora y el cliente que la
 hizo (cada cliente envía el encabezado `X-Cliente: web` o `X-Cliente: movil`):

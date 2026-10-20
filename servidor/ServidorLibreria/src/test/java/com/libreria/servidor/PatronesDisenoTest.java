@@ -31,7 +31,7 @@ class PatronesDisenoTest {
     @Test
     void singletonCargaLosDatosDePrueba() {
         assertThat(RepositorioLibros.getInstancia().listar())
-                .extracting(Libro::getIsbn).contains("978-0307474728", "978-8420471839", "978-9584276193");
+                .extracting(Libro::getIsbn).contains("978-0307474728", "978-8437609355", "978-8420401751");
         assertThat(RepositorioEjemplares.getInstancia().listar())
                 .extracting(Ejemplar::getCodigo).contains("EJ-001", "EJ-002", "EJ-003");
     }

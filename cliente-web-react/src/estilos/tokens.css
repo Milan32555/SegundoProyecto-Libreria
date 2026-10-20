@@ -1,0 +1,80 @@
+/*
+ * Sistema de diseño de Librería: tokens.
+ *
+ * Los mismos valores están en la app móvil (cliente-movil-flutter/lib/tema/tokens.dart):
+ * si se cambia uno aquí, se cambia también allá. El contraste AA de cada par texto/fondo se
+ * comprueba con scripts/verificar-contraste.py.
+ *
+ * Reglas de uso:
+ *  - Neutros para casi todo; la marca solo en acciones primarias, navegación activa y foco.
+ *  - Los estados de un ejemplar se distinguen por la forma (insignia con punto + texto) y no
+ *    solo por el color.
+ *  - Espaciado en múltiplos de 4 px; radios pequeños; bordes de 1 px en lugar de sombras.
+ */
+:root {
+  /* ── Neutros (escala cálida) ─────────────────────────────────────────────── */
+  --gris-0: #ffffff;   /* superficie: paneles, tablas, campos */
+  --gris-25: #fafaf9;  /* fondo de la página */
+  --gris-50: #f5f5f4;  /* fondo sutil: menú lateral, encabezado de tabla */
+  --gris-100: #e7e5e4; /* bordes de paneles y divisores */
+  --gris-200: #d6d3d1; /* bordes de botones secundarios */
+  --gris-400: #8f8882; /* borde de campos (3,5:1) */
+  --gris-500: #78716c; /* texto terciario (4,8:1) */
+  --gris-600: #57534e; /* texto secundario (7,6:1) */
+  --gris-800: #292524;
+  --gris-900: #1c1917; /* texto principal (17,5:1) */
+
+  /* ── Marca: verde bosque ─────────────────────────────────────────────────── */
+  --marca-50: #edf5f1;
+  --marca-100: #d3e7dd;
+  --marca-600: #1f5c4a; /* botón primario, navegación activa, foco (7,8:1) */
+  --marca-700: #174a3b; /* botón primario al pasar el cursor */
+
+  /* ── Semánticos (fondo · punto · texto) ──────────────────────────────────── */
+  --exito-fondo: #e8f5ec;  --exito-punto: #1a7f37;  --exito-texto: #116329;  /* Disponible */
+  --info-fondo: #e9f1fb;   --info-punto: #2f6fbf;   --info-texto: #1d4e89;   /* Prestado */
+  --aviso-fondo: #fdf1dc;  --aviso-punto: #b86e00;  --aviso-texto: #7a4300;  /* Dañado */
+  --neutro-fondo: #efedeb; --neutro-punto: #78716c; --neutro-texto: #4a4541; /* Dado de baja */
+  --peligro-fondo: #fdedec;
+  --peligro-borde: #f3c4c0;
+  --peligro-texto: #9b1c1c;
+  --peligro-600: #b42318;
+  --peligro-700: #912018;
+
+  /* ── Tipografía ──────────────────────────────────────────────────────────── */
+  --fuente-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fuente-libro: "Literata", Georgia, "Times New Roman", serif; /* títulos de libros y logotipo */
+
+  --texto-12: 0.75rem;   /* 12/16 leyendas, encabezados de tabla */
+  --texto-13: 0.8125rem; /* 13/18 etiquetas de campo, navegación secundaria */
+  --texto-14: 0.875rem;  /* 14/20 texto base */
+  --texto-16: 1rem;      /* 16/24 títulos de panel */
+  --texto-20: 1.25rem;   /* 20/28 títulos de sección */
+  --texto-24: 1.5rem;    /* 24/32 título de página */
+  --texto-30: 1.875rem;  /* 30/38 cifras del inicio */
+
+  /* ── Espaciado (múltiplos de 4) ──────────────────────────────────────────── */
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 16px;
+  --esp-6: 24px;
+  --esp-8: 32px;
+  --esp-12: 48px;
+
+  /* ── Radios ──────────────────────────────────────────────────────────────── */
+  --radio-control: 6px;  /* botones, campos */
+  --radio-panel: 8px;    /* paneles, tablas, menús */
+  --radio-dialogo: 12px; /* diálogos */
+  --radio-pastilla: 999px;
+
+  /* ── Elevación (solo dos niveles) ────────────────────────────────────────── */
+  --elevacion-1: 0 1px 2px rgb(28 25 23 / 0.06), 0 1px 1px rgb(28 25 23 / 0.04); /* menús, segmento activo */
+  --elevacion-2: 0 12px 32px rgb(28 25 23 / 0.16), 0 2px 6px rgb(28 25 23 / 0.08); /* diálogos, avisos */
+
+  /* ── Medidas ─────────────────────────────────────────────────────────────── */
+  --ancho-menu: 248px;
+  --alto-control: 36px;
+  --ancho-contenido: 1120px;
+  --duracion: 120ms;
+}

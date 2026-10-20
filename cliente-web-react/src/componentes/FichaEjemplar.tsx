@@ -1,25 +1,36 @@
+import { Lock } from "lucide-react";
 import { formatearFecha, formatearPrecio } from "../formato";
-import { Ejemplar, etiquetaEstado } from "../types";
-import { Pastilla, colorEstado } from "./Basicos";
+import { Ejemplar } from "../types";
+import { Dato } from "./FichaLibro";
+import { InsigniaEstado } from "./ui/Insignias";
 
-/** Muestra TODA la información de un Ejemplar (se usa al consultar y antes de eliminar). */
-export default function FichaEjemplar({ ejemplar }: { ejemplar: Ejemplar }) {
-  const color = colorEstado(ejemplar.estado);
+/**
+ * Muestra TODA la información de un Ejemplar (la fecha de ingreso con hora). Se usa al
+ * consultar, antes de eliminar y antes de editar.
+ */
+export default function FichaEjemplar({ ejemplar, titulo = "Ejemplar" }: { ejemplar: Ejemplar; titulo?: string }) {
   return (
-    <article className="ficha" aria-label={`Ejemplar ${ejemplar.codigo}`}>
-      <div className="ficha-cabecera">
-        <span className="etiqueta etiqueta-acento">Ejemplar</span>
-        <Pastilla color={color}>{etiquetaEstado(ejemplar.estado)}</Pastilla>
-      </div>
-      <h2 className="ficha-titulo">{ejemplar.codigo}</h2>
-      <p className="ficha-subtitulo">Ubicación: {ejemplar.ubicacion}</p>
-      <p className="ficha-precio">{formatearPrecio(ejemplar.precioReposicion)}</p>
-      <span className="leyenda">Precio de reposición</span>
+    <article className="panel" aria-label={`Ejemplar ${ejemplar.codigo}`}>
+      <header className="ficha-cabecera">
+        <div>
+          <p className="ficha-tipo">{titulo}</p>
+          <h2 className="ficha-titulo">{ejemplar.codigo}</h2>
+          <p className="ficha-subtitulo">Libro {ejemplar.isbnLibro}</p>
+        </div>
+        <InsigniaEstado estado={ejemplar.estado} />
+      </header>
       <dl className="ficha-datos">
-        <div><dt className="etiqueta">Estado</dt><dd>{etiquetaEstado(ejemplar.estado)}</dd></div>
-        <div><dt className="etiqueta">Ingreso</dt><dd>{formatearFecha(ejemplar.fechaIngreso)}</dd></div>
-        <div><dt className="etiqueta">Préstamos</dt><dd>{ejemplar.numeroPrestamos}</dd></div>
-        <div><dt className="etiqueta">Libro (ISBN)</dt><dd>{ejemplar.isbnLibro}</dd></div>
+        <Dato termino="Código" valor={ejemplar.codigo} />
+        <Dato termino="Estado" valor={<InsigniaEstado estado={ejemplar.estado} />} />
+        <Dato termino="Libro (ISBN)" valor={ejemplar.isbnLibro} />
+        <Dato termino="Ubicación" valor={ejemplar.ubicacion} />
+        <Dato termino="Fecha de ingreso" valor={formatearFecha(ejemplar.fechaIngreso)} />
+        <Dato termino="Precio de reposición" valor={formatearPrecio(ejemplar.precioReposicion)} />
+        <Dato
+          termino="Número de préstamos"
+          valor={ejemplar.numeroPrestamos}
+          nota={<><Lock size={12} aria-hidden="true" /> Lo calcula el servidor</>}
+        />
       </dl>
     </article>
   );

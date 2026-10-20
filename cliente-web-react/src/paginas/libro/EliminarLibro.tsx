@@ -1,34 +1,37 @@
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { buscarLibroPorIsbn, eliminarLibro } from "../../graphql/servicioLibro";
 import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { libroObservable } from "../../observer/Observable";
-import { Aviso, Encabezado } from "../../componentes/Basicos";
 import FichaLibro from "../../componentes/FichaLibro";
-import Icono from "../../componentes/Icono";
+import { useAvisos } from "../../componentes/ui/Avisos";
+import { Banner } from "../../componentes/ui/Banner";
+import { Boton } from "../../componentes/ui/Boton";
+import { BuscadorClave } from "../../componentes/ui/BuscadorClave";
+import { ConfirmarEliminacion } from "../../componentes/ui/ConfirmarEliminacion";
+import { Encabezado } from "../../componentes/ui/Encabezado";
+import { SinResultados } from "../../componentes/ui/SinResultados";
 import { Libro } from "../../types";
 
 /**
- * Caso de uso: Eliminar Libro. Primero se busca el objeto y se muestra TODA su información;
- * solo después de confirmar se ejecuta la eliminación (como exige el enunciado).
+ * Caso de uso: Eliminar Libro. Primero se busca y se muestra TODA su información; la
+ * eliminación solo ocurre después de confirmarla en el diálogo. Si el libro tiene ejemplares,
+ * el servidor la rechaza y aquí se muestra el motivo.
  */
 export default function EliminarLibro() {
-  const [isbn, setIsbn] = useState("");
   const [libro, setLibro] = useState<Libro | null>(null);
+  const [sinResultado, setSinResultado] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [exito, setExito] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
+  const [busqueda, setBusqueda] = useState(0);
+  const avisar = useAvisos();
 
-  async function buscar(e: FormEvent) {
-    e.preventDefault();
-    setError(null); setExito(null); setLibro(null);
+  async function buscar(isbn: string) {
+    setError(null); setSinResultado(null); setLibro(null);
     setCargando(true);
     try {
       const resultado = await buscarLibroPorIsbn(isbn);
-      if (!resultado) {
-        setError(`No se encontró ningún libro con el ISBN "${isbn}".`);
-      } else {
-        setLibro(resultado);
-      }
+      if (resultado) setLibro(resultado);
+      else setSinResultado(`No hay ningún libro con el ISBN «${isbn}».`);
     } catch (err) {
       setError(mensajeDeError(err));
     } finally {
@@ -36,16 +39,15 @@ export default function EliminarLibro() {
     }
   }
 
-  async function confirmarEliminacion() {
+  async function confirmar() {
     if (!libro) return;
-    setCargando(true);
-    setError(null);
+    setCargando(true); setError(null);
     try {
       await eliminarLibro(libro.isbn);
-      setExito(`Libro "${libro.titulo}" (ISBN ${libro.isbn}) eliminado correctamente.`);
       libroObservable.notificar();
+      avisar({ titulo: "Libro eliminado", descripcion: `«${libro.titulo}» (ISBN ${libro.isbn}) ya no está en el inventario.` });
       setLibro(null);
-      setIsbn("");
+      setBusqueda((n) => n + 1); // limpia el buscador
     } catch (err) {
       setError(mensajeDeError(err));
     } finally {
@@ -55,33 +57,32 @@ export default function EliminarLibro() {
 
   return (
     <>
-      <Encabezado etiqueta="Libro" titulo="Eliminar libro">
-        Busca el libro por su ISBN para revisar toda su información antes de eliminarlo.
-      </Encabezado>
-      {exito && <Aviso tipo="exito">{exito}</Aviso>}
+      <Encabezado
+        seccion="Libros"
+        titulo="Eliminar libro"
+        descripcion="Busca el libro por su ISBN y revisa toda su información antes de eliminarlo."
+      />
 
-      <form className="tarjeta filtros-fila" role="search" onSubmit={buscar}>
-        <label>ISBN del libro a eliminar
-          <input value={isbn} onChange={(e) => setIsbn(e.target.value)} required />
-        </label>
-        <button type="submit" disabled={cargando}><Icono nombre="buscar" /> Buscar</button>
-      </form>
-
-      {!libro && error && <Aviso>{error}</Aviso>}
-
-      {libro && (
-        <>
-          <FichaLibro libro={libro} />
-          <Aviso tipo="advertencia">¿Seguro que desea eliminar este libro? Esta acción no se puede deshacer.</Aviso>
-          {error && <Aviso>{error}</Aviso>}
-          <div className="acciones">
-            <button type="button" className="peligro" onClick={confirmarEliminacion} disabled={cargando}>
-              <Icono nombre="eliminar" /> Confirmar eliminación
-            </button>
-            <button type="button" className="secundario" onClick={() => setLibro(null)}>Cancelar</button>
-          </div>
-        </>
-      )}
+      <div className="pila">
+        <BuscadorClave key={busqueda} etiqueta="ISBN del libro" placeholder="978-8420401751" cargando={cargando && !libro} alBuscar={buscar} />
+        {error && <Banner titulo={libro ? "El servidor no permitió eliminar el libro" : "No se pudo buscar el libro"}>{error}</Banner>}
+        {sinResultado && <SinResultados titulo="Sin resultados">{sinResultado}</SinResultados>}
+        {libro && (
+          <>
+            <FichaLibro libro={libro} titulo="Libro a eliminar" />
+            <div className="acciones">
+              <Boton onClick={() => { setLibro(null); setError(null); }}>Cancelar</Boton>
+              <ConfirmarEliminacion
+                textoBoton="Eliminar libro"
+                titulo={`¿Eliminar «${libro.titulo}»?`}
+                descripcion={`Se eliminará el libro con ISBN ${libro.isbn}. Esta acción no se puede deshacer.`}
+                cargando={cargando}
+                alConfirmar={confirmar}
+              />
+            </div>
+          </>
+        )}
+      </div>
     </>
   );
 }

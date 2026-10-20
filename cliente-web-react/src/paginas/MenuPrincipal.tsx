@@ -1,17 +1,17 @@
-import { CSSProperties, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import { List, LucideIcon, Pencil, Plus, RotateCw, Search, Trash2 } from "lucide-react";
 import { consultarResumenInventario } from "../graphql/servicioResumen";
 import { mensajeDeError } from "../graphql/clienteGraphQL";
 import { ejemplarObservable, libroObservable } from "../observer/Observable";
 import { useListadoObservado } from "../observer/useListadoObservado";
-import { Aviso, IconoAcento, TituloSeccion, colorEstado } from "../componentes/Basicos";
-import Estanteria from "../componentes/Estanteria";
-import Icono, { NombreIcono } from "../componentes/Icono";
-import { useContador } from "../componentes/useContador";
-import { formatearFechaLarga, saludo } from "../formato";
+import { Banner } from "../componentes/ui/Banner";
+import { Boton } from "../componentes/ui/Boton";
+import { Encabezado } from "../componentes/ui/Encabezado";
+import { COLOR_ESTADO, InsigniaEstado } from "../componentes/ui/Insignias";
+import { formatearFechaLarga } from "../formato";
 import { ConteoEstado, ESTADOS_EJEMPLAR, EstadoEjemplar, ResumenInventario } from "../types";
 
-/** Nombre de cada estado en la leyenda (en plural). */
 const NOMBRE_ESTADO: Record<EstadoEjemplar, string> = {
   DISPONIBLE: "Disponibles",
   PRESTADO: "Prestados",
@@ -19,16 +19,15 @@ const NOMBRE_ESTADO: Record<EstadoEjemplar, string> = {
   DADO_DE_BAJA: "Dados de baja"
 };
 
-/** Retraso de la animación de entrada de cada bloque (aparecen uno tras otro). */
-const retraso = (ms: number) => ({ "--retraso": `${ms}ms` }) as CSSProperties;
+const formatoPorcentaje = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 });
 
 /**
- * Ventana principal: encabezado con el resumen del inventario (se actualiza solo, patrón
- * Observer), estado de los ejemplares y accesos a cada caso de uso. El menú superior tiene
- * las mismas opciones y "Ayuda".
+ * Ventana principal: el resumen del inventario y accesos a cada caso de uso (el menú lateral
+ * tiene las mismas opciones y "Ayuda").
  *
- * Los totales y la distribución por estado los calcula el servidor (query resumenInventario):
- * esta pantalla no cuenta nada, solo muestra lo que recibe.
+ * Todas las cifras las calcula el servidor (query resumenInventario): esta pantalla no cuenta
+ * nada, solo muestra lo que recibe. Se suscribe a los dos sujetos del Observer, así que se
+ * actualiza sola cuando cambian los libros o los ejemplares.
  */
 export default function MenuPrincipal() {
   const [resumen, setResumen] = useState<ResumenInventario | null>(null);
@@ -46,111 +45,110 @@ export default function MenuPrincipal() {
   useListadoObservado(libroObservable, cargar);
   useListadoObservado(ejemplarObservable, cargar, { cargarAlInicio: false });
 
-  const ahora = new Date();
+  const cantidad = (estado: EstadoEjemplar) =>
+    resumen?.ejemplaresPorEstado.find((c) => c.estado === estado)?.cantidad ?? null;
 
   return (
     <>
-      <section className="inicio-hero" aria-label="Inventario">
-        <div className="inicio-hero-contenido">
-          <div>
-            <span className="inicio-fecha aparecer" style={retraso(0)}>{formatearFechaLarga(ahora)}</span>
-            <h1 className="inicio-saludo aparecer" style={retraso(60)}>{saludo(ahora)}.</h1>
-            <p className="inicio-subtitulo aparecer" style={retraso(120)}>Así está tu inventario hoy.</p>
-          </div>
-          <div className="inicio-cifras aparecer" style={retraso(220)}>
-            <Cifra valor={resumen?.totalLibros ?? null} leyenda="Títulos" />
-            <Cifra valor={resumen?.totalEjemplares ?? null} leyenda="Ejemplares" />
-          </div>
-        </div>
-        <Estanteria />
+      <Encabezado titulo="Inicio" descripcion={formatearFechaLarga(new Date())} />
+
+      {error && (
+        <Banner
+          titulo="No se pudo cargar el resumen del inventario"
+          className="espacio-abajo"
+          accion={<Boton icono={RotateCw} onClick={() => void cargar()}>Reintentar</Boton>}
+        >
+          {error}
+        </Banner>
+      )}
+
+      <section aria-label="Inventario" className="cifras">
+        <Cifra etiqueta="Títulos" valor={resumen?.totalLibros ?? null} detalle="Libros distintos en el catálogo" />
+        <Cifra etiqueta="Ejemplares" valor={resumen?.totalEjemplares ?? null} detalle="Copias físicas registradas" />
+        <Cifra etiqueta="Disponibles" valor={cantidad("DISPONIBLE")} detalle="Listas para prestar o vender" />
+        <Cifra etiqueta="Prestados" valor={cantidad("PRESTADO")} detalle="Fuera de la librería" />
       </section>
 
-      <div className="aparecer" style={retraso(420)}>
-        {error ? <Aviso>{error}</Aviso> : <TarjetaEstados conteos={resumen?.ejemplaresPorEstado ?? null} />}
-      </div>
-
-      <div className="aparecer" style={retraso(560)}>
-        <GrupoAcciones titulo="Libros" icono="libro" base="/libros" objeto="libros" />
-      </div>
-      <div className="aparecer" style={retraso(700)}>
-        <GrupoAcciones titulo="Ejemplares" icono="inventario" base="/ejemplares" objeto="ejemplares" />
+      <div className="inicio-rejilla">
+        <EstadoEjemplares conteos={resumen?.ejemplaresPorEstado ?? null} total={resumen?.totalEjemplares ?? null} />
+        <section className="panel" aria-labelledby="titulo-accesos">
+          <header className="panel-cabecera">
+            <h2 className="panel-titulo" id="titulo-accesos">Accesos directos</h2>
+          </header>
+          <div className="panel-cuerpo accesos">
+            <Accesos titulo="Libros" base="/libros" />
+            <Accesos titulo="Ejemplares" base="/ejemplares" />
+          </div>
+        </section>
       </div>
     </>
   );
 }
 
-/** Cifra grande que cuenta desde su valor anterior hasta el nuevo. */
-function Cifra({ valor, leyenda }: { valor: number | null; leyenda: string }) {
-  const mostrado = useContador(valor);
+function Cifra({ etiqueta, valor, detalle }: { etiqueta: string; valor: number | null; detalle: string }) {
   return (
-    <div className="cifra">
-      <strong>{mostrado ?? "—"}</strong>
-      <span>{leyenda}</span>
+    <div className="panel cifra-panel">
+      <p className="cifra-etiqueta">{etiqueta}</p>
+      <strong className="cifra">{valor ?? "—"}</strong>
+      <p className="cifra-detalle">{detalle}</p>
     </div>
   );
 }
 
-type FilaEstado = Omit<ConteoEstado, "cantidad"> & { cantidad: number | null };
-
-/** Mientras llega la respuesta del servidor: los cuatro estados, sin cifras. */
-const ESTADOS_CARGANDO: FilaEstado[] = ESTADOS_EJEMPLAR.map((estado) => ({ estado, cantidad: null, porcentaje: 0 }));
-
-/**
- * Distribución de los ejemplares por estado: barra proporcional + leyenda.
- * Cantidad y porcentaje de cada estado vienen calculados del servidor.
- */
-function TarjetaEstados({ conteos }: { conteos: ConteoEstado[] | null }) {
-  const filas: FilaEstado[] = conteos ?? ESTADOS_CARGANDO;
+/** Distribución de los ejemplares por estado; cantidades y porcentajes vienen del servidor. */
+function EstadoEjemplares({ conteos, total }: { conteos: ConteoEstado[] | null; total: number | null }) {
+  const filas = ESTADOS_EJEMPLAR.map(
+    (estado) => conteos?.find((c) => c.estado === estado) ?? { estado, cantidad: null, porcentaje: null }
+  );
   return (
-    <section className="tarjeta estados" aria-label="Estado de los ejemplares">
-      <h2 className="estados-titulo">Estado de los ejemplares</h2>
-      <p className="leyenda">{conteos ? "Copias físicas registradas en el inventario" : "Cargando…"}</p>
-      <div className="estados-barra">
-        {filas.map(({ estado, porcentaje }) => (
-          <span key={estado} style={{ width: `${porcentaje}%`, background: colorEstado(estado) }} />
-        ))}
+    <section className="panel" aria-label="Estado de los ejemplares">
+      <header className="panel-cabecera">
+        <h2 className="panel-titulo">Estado de los ejemplares</h2>
+        <span className="panel-subtitulo">{total === null ? "Cargando…" : `${total} copias · calculado por el servidor`}</span>
+      </header>
+      <div className="panel-cuerpo">
+        <div className="barra-estados" aria-hidden="true">
+          {filas.map(({ estado, porcentaje }) => (
+            <span key={estado} style={{ width: `${porcentaje ?? 0}%`, background: COLOR_ESTADO[estado] }} />
+          ))}
+        </div>
+        <ul className="leyenda-estados">
+          {filas.map(({ estado, cantidad, porcentaje }) => (
+            <li key={estado}>
+              <InsigniaEstado estado={estado} texto={NOMBRE_ESTADO[estado]} />
+              <span className="numero">{cantidad ?? "—"}</span>
+              <span className="numero porcentaje">{porcentaje === null ? "" : `${formatoPorcentaje.format(porcentaje)} %`}</span>
+            </li>
+          ))}
+        </ul>
       </div>
-      <ul className="estados-leyenda">
-        {filas.map(({ estado, cantidad }) => (
-          <li key={estado}>
-            <span className="punto" style={{ background: colorEstado(estado) }} />
-            <span>{NOMBRE_ESTADO[estado]}</span>
-            <strong>{cantidad ?? "—"}</strong>
+    </section>
+  );
+}
+
+const ACCESOS: { ruta: string; texto: string; icono: LucideIcon }[] = [
+  { ruta: "listar", texto: "Listar", icono: List },
+  { ruta: "consultar", texto: "Consultar", icono: Search },
+  { ruta: "agregar", texto: "Adicionar", icono: Plus },
+  { ruta: "actualizar", texto: "Actualizar", icono: Pencil },
+  { ruta: "eliminar", texto: "Eliminar", icono: Trash2 }
+];
+
+function Accesos({ titulo, base }: { titulo: string; base: string }) {
+  const singular = titulo === "Libros" ? "libro" : "ejemplar";
+  return (
+    <div>
+      <h3>{titulo}</h3>
+      <ul>
+        {ACCESOS.map(({ ruta, texto, icono: Icono }) => (
+          <li key={ruta}>
+            <Link className="acceso" to={`${base}/${ruta}`}>
+              <Icono size={16} aria-hidden="true" />
+              {ruta === "listar" ? `${texto} ${titulo.toLowerCase()}` : `${texto} ${singular}`}
+            </Link>
           </li>
         ))}
       </ul>
-    </section>
-  );
-}
-
-function GrupoAcciones({ titulo, icono, base, objeto }: {
-  titulo: string; icono: NombreIcono; base: string; objeto: string;
-}) {
-  return (
-    <section className="seccion">
-      <TituloSeccion icono={icono} titulo={titulo} />
-      <div className="acciones-grilla">
-        <Accion destacada ruta={`${base}/listar`} icono="lista" titulo="Listar" detalle={`Ver todos los ${objeto} y filtrar`} />
-        <Accion ruta={`${base}/agregar`} icono="agregar" titulo="Adicionar" detalle="Registrar nuevo" />
-        <Accion ruta={`${base}/consultar`} icono="buscar" titulo="Buscar" detalle="Consultar uno" />
-        <Accion ruta={`${base}/actualizar`} icono="editar" titulo="Actualizar" detalle="Modificar datos" />
-        <Accion ruta={`${base}/eliminar`} icono="eliminar" titulo="Eliminar" detalle="Quitar del sistema" color="var(--rojo)" />
-      </div>
-    </section>
-  );
-}
-
-function Accion({ ruta, icono, titulo, detalle, color, destacada = false }: {
-  ruta: string; icono: NombreIcono; titulo: string; detalle: string; color?: string; destacada?: boolean;
-}) {
-  return (
-    <Link to={ruta} className={destacada ? "accion accion-destacada" : "accion"}>
-      <IconoAcento nombre={icono} color={destacada ? "var(--crema)" : color} />
-      <span>
-        <strong>{titulo}</strong>
-        <small>{detalle}</small>
-      </span>
-      {destacada && <span className="flecha"><Icono nombre="flecha" /></span>}
-    </Link>
+    </div>
   );
 }

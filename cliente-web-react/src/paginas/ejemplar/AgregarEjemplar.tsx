@@ -1,41 +1,69 @@
 import { FormEvent, useState } from "react";
+import { Check } from "lucide-react";
 import { crearEjemplar } from "../../graphql/servicioEjemplar";
 import { mensajeDeError } from "../../graphql/clienteGraphQL";
 import { ejemplarObservable } from "../../observer/Observable";
-import { Aviso, Encabezado, SelectorChips } from "../../componentes/Basicos";
-import Icono from "../../componentes/Icono";
-import { ESTADOS_EJEMPLAR, EstadoEjemplar, etiquetaEstado } from "../../types";
+import { OPCIONES_ESTADO } from "../../componentes/opciones";
+import { useAvisos } from "../../componentes/ui/Avisos";
+import { Banner } from "../../componentes/ui/Banner";
+import { Boton } from "../../componentes/ui/Boton";
+import { Campo } from "../../componentes/ui/Campo";
+import { Encabezado } from "../../componentes/ui/Encabezado";
+import { Selector } from "../../componentes/ui/Selector";
+import { EstadoEjemplar } from "../../types";
+import {
+  Errores, hayErrores, validar, validarDecimalPositivo, validarEnteroNoNegativo, validarFecha, validarObligatorio
+} from "../../validaciones";
 
-/** Caso de uso: Adicionar Ejemplar a un Libro existente. */
+type CampoEjemplar = "codigo" | "isbnLibro" | "ubicacion" | "fechaIngreso" | "precioReposicion" | "numeroPrestamos";
+
+const VACIO = { codigo: "", isbnLibro: "", ubicacion: "", fechaIngreso: "", precioReposicion: "", numeroPrestamos: "0" };
+
+/** Caso de uso: Adicionar Ejemplar (una copia física de un libro que ya existe). */
 export default function AgregarEjemplar() {
-  const [codigo, setCodigo] = useState("");
+  const [datos, setDatos] = useState(VACIO);
   const [estado, setEstado] = useState<EstadoEjemplar>("DISPONIBLE");
-  const [ubicacion, setUbicacion] = useState("");
-  const [fechaIngreso, setFechaIngreso] = useState("");
-  const [precioReposicion, setPrecioReposicion] = useState("");
-  const [numeroPrestamos, setNumeroPrestamos] = useState("0");
-  const [isbnLibro, setIsbnLibro] = useState("");
-
-  const [error, setError] = useState<string | null>(null);
-  const [exito, setExito] = useState<string | null>(null);
+  const [errores, setErrores] = useState<Errores<CampoEjemplar>>({});
+  const [errorServidor, setErrorServidor] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const avisar = useAvisos();
+
+  const cambiar = (campo: CampoEjemplar) => (e: { target: { value: string } }) => {
+    setDatos((d) => ({ ...d, [campo]: e.target.value }));
+    if (errores[campo]) setErrores((err) => ({ ...err, [campo]: undefined }));
+  };
 
   async function manejarEnvio(e: FormEvent) {
     e.preventDefault();
-    setError(null); setExito(null); setEnviando(true);
+    setErrorServidor(null);
+    const encontrados = validar<CampoEjemplar>({
+      codigo: validarObligatorio(datos.codigo),
+      isbnLibro: validarObligatorio(datos.isbnLibro),
+      ubicacion: validarObligatorio(datos.ubicacion),
+      fechaIngreso: validarFecha(datos.fechaIngreso),
+      precioReposicion: validarDecimalPositivo(datos.precioReposicion),
+      numeroPrestamos: validarEnteroNoNegativo(datos.numeroPrestamos)
+    });
+    setErrores(encontrados);
+    if (hayErrores(encontrados)) return;
+
+    setEnviando(true);
     try {
       const ejemplar = await crearEjemplar({
-        codigo, estado, ubicacion, fechaIngreso,
-        precioReposicion: Number(precioReposicion),
-        numeroPrestamos: Number(numeroPrestamos),
-        isbnLibro
+        codigo: datos.codigo.trim(),
+        estado,
+        ubicacion: datos.ubicacion.trim(),
+        fechaIngreso: datos.fechaIngreso,
+        precioReposicion: Number(datos.precioReposicion),
+        numeroPrestamos: Number(datos.numeroPrestamos),
+        isbnLibro: datos.isbnLibro.trim()
       });
-      setExito(`Ejemplar "${ejemplar.codigo}" creado correctamente.`);
       ejemplarObservable.notificar();
-      setCodigo(""); setUbicacion(""); setFechaIngreso("");
-      setPrecioReposicion(""); setNumeroPrestamos("0"); setIsbnLibro("");
+      avisar({ titulo: "Ejemplar adicionado", descripcion: `${ejemplar.codigo} quedó registrado para el libro ${ejemplar.isbnLibro}.` });
+      setDatos(VACIO);
+      setEstado("DISPONIBLE");
     } catch (err) {
-      setError(mensajeDeError(err));
+      setErrorServidor(mensajeDeError(err));
     } finally {
       setEnviando(false);
     }
@@ -43,42 +71,53 @@ export default function AgregarEjemplar() {
 
   return (
     <>
-      <Encabezado etiqueta="Ejemplar" titulo="Nuevo ejemplar">
-        Registra una copia física de un libro que ya exista en el sistema.
-      </Encabezado>
-      {error && <Aviso>{error}</Aviso>}
-      {exito && <Aviso tipo="exito">{exito}</Aviso>}
+      <Encabezado seccion="Ejemplares" titulo="Adicionar ejemplar" descripcion="Registra una copia física de un libro que ya está en el inventario." />
 
-      <form className="tarjeta" onSubmit={manejarEnvio}>
-        <div className="campos">
-          <label>Código del ejemplar
-            <input value={codigo} onChange={(e) => setCodigo(e.target.value)} required />
-          </label>
-          <label>ISBN del libro al que pertenece
-            <input value={isbnLibro} onChange={(e) => setIsbnLibro(e.target.value)} required />
-          </label>
-          <label className="campo-ancho">Ubicación
-            <input value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} required />
-          </label>
-          <label>Fecha de ingreso
-            <input type="datetime-local" value={fechaIngreso}
-                   onChange={(e) => setFechaIngreso(e.target.value)} required />
-          </label>
-          <label>Precio de reposición
-            <input type="number" min="0.01" step="0.01" value={precioReposicion}
-                   onChange={(e) => setPrecioReposicion(e.target.value)} required />
-          </label>
-          <label>Número de préstamos
-            <input type="number" min="0" step="1" value={numeroPrestamos}
-                   onChange={(e) => setNumeroPrestamos(e.target.value)} required />
-          </label>
-        </div>
-        <SelectorChips etiqueta="Estado" nombre="estado" opciones={ESTADOS_EJEMPLAR} valor={estado}
-                       etiquetaDe={etiquetaEstado} alCambiar={(s) => setEstado(s || "DISPONIBLE")} />
-        <div className="acciones">
-          <button type="submit" disabled={enviando}>
-            <Icono nombre="listo" /> {enviando ? "Guardando..." : "Adicionar"}
-          </button>
+      {errorServidor && <Banner titulo="No se pudo adicionar el ejemplar" className="espacio-abajo">{errorServidor}</Banner>}
+
+      <form className="panel formulario-secciones" onSubmit={manejarEnvio} noValidate>
+        <section className="seccion-formulario" aria-labelledby="sec-ejemplar">
+          <div>
+            <h2 id="sec-ejemplar">Identificación</h2>
+            <p className="seccion-formulario-ayuda">El código es único por copia. El libro debe existir: búscalo por su ISBN.</p>
+          </div>
+          <div className="rejilla-campos">
+            <Campo etiqueta="Código del ejemplar" value={datos.codigo} onChange={cambiar("codigo")} error={errores.codigo}
+                   placeholder="EJ-021" autoComplete="off" />
+            <Campo etiqueta="ISBN del libro" value={datos.isbnLibro} onChange={cambiar("isbnLibro")} error={errores.isbnLibro}
+                   placeholder="978-0307474728" autoComplete="off" />
+          </div>
+        </section>
+
+        <section className="seccion-formulario" aria-labelledby="sec-estado">
+          <div>
+            <h2 id="sec-estado">Estado y ubicación</h2>
+            <p className="seccion-formulario-ayuda">Dónde está la copia y en qué condición se encuentra.</p>
+          </div>
+          <div className="rejilla-campos">
+            <Selector etiqueta="Estado" valor={estado} opciones={OPCIONES_ESTADO} alCambiar={(s) => setEstado(s || "DISPONIBLE")} />
+            <Campo etiqueta="Ubicación" value={datos.ubicacion} onChange={cambiar("ubicacion")} error={errores.ubicacion}
+                   placeholder="Estante A1" />
+          </div>
+        </section>
+
+        <section className="seccion-formulario" aria-labelledby="sec-ingreso">
+          <div>
+            <h2 id="sec-ingreso">Ingreso y valor</h2>
+            <p className="seccion-formulario-ayuda">Préstamos que ya tenía la copia al registrarla (normalmente 0).</p>
+          </div>
+          <div className="rejilla-campos">
+            <Campo etiqueta="Fecha de ingreso" type="datetime-local" value={datos.fechaIngreso}
+                   onChange={cambiar("fechaIngreso")} error={errores.fechaIngreso} />
+            <Campo etiqueta="Precio de reposición" type="number" inputMode="decimal" min="0" step="0.01" prefijo="$"
+                   value={datos.precioReposicion} onChange={cambiar("precioReposicion")} error={errores.precioReposicion} />
+            <Campo etiqueta="Número de préstamos" type="number" inputMode="numeric" min="0" step="1"
+                   value={datos.numeroPrestamos} onChange={cambiar("numeroPrestamos")} error={errores.numeroPrestamos} />
+          </div>
+        </section>
+
+        <div className="acciones acciones-pie">
+          <Boton type="submit" variante="primario" icono={Check} cargando={enviando}>Adicionar ejemplar</Boton>
         </div>
       </form>
     </>

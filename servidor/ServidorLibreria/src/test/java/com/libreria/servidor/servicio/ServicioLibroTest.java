@@ -6,7 +6,6 @@ import com.libreria.servidor.excepciones.LibreriaException;
 import com.libreria.servidor.model.EjemplarInput;
 import com.libreria.servidor.model.Libro;
 import com.libreria.servidor.model.LibroInput;
-import com.libreria.servidor.model.LibroUpdateInput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -120,9 +119,10 @@ class ServicioLibroTest {
         servicio.crear(libro(isbn, "Viejo", "Autor", Genero.OTRO));
         LocalDateTime nuevaFecha = LocalDateTime.of(1999, 1, 2, 3, 4);
 
-        Libro actualizado = servicio.actualizar(isbn,
-                new LibroUpdateInput("Nuevo", "Otro Autor", 99000.5, 321, nuevaFecha, Genero.HISTORIA));
+        Libro actualizado = servicio.actualizar(
+                new LibroInput(" " + isbn.toLowerCase() + " ", "Nuevo", "Otro Autor", 99000.5, 321, nuevaFecha, Genero.HISTORIA));
 
+        assertThat(actualizado.getIsbn()).isEqualTo(isbn);
         assertThat(actualizado.getTitulo()).isEqualTo("Nuevo");
         assertThat(actualizado.getAutor()).isEqualTo("Otro Autor");
         assertThat(actualizado.getPrecio()).isEqualTo(99000.5);
@@ -134,9 +134,10 @@ class ServicioLibroTest {
 
     @Test
     void actualizarOEliminarUnLibroInexistenteFalla() {
-        LibroUpdateInput cambios = new LibroUpdateInput("T", "A", 1, 1, FECHA, Genero.OTRO);
-
-        assertThatThrownBy(() -> servicio.actualizar("no-existe", cambios)).hasMessageContaining("No existe");
+        assertThatThrownBy(() -> servicio.actualizar(new LibroInput("no-existe", "T", "A", 1, 1, FECHA, Genero.OTRO)))
+                .hasMessageContaining("No existe");
+        assertThatThrownBy(() -> servicio.actualizar(new LibroInput("  ", "T", "A", 1, 1, FECHA, Genero.OTRO)))
+                .hasMessageContaining("El ISBN es obligatorio");
         assertThatThrownBy(() -> servicio.eliminar("no-existe")).hasMessageContaining("No existe");
     }
 
@@ -177,7 +178,7 @@ class ServicioLibroTest {
         String isbn = isbnUnico();
 
         servicio.crear(libro(isbn, "Observado", "Autor", Genero.OTRO));
-        servicio.actualizar(isbn, new LibroUpdateInput("Observado 2", "Autor", 1, 1, FECHA, Genero.OTRO));
+        servicio.actualizar(new LibroInput(isbn, "Observado 2", "Autor", 1, 1, FECHA, Genero.OTRO));
         servicio.eliminar(isbn);
 
         assertThat(notificaciones[0]).isEqualTo(3);

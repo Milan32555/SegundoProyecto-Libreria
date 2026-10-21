@@ -5,7 +5,6 @@ import com.libreria.servidor.enums.Genero;
 import com.libreria.servidor.excepciones.LibreriaException;
 import com.libreria.servidor.model.Libro;
 import com.libreria.servidor.model.LibroInput;
-import com.libreria.servidor.model.LibroUpdateInput;
 import com.libreria.servidor.observer.ListadoObservable;
 import com.libreria.servidor.observer.ObservadorListado;
 import com.libreria.servidor.observer.RevisionListado;
@@ -117,9 +116,16 @@ public class ServicioLibro {
         return libro;
     }
 
-    public synchronized Libro actualizar(String isbn, LibroUpdateInput in) {
-        Libro libro = buscarPorIsbn(isbn)
-                .orElseThrow(() -> new LibreriaException("No existe un libro con el ISBN " + isbn + "."));
+    /**
+     * Actualiza el libro cuyo isbn viene en el input. El isbn es la clave del libro:
+     * solo sirve para encontrarlo y no se modifica; el resto de los datos se reemplaza.
+     */
+    public synchronized Libro actualizar(LibroInput in) {
+        if (in.isbn() == null || in.isbn().isBlank()) {
+            throw new LibreriaException("El ISBN es obligatorio.");
+        }
+        Libro libro = buscarPorIsbn(in.isbn())
+                .orElseThrow(() -> new LibreriaException("No existe un libro con el ISBN " + in.isbn().trim() + "."));
         validar(in.titulo(), in.autor(), in.precio(), in.numeroPaginas(), in.fechaPublicacion(), in.genero());
 
         libro.setTitulo(in.titulo().trim());

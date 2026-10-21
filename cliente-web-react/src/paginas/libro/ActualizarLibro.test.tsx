@@ -45,7 +45,7 @@ describe("ActualizarLibro", () => {
 
   it("guarda los cambios, muestra lo que respondió el servidor y notifica al Observer", async () => {
     vi.mocked(buscarLibroPorIsbn).mockResolvedValue(MARIA);
-    vi.mocked(actualizarLibro).mockImplementation(async (isbn, datos) => ({ isbn, ...datos }));
+    vi.mocked(actualizarLibro).mockImplementation(async (datos) => datos);
     const notificar = vi.spyOn(libroObservable, "notificar");
     const user = await buscar();
 
@@ -56,8 +56,8 @@ describe("ActualizarLibro", () => {
     await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
 
     expect(await screen.findByText("Cambios guardados")).toBeInTheDocument();
-    expect(actualizarLibro).toHaveBeenCalledWith("978-9589012338", {
-      titulo: "María", autor: "Jorge Isaacs", precio: 41000, numeroPaginas: 340,
+    expect(actualizarLibro).toHaveBeenCalledWith({
+      isbn: "978-9589012338", titulo: "María", autor: "Jorge Isaacs", precio: 41000, numeroPaginas: 340,
       fechaPublicacion: "1867-06-01T09:00", genero: "POESIA"
     });
     expect(notificar).toHaveBeenCalledTimes(1);

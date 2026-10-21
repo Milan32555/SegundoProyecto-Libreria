@@ -23,7 +23,7 @@ src/main/java/com/libreria/servidor/
 ├── controller/    LibroController, EjemplarController, ResumenController → capa Controller (GraphQL)
 ├── servicio/      ServicioLibro, ServicioEjemplar, ServicioResumen → lógica de negocio y validaciones
 ├── repositorio/   RepositorioLibros, RepositorioEjemplares → Singleton, dueños de las List
-├── model/         Libro, Ejemplar + DTOs de entrada (LibroInput, LibroUpdateInput, …)
+├── model/         Libro, Ejemplar + DTOs de entrada (LibroInput, EjemplarInput, …)
 │                  + records de salida ResumenInventario y ConteoEstado
 ├── builder/       LibroBuilder, EjemplarBuilder        → patrón Builder
 ├── observer/      ListadoObservable, ObservadorListado, RevisionListado → patrón Observer

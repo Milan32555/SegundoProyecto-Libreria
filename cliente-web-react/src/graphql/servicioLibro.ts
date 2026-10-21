@@ -55,12 +55,11 @@ export async function crearLibro(input: Libro): Promise<Libro> {
   return data.crearLibro;
 }
 
-export async function actualizarLibro(isbn: string, input: Omit<Libro, "isbn">): Promise<Libro> {
+/** Actualiza el libro cuyo isbn viene en el input (el isbn no se cambia: indica qué libro se modifica). */
+export async function actualizarLibro(input: Libro): Promise<Libro> {
   const data = await graphql().ejecutar<{ actualizarLibro: Libro }>(
-    `mutation ($isbn: ID!, $input: LibroUpdateInput!) {
-       actualizarLibro(isbn: $isbn, input: $input) { ${CAMPOS_LIBRO} }
-     }`,
-    { isbn, input }
+    `mutation ($input: LibroInput!) { actualizarLibro(input: $input) { ${CAMPOS_LIBRO} } }`,
+    { input }
   );
   return data.actualizarLibro;
 }

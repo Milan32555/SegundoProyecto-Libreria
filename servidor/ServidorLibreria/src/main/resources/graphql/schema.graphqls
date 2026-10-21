@@ -59,17 +59,9 @@ type ResumenInventario {
     ejemplaresPorEstado: [ConteoEstado!]!
 }
 
+"Datos de un libro, para crearlo o actualizarlo. Al actualizar, el isbn indica qué libro se modifica (no se cambia)."
 input LibroInput {
     isbn: ID!
-    titulo: String!
-    autor: String!
-    precio: Float!
-    numeroPaginas: Int!
-    fechaPublicacion: LocalDateTime!
-    genero: Genero!
-}
-
-input LibroUpdateInput {
     titulo: String!
     autor: String!
     precio: Float!
@@ -126,8 +118,10 @@ type Query {
 }
 
 type Mutation {
+    "Crea el libro (su isbn no debe existir)"
     crearLibro(input: LibroInput!): Libro
-    actualizarLibro(isbn: ID!, input: LibroUpdateInput!): Libro
+    "Actualiza el libro cuyo isbn viene en el input (debe existir); cambia todos los datos menos el isbn"
+    actualizarLibro(input: LibroInput!): Libro
     "Elimina el libro (solo si no tiene ejemplares) y devuelve los datos del libro eliminado"
     eliminarLibro(isbn: ID!): Libro
 

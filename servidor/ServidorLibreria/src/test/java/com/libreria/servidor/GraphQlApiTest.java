@@ -153,13 +153,13 @@ class GraphQlApiTest {
                 .path("crearLibro.fechaPublicacion").entity(String.class).isEqualTo("2020-01-02T03:04:00");
 
         graphQlTester.document("""
-                        mutation ($isbn: ID!, $input: LibroUpdateInput!) {
-                          actualizarLibro(isbn: $isbn, input: $input) { titulo precio fechaPublicacion }
+                        mutation ($input: LibroInput!) {
+                          actualizarLibro(input: $input) { isbn titulo precio fechaPublicacion }
                         }""")
-                .variable("isbn", isbn)
-                .variable("input", Map.of("titulo", "Actualizado", "autor", "Otra", "precio", 1.5,
+                .variable("input", Map.of("isbn", isbn, "titulo", "Actualizado", "autor", "Otra", "precio", 1.5,
                         "numeroPaginas", 9, "fechaPublicacion", "2019-12-31T23:59:59Z", "genero", "OTRO"))
                 .execute()
+                .path("actualizarLibro.isbn").entity(String.class).isEqualTo(isbn)
                 .path("actualizarLibro.titulo").entity(String.class).isEqualTo("Actualizado")
                 .path("actualizarLibro.precio").entity(Double.class).isEqualTo(1.5)
                 .path("actualizarLibro.fechaPublicacion").entity(String.class).isEqualTo("2019-12-31T23:59:59");

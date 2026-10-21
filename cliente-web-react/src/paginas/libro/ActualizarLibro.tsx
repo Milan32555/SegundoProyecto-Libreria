@@ -83,7 +83,8 @@ export default function ActualizarLibro() {
 
     setCargando(true); setError(null);
     try {
-      const actualizado = await actualizarLibro(libro.isbn, {
+      const actualizado = await actualizarLibro({
+        isbn: libro.isbn,
         titulo: datos.titulo.trim(),
         autor: datos.autor.trim(),
         precio: Number(datos.precio),

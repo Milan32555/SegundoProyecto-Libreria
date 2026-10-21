@@ -80,13 +80,12 @@ Future<Libro> actualizarLibro({
   required String fechaPublicacion,
   required String genero,
 }) async {
+  // El isbn va dentro del input: indica qué libro se modifica (no se cambia).
   final data = await ClienteGraphQL().ejecutar(
-    '''mutation (\$isbn: ID!, \$input: LibroUpdateInput!) {
-         actualizarLibro(isbn: \$isbn, input: \$input) { $_camposLibro }
-       }''',
+    'mutation (\$input: LibroInput!) { actualizarLibro(input: \$input) { $_camposLibro } }',
     variables: {
-      'isbn': isbn,
       'input': {
+        'isbn': isbn,
         'titulo': titulo,
         'autor': autor,
         'precio': precio,

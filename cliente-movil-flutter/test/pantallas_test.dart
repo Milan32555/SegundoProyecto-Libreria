@@ -385,7 +385,7 @@ void main() {
     testWidgets('busca primero, muestra los datos actuales y luego guarda', (tester) async {
       final servidor = ServidorSimulado({
         'libroPorIsbn': (_) => libroJson(),
-        'actualizarLibro': (v) => {...(v['input'] as Map<String, dynamic>), 'isbn': v['isbn']},
+        'actualizarLibro': (v) => v['input'] as Map<String, dynamic>,
         'revisionLibros': (_) => 1,
       })..instalar();
       await abrir(tester, '/libros/actualizar');
@@ -402,8 +402,8 @@ void main() {
       await tocar(tester, find.widgetWithText(FilledButton, 'Guardar cambios'));
 
       expect(servidor.variablesDe('actualizarLibro').single, {
-        'isbn': '978-8420401751',
         'input': {
+          'isbn': '978-8420401751',
           'titulo': 'Delirio',
           'autor': 'Laura Restrepo',
           'precio': 57000.0,

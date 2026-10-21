@@ -4,7 +4,6 @@ import com.libreria.servidor.enums.Genero;
 import com.libreria.servidor.model.Ejemplar;
 import com.libreria.servidor.model.Libro;
 import com.libreria.servidor.model.LibroInput;
-import com.libreria.servidor.model.LibroUpdateInput;
 import com.libreria.servidor.servicio.ServicioEjemplar;
 import com.libreria.servidor.servicio.ServicioLibro;
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -72,8 +71,8 @@ public class LibroController {
     }
 
     @MutationMapping
-    public Libro actualizarLibro(@Argument String isbn, @Argument LibroUpdateInput input) {
-        return servicioLibro.actualizar(isbn, input);
+    public Libro actualizarLibro(@Argument LibroInput input) {
+        return servicioLibro.actualizar(input);
     }
 
     @MutationMapping

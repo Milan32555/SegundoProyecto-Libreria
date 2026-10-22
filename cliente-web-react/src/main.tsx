@@ -14,6 +14,7 @@ import "@fontsource/literata/latin-600.css";
 import "./estilos/tokens.css";
 import "./estilos/app.css";
 
+// Elemento raiz el cual REACT va a usar para crear toda la interfaz
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
